@@ -22,5 +22,5 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(hws)
 add_dependencies(Heterogeneous_CG hws)
 target_include_directories(Heterogeneous_CG PUBLIC ${hws_SOURCE_DIR}/include)
-target_link_libraries(Heterogeneous_CG PRIVATE hws)
+target_link_libraries(Heterogeneous_CG PUBLIC hws::hws)
 
