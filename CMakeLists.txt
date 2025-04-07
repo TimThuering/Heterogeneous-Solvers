@@ -4,6 +4,9 @@ project(Heterogeneous_Conjugate_Gradients)
 set(CMAKE_CXX_STANDARD 20)
 
 option(ENABLE_TESTS "Enable Test" ON)
+option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
+
+
 
 
 # find AdaptiveCpp SYCL implementation
@@ -17,20 +20,26 @@ include(FetchContent)
 
 
 # define all program source files for the executable
-set(EXECUTABLE_FILES ${CMAKE_SOURCE_DIR}/src/main.cpp)
+set(EXECUTABLE_FILES src/main.cpp)
 
 # define all library files that will be linked to the executable
-set(LIBRARY_FILES ${CMAKE_SOURCE_DIR}/src/matrixData/SymmetricMatrix.cpp)
+set(LIBRARY_FILES src/matrixData/SymmetricMatrix.cpp
+        src/utility/Configuration.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/src/MatrixData)
+include_directories(src)
+include_directories(src/MatrixData)
+include_directories(src/utility)
 
 # create and executable, add SYCL to executable and link OpenMP and custom library files
 add_executable(Heterogeneous_CG ${EXECUTABLE_FILES})
 target_link_libraries(Heterogeneous_CG PUBLIC Heterogeneous_CG_lib)
 add_sycl_to_target(TARGET Heterogeneous_CG SOURCES ${EXECUTABLE_FILES})
 target_link_options(Heterogeneous_CG PUBLIC -fopenmp)
+
+if (USE_DOUBLE)
+    target_compile_definitions(Heterogeneous_CG_lib PUBLIC USE_DOUBLE=1)
+endif ()
 
 message("Building the hardware sampling library")
 # build and link the hws library
@@ -48,7 +57,7 @@ target_link_libraries(Heterogeneous_CG_lib PUBLIC hws::hws)
 
 # Tests
 if (${ENABLE_TESTS})
-    set(TEST_SOURCE_FILES ${CMAKE_SOURCE_DIR}/tests/test.cpp)
+    set(TEST_SOURCE_FILES tests/test.cpp)
 
     FetchContent_Declare(
             googletest
@@ -64,4 +73,4 @@ if (${ENABLE_TESTS})
     gtest_discover_tests(Heterogeneous_CG_Test)
     target_link_libraries(Heterogeneous_CG_Test GTest::gtest_main Heterogeneous_CG_lib)
     message("Tests are enabled")
-endif()
+endif ()

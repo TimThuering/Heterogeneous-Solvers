@@ -21,6 +21,12 @@ int main()
 
 
     sleep(3);
+#ifdef USE_DOUBLE
+    std::cout << "Using FP64 double precision" << std::endl;
+#else
+    std::cout << "Using FP32 single precision" << std::endl;
+#endif
+
 
 
     sampler.stop_sampling();
