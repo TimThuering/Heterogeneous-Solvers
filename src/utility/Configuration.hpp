@@ -10,6 +10,8 @@ namespace conf
 #else
     typedef float fp_type;
 #endif
+
+    inline int matrixBlockSize = 4;
 }
 
 #endif //CONFIGURATION_HPP

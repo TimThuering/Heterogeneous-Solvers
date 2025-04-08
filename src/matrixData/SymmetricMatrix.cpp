@@ -4,12 +4,18 @@
 #include "SymmetricMatrix.hpp"
 #include "Configuration.hpp"
 
-SymmetricMatrix::SymmetricMatrix(const std::size_t N, const std::size_t blockSize): N(N), blockSize(blockSize)
+SymmetricMatrix::SymmetricMatrix(const std::size_t N, const std::size_t blockSize):
+    N(N),
+    blockSize(blockSize),
+    blockCountXY(std::ceil(static_cast<double>(N) / static_cast<double>(blockSize)))
 {
+    // allocate memory for matrix storage
+    matrixData.resize(blockCountXY * blockCountXY * blockSize * blockSize);
 }
 
-int SymmetricMatrix::example() {
-  conf::fp_type value = 1.0f;
-  std::cout << typeid(value).name() << std::endl;
-  return 123;
+int SymmetricMatrix::example()
+{
+    conf::fp_type value = 1.0f;
+    std::cout << typeid(value).name() << std::endl;
+    return 123;
 }

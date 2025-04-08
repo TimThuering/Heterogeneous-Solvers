@@ -11,8 +11,9 @@ def generateMatrix(N, path):
     matrix = np.array(matrix)
 
     output = open(path + '/matrix.txt', "w")
+    output.write('# {}\n'.format(N))
     for i in range(N):
-        output.write(np.array2string(matrix[i][0:i+1], max_line_width=sys.maxsize, precision=20, suppress_small=False, floatmode='fixed')[1:-1] + "\n")
+        output.write(np.array2string(matrix[i][0:i+1], max_line_width=sys.maxsize, precision=20, suppress_small=False, floatmode='fixed', separator=';')[1:-1] + "\n")
 
 # Usage: First arguments: N, second argument: path to output directory
 if __name__ == '__main__':
