@@ -14,7 +14,7 @@ public:
      * Parses a symmetric matrix.
      * Stores the matrix in a blocked manner as described in the SymmetricMatrix class
      */
-    SymmetricMatrix parseSymmetricMatrix(std::string& path);
+    static SymmetricMatrix parseSymmetricMatrix(std::string& path);
 
     /**
      * Splits a string containing matrix entries.

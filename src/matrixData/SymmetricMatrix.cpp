@@ -10,5 +10,6 @@ SymmetricMatrix::SymmetricMatrix(const std::size_t N, const int blockSize):
     blockCountXY(std::ceil(static_cast<double>(N) / static_cast<double>(blockSize)))
 {
     // allocate memory for matrix storage
-    matrixData.resize(blockCountXY * blockCountXY * blockSize * blockSize);
+    const int blockCount = (blockCountXY * (blockCountXY + 1)) / 2;
+    matrixData.resize(blockCount * blockSize * blockSize);
 }

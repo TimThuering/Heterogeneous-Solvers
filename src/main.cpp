@@ -16,7 +16,7 @@ int main()
     std::string path = "../matrixGenerator/matrix.txt";
     std::string path2 = "../matrixGenerator/matrixBlocked.txt";
     MatrixParser parser;
-    SymmetricMatrix matrix = parser.parseSymmetricMatrix(path);
+    const SymmetricMatrix matrix = parser.parseSymmetricMatrix(path);
     MatrixParser::writeBlockedMatrix(path2, matrix);
 
 
