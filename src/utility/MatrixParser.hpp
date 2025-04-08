@@ -10,9 +10,12 @@ class MatrixParser
 public:
     SymmetricMatrix parseSymmetricMatrix(std::string& path);
 
-    std::vector<conf::fp_type> getRowValuesFromString(std::string& rowString);
+    std::vector<conf::fp_type> getRowValuesFromString(const std::string& rowString);
 
-    void writeBlockedMatrix(std::string& path, SymmetricMatrix& matrix);
+    void writeBlockedMatrix(const std::string& path, const SymmetricMatrix& matrix);
+
+private:
+    void processRow(std::string& row, unsigned int rowIndex, SymmetricMatrix& matrix);
 };
 
 
