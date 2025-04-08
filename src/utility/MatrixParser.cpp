@@ -1,6 +1,6 @@
 #include "MatrixParser.hpp"
 
-#include <assert.h>
+#include <cassert>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -58,7 +58,7 @@ std::vector<conf::fp_type> MatrixParser::getRowValuesFromString(const std::strin
                 rowValues.push_back(value);
             } catch (...)
             {
-                std::cerr << "Error while parsing string '" << valueString << "'" << std::endl;
+                throw std::invalid_argument("Error while parsing string '" + valueString + "'");
             }
             lastSplitIndex = i + 1;
         }
@@ -66,13 +66,19 @@ std::vector<conf::fp_type> MatrixParser::getRowValuesFromString(const std::strin
 
     // parse the last value
     const std::string valueString = rowString.substr(lastSplitIndex, rowString.size() - lastSplitIndex);
-    const auto value = static_cast<conf::fp_type>(std::stod(valueString));
-    rowValues.push_back(value);
+    try
+    {
+        const auto value = static_cast<conf::fp_type>(std::stod(valueString));
+        rowValues.push_back(value);
+    } catch (...)
+    {
+        throw std::invalid_argument("Error while parsing string '" + valueString + "'");
+    }
 
     return rowValues;
 }
 
-void MatrixParser::processRow(std::string& row, const unsigned int rowIndex, SymmetricMatrix& matrix)
+void MatrixParser::processRow(const std::string& row, const unsigned int rowIndex, SymmetricMatrix& matrix)
 {
     const std::vector<conf::fp_type> rowValues = getRowValuesFromString(row);
     assert(rowValues.size() == rowIndex + 1);
@@ -84,25 +90,32 @@ void MatrixParser::processRow(std::string& row, const unsigned int rowIndex, Sym
     // row index divided by the block size to determine block index later
     auto rowDivBlock = std::div(rowIndex, matrix.blockSize);
 
+    // row index of the current block
     const int rowBlockIndex = rowDivBlock.quot;
 
+    // tracks the total number of blocks in columns left to the current column
     int blockCountLeftColumns = 0;
+
+    // iterate over all column indices of blocks that intersect with the current row
     for (int columnBlockIndex = 0; columnBlockIndex < columnBlockCount; ++columnBlockIndex)
     {
+        // Index of block when enumerating all blocks column by column from top to bottom
         const int blockIndex = blockCountLeftColumns + (rowBlockIndex - columnBlockIndex);
 
         // start index of block in matrix data structure
         const int blockStartIndex = blockIndex * conf::matrixBlockSize * conf::matrixBlockSize;
 
-        // row index in block
+        // local row index in block
         const int value_i = rowDivBlock.rem;
 
         if (rowBlockIndex == columnBlockIndex) // Diagonal Block, some values have to be mirrored
         {
+            // for each column in block, j is a global index and corresponds to the column of the whole matrix
             for (unsigned int j = columnBlockIndex * conf::matrixBlockSize; j < rowValues.size(); ++j)
-            // for each column in block
             {
-                const int value_j = j - columnBlockIndex * conf::matrixBlockSize;
+                // compute local column index value_j inside the current block from global column index j
+                const unsigned int value_j = j - columnBlockIndex * conf::matrixBlockSize;
+
                 const conf::fp_type value = rowValues[j];
 
                 // location as read in file in lower triangle (i,j)
@@ -113,11 +126,14 @@ void MatrixParser::processRow(std::string& row, const unsigned int rowIndex, Sym
         }
         else // normal block
         {
+            // for each column in block, j is a global index and corresponds to the column of the whole matrix
             for (int j = columnBlockIndex * conf::matrixBlockSize; j < columnBlockIndex *
                  conf::matrixBlockSize +
                  conf::matrixBlockSize; ++j) // for each column in block
             {
+                // compute local column index value_j inside the current block from global column index j
                 const int value_j = j - columnBlockIndex * conf::matrixBlockSize;
+
                 const conf::fp_type value = rowValues[j];
 
                 // location as read in file in lower triangle (i,j)

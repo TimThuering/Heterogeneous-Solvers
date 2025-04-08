@@ -4,9 +4,40 @@
 #include <vector>
 #include "Configuration.hpp"
 
+/**
+ * Class that represents a symmetric matrix that is stored in a blocked manner.
+ * Symmetric values in diagonal blocks are stored redundantly. Otherwise, only the lower triangle of the matrix is stored.
+ *
+ * The block size depends on conf::matrixBlockSize.
+ *
+ * Blocks in the lower (blocked) triangle of the matrix are enumerated from top to bottom and from left to right in the matrix.
+ * Internally blocks are stored after each other according to their ID.
+ * Each block itself is stored in row major layout.
+ *
+ * Example:
+ *
+ * Lower blocked triangle of the symmetric matrix divided into blocks:
+ * |---+---+---|
+ * | 1 |   |   |
+ * |---+---+---|
+ * | 2 | 4 |   |
+ * |---+---+---|
+ * | 3 | 5 | 6 |
+ * |---+---+---|
+ *
+ *
+ * Block order in memory:
+ *
+ * | 1 | 2 | 3 | 4 | 5 | 6 |
+ *
+ */
 class SymmetricMatrix
 {
 public:
+    /**
+     * Constructor of the class.
+     * Automatically resized the vector matrixData to the correct size.
+     */
     SymmetricMatrix(std::size_t N, int blockSize);
 
     const std::size_t N; /// Size N of the NxN symmetric matrix
@@ -14,8 +45,6 @@ public:
     const int blockCountXY; /// block Count in X/Y direction (if the matrix would be stored completely)
 
     std::vector<conf::fp_type> matrixData; /// internal matrix data structure
-
-    int example();
 };
 
 #endif //SYMMETRICMATRIX_HPP

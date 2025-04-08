@@ -17,7 +17,7 @@ int main()
     std::string path2 = "../matrixGenerator/matrixBlocked.txt";
     MatrixParser parser;
     SymmetricMatrix matrix = parser.parseSymmetricMatrix(path);
-    parser.writeBlockedMatrix(path2, matrix);
+    MatrixParser::writeBlockedMatrix(path2, matrix);
 
 
     // sycl::queue gpuQueue(sycl::gpu_selector_v);
