@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "MatrixParser.hpp"
+#include "Configuration.hpp"
 
 
 class SymmetricMatrixTest : public ::testing::Test

@@ -8,7 +8,7 @@
  * Class that represents a symmetric matrix that is stored in a blocked manner.
  * Symmetric values in diagonal blocks are stored redundantly. Otherwise, only the lower triangle of the matrix is stored.
  *
- * The block size depends on conf::matrixBlockSize.
+ * The block size can be set via the constructor.
  *
  * Blocks in the lower (blocked) triangle of the matrix are enumerated from top to bottom and from left to right in the matrix.
  * Internally blocks are stored after each other according to their ID.
@@ -16,19 +16,19 @@
  *
  * Example:
  *
- * Lower blocked triangle of the symmetric matrix divided into blocks:
+ * Lower triangle of the symmetric matrix divided into blocks:
  * |---+---+---|
- * | 1 |   |   |
+ * | 0 |   |   |
  * |---+---+---|
- * | 2 | 4 |   |
+ * | 1 | 3 |   |
  * |---+---+---|
- * | 3 | 5 | 6 |
+ * | 2 | 4 | 5 |
  * |---+---+---|
  *
  *
  * Block order in memory:
  *
- * | 1 | 2 | 3 | 4 | 5 | 6 |
+ * | 0 | 1 | 2 | 3 | 4 | 5 |
  *
  */
 class SymmetricMatrix
