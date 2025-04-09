@@ -1,9 +1,11 @@
 #include <iostream>
-#include "SymmetricMatrix.hpp"
 #include <sycl/sycl.hpp>
 #include <hws/system_hardware_sampler.hpp>
 
 #include "MatrixParser.hpp"
+#include "SymmetricMatrix.hpp"
+#include "CG.hpp"
+
 
 int main()
 {
@@ -13,10 +15,12 @@ int main()
     std::cout << "Using FP32 single precision" << std::endl;
 #endif
 
-    std::string path = "../matrixGenerator/matrix.txt";
-    std::string path2 = "../matrixGenerator/matrixBlocked.txt";
-    const SymmetricMatrix matrix = MatrixParser::parseSymmetricMatrix(path);
-    MatrixParser::writeBlockedMatrix(path2, matrix);
+    std::string path_A = "../matrixGenerator/A_100.txt";
+    std::string path_b = "../matrixGenerator/b_100.txt";
+    // std::string path2 = "../matrixGenerator/matrixBlocked.txt";
+
+    CG algorithm(path_A, path_b);
+    algorithm.solve();
 
 
     // sycl::queue gpuQueue(sycl::gpu_selector_v);

@@ -24,6 +24,8 @@ SymmetricMatrix MatrixParser::parseSymmetricMatrix(std::string& path)
     // retrieve dimension N of the matrix form the input file
     std::size_t N = std::stoul(row.substr(2, row.size() - 2));
 
+    std::cout << "-- Starting to parse symmetric matrix of size " << N << "x" << N << std::endl;
+
     // create symmetric matrix
     SymmetricMatrix matrix(N, conf::matrixBlockSize);
 
@@ -38,6 +40,29 @@ SymmetricMatrix MatrixParser::parseSymmetricMatrix(std::string& path)
 
     matrixInputStream.close();
     return matrix;
+}
+
+std::vector<conf::fp_type> MatrixParser::parseRightHandSide(std::string& path)
+{
+    std::ifstream rhsInputStream(path);
+
+    std::string row;
+
+    // read first line
+    std::getline(rhsInputStream, row);
+
+    if (!row.starts_with("#"))
+    {
+        throw std::invalid_argument("Invalid right-hand side format. First line has to be '# <N>!'");
+    }
+
+    // retrieve dimension N of the matrix form the input file
+    const std::size_t N = std::stoul(row.substr(2, row.size() - 2));
+
+    std::cout << "-- Starting to parse right-hand side of size " << N << std::endl;
+
+    std::getline(rhsInputStream, row);
+    return getRowValuesFromString(row);
 }
 
 std::vector<conf::fp_type> MatrixParser::getRowValuesFromString(const std::string& rowString)

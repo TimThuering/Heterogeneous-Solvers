@@ -1,6 +1,8 @@
 #ifndef MATRIXPARSER_HPP
 #define MATRIXPARSER_HPP
 
+#include <string>
+
 #include "SymmetricMatrix.hpp"
 #include "Configuration.hpp"
 
@@ -15,6 +17,8 @@ public:
      * Stores the matrix in a blocked manner as described in the SymmetricMatrix class
      */
     static SymmetricMatrix parseSymmetricMatrix(std::string& path);
+
+    static std::vector<conf::fp_type> parseRightHandSide(std::string& path);
 
     /**
      * Splits a string containing matrix entries.
