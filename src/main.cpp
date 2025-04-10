@@ -6,6 +6,7 @@
 #include "SymmetricMatrix.hpp"
 #include "CG.hpp"
 
+using namespace sycl;
 
 int main()
 {
@@ -15,11 +16,14 @@ int main()
     std::cout << "Using FP32 single precision" << std::endl;
 #endif
 
-    std::string path_A = "../matrixGenerator/A_100.txt";
-    std::string path_b = "../matrixGenerator/b_100.txt";
+    std::string path_A = "../matrixGenerator/A_20.txt";
+    std::string path_b = "../matrixGenerator/b_20.txt";
     // std::string path2 = "../matrixGenerator/matrixBlocked.txt";
 
-    CG algorithm(path_A, path_b);
+    queue gpuQueue(gpu_selector_v);
+    queue cpuQueue(cpu_selector_v);
+
+    CG algorithm(path_A, path_b, cpuQueue, gpuQueue);
     algorithm.solve();
 
 

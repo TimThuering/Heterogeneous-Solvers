@@ -30,7 +30,9 @@ set(LIBRARY_FILES src/matrixData/SymmetricMatrix.cpp
         src/solver/cg/CG.cpp
         src/solver/cg/CG.hpp
         src/matrixOperations/MatrixOperations.cpp
-        src/matrixOperations/MatrixOperations.hpp)
+        src/matrixOperations/MatrixOperations.hpp
+        src/matrixData/RightHandSide.cpp
+        src/matrixData/RightHandSide.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)

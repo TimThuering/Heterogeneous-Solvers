@@ -21,9 +21,9 @@ void MatrixOperations::matrixVectorBlock(sycl::queue& queue, conf::fp_type* A, c
         {
             const int i = nd_item.get_global_id();
 
-            const int matrix_i = blockStart_i * matrixBlockSize * matrixBlockSize + i;
+            // const int matrix_i = blockStart_i * matrixBlockSize * matrixBlockSize + i;
 
-            A[matrix_i] = i;
+            A[0] = i;
 
         });
     });

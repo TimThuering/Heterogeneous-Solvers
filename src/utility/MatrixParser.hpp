@@ -3,8 +3,9 @@
 
 #include <string>
 
-#include "SymmetricMatrix.hpp"
 #include "Configuration.hpp"
+#include "SymmetricMatrix.hpp"
+#include "RightHandSide.hpp"
 
 /**
  * Class that contains functions to parse matrices from .txt files
@@ -16,9 +17,9 @@ public:
      * Parses a symmetric matrix.
      * Stores the matrix in a blocked manner as described in the SymmetricMatrix class
      */
-    static SymmetricMatrix parseSymmetricMatrix(std::string& path);
+    static SymmetricMatrix parseSymmetricMatrix(std::string& path, sycl::queue& queue);
 
-    static std::vector<conf::fp_type> parseRightHandSide(std::string& path);
+    static RightHandSide parseRightHandSide(std::string& path, sycl::queue& queue);
 
     /**
      * Splits a string containing matrix entries.

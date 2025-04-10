@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <sycl/sycl.hpp>
 
 #include "MatrixParser.hpp"
 #include "Configuration.hpp"
@@ -13,8 +14,9 @@ protected:
 
 TEST_F(SymmetricMatrixTest, parseSymmetricMatrixBS4)
 {
+    sycl::queue queue(sycl::cpu_selector_v);
     conf::matrixBlockSize = 4;
-    SymmetricMatrix matrix = MatrixParser::parseSymmetricMatrix(path);
+    SymmetricMatrix matrix = MatrixParser::parseSymmetricMatrix(path, queue);
 
     EXPECT_EQ(matrix.blockSize, 4);
     EXPECT_EQ(matrix.blockCountXY, 5);
@@ -29,8 +31,9 @@ TEST_F(SymmetricMatrixTest, parseSymmetricMatrixBS4)
 
 TEST_F(SymmetricMatrixTest, parseSymmetricMatrixBS6)
 {
+    sycl::queue queue(sycl::cpu_selector_v);
     conf::matrixBlockSize = 6;
-    SymmetricMatrix matrix = MatrixParser::parseSymmetricMatrix(path);
+    SymmetricMatrix matrix = MatrixParser::parseSymmetricMatrix(path, queue);
 
     EXPECT_EQ(matrix.blockSize, 6);
     EXPECT_EQ(matrix.blockCountXY, 4);

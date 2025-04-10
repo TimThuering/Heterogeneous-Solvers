@@ -5,9 +5,10 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <sycl/sycl.hpp>
 
 
-SymmetricMatrix MatrixParser::parseSymmetricMatrix(std::string& path)
+SymmetricMatrix MatrixParser::parseSymmetricMatrix(std::string& path, sycl::queue& queue)
 {
     std::ifstream matrixInputStream(path);
 
@@ -27,7 +28,7 @@ SymmetricMatrix MatrixParser::parseSymmetricMatrix(std::string& path)
     std::cout << "-- Starting to parse symmetric matrix of size " << N << "x" << N << std::endl;
 
     // create symmetric matrix
-    SymmetricMatrix matrix(N, conf::matrixBlockSize);
+    SymmetricMatrix matrix(N, conf::matrixBlockSize, queue);
 
     // read file row by row
     unsigned int rowIndex = 0;
@@ -42,7 +43,7 @@ SymmetricMatrix MatrixParser::parseSymmetricMatrix(std::string& path)
     return matrix;
 }
 
-std::vector<conf::fp_type> MatrixParser::parseRightHandSide(std::string& path)
+RightHandSide MatrixParser::parseRightHandSide(std::string& path, sycl::queue& queue)
 {
     std::ifstream rhsInputStream(path);
 
@@ -62,7 +63,18 @@ std::vector<conf::fp_type> MatrixParser::parseRightHandSide(std::string& path)
     std::cout << "-- Starting to parse right-hand side of size " << N << std::endl;
 
     std::getline(rhsInputStream, row);
-    return getRowValuesFromString(row);
+
+    auto values = getRowValuesFromString(row);
+
+    RightHandSide b(N, conf::matrixBlockSize, queue);
+
+    // copy values to the right-hand side vector b which is allocated as sycl host memory
+    for (int i = 0; i < N; i++)
+    {
+        b.rightHandSideData[i] = values[i];
+    }
+
+    return b;
 }
 
 std::vector<conf::fp_type> MatrixParser::getRowValuesFromString(const std::string& rowString)
