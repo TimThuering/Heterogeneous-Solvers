@@ -69,7 +69,7 @@ RightHandSide MatrixParser::parseRightHandSide(std::string& path, sycl::queue& q
     RightHandSide b(N, conf::matrixBlockSize, queue);
 
     // copy values to the right-hand side vector b which is allocated as sycl host memory
-    for (int i = 0; i < N; i++)
+    for (unsigned int  i = 0; i < N; i++)
     {
         b.rightHandSideData[i] = values[i];
     }

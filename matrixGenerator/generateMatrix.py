@@ -16,6 +16,8 @@ def generateMatrix(N, path):
         output.write(np.array2string(matrix[i][0:i + 1], max_line_width=sys.maxsize, precision=20, suppress_small=False,
                                      floatmode='fixed', separator=';')[1:-1] + "\n")
 
+    return matrix
+
 
 def generateRightHandSide(N, path):
     print(r'Generating right-hand side b of size {}'.format(N))
@@ -28,6 +30,8 @@ def generateRightHandSide(N, path):
     output.write(np.array2string(b, max_line_width=sys.maxsize, precision=20, suppress_small=False, floatmode='fixed',
                                  separator=';')[1:-1] + "\n")
 
+    return b
+
 
 # Usage: First arguments: N, second argument: path to output directory
 if __name__ == '__main__':
@@ -36,5 +40,9 @@ if __name__ == '__main__':
         path = str(sys.argv[2])
     else:
         path = '.'
-    generateMatrix(N, path)
-    generateRightHandSide(N, path)
+    A = generateMatrix(N, path)
+    b = generateRightHandSide(N, path)
+
+    result = A @ b
+    s = np.sum(A, axis=0)
+    print(result)

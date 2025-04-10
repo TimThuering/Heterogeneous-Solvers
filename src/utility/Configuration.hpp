@@ -12,9 +12,9 @@ namespace conf
     typedef float fp_type; /// use single precision for all floating point operations
 #endif
 
-    inline int matrixBlockSize = 6; /// Block size for storing the symmetric matrix in memory
+    inline int matrixBlockSize = 4; /// Block size for storing the symmetric matrix in memory
 
-    inline int workGroupSize = 256;
+    inline int workGroupSize = 4;
 }
 
 #endif //CONFIGURATION_HPP

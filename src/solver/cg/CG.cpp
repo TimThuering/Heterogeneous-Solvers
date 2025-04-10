@@ -7,8 +7,8 @@
 #include "MatrixOperations.hpp"
 using namespace sycl;
 
-CG::CG(std::string& path_A, std::string& path_b, queue cpuQueue, queue gpuQueue): A(MatrixParser::parseSymmetricMatrix(path_A, cpuQueue)),
-                                                  b(MatrixParser::parseRightHandSide(path_b, cpuQueue))
+CG::CG(std::string& path_A, std::string& path_b, queue &cpuQueue, queue &gpuQueue): A(MatrixParser::parseSymmetricMatrix(path_A, cpuQueue)),
+                                                  b(MatrixParser::parseRightHandSide(path_b, cpuQueue)), cpuQueue(cpuQueue), gpuQueue(gpuQueue)
 {
     // check if dimensions match
     if (A.N != b.N)
@@ -28,8 +28,14 @@ void CG::solve()
     std::cout << b.N << std::endl;
     std::cout << b.rightHandSideData[0] << std::endl;
 
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{cpuQueue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
 
-    // conf::fp_type *testData = malloc_host<conf::fp_type>(A.matrixData.size(), cpu_queue);
 
-    // MatrixOperations::matrixVectorBlock(cpuQueue, A.matrixData, b.rightHandSideData, 0,0,A.blockCountXY,A.blockSize);
+    MatrixOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,0,A.blockCountXY,A.blockCountXY, A.blockCountXY);
+
+    cpuQueue.wait();
+    std::string path2 = "../matrixGenerator/matrixBlocked.txt";
+    MatrixParser::writeBlockedMatrix(path2, A);
 }

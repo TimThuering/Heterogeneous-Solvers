@@ -42,15 +42,12 @@ public:
      */
     SymmetricMatrix(std::size_t N, int blockSize, sycl::queue &queue);
 
-    ~SymmetricMatrix();
-
     const std::size_t N; /// Size N of the NxN symmetric matrix
     const int blockSize; /// The matrix will be partitioned in blockSize x blockSize blocks
     const int blockCountXY; /// block Count in X/Y direction (if the matrix would be stored completely)
     sycl::queue& cpuQueue;
 
-    // std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>> matrixData; /// internal matrix data structure allocated as SYCL host memory
-    conf::fp_type* matrixData; /// internal matrix data structure allocated as SYCL host memory
+    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>> matrixData; /// internal matrix data structure allocated as SYCL host memory
 };
 
 #endif //SYMMETRICMATRIX_HPP
