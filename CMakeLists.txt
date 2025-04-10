@@ -28,7 +28,9 @@ set(LIBRARY_FILES src/matrixData/SymmetricMatrix.cpp
         src/utility/MatrixParser.cpp
         src/utility/MatrixParser.hpp
         src/solver/cg/CG.cpp
-        src/solver/cg/CG.hpp)
+        src/solver/cg/CG.hpp
+        src/matrixOperations/MatrixOperations.cpp
+        src/matrixOperations/MatrixOperations.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)
@@ -36,6 +38,7 @@ include_directories(src/matrixData)
 include_directories(src/utility)
 include_directories(src/solver)
 include_directories(src/solver/cg)
+include_directories(src/matrixOperations)
 
 # create and executable, add SYCL to executable and link OpenMP and custom library files
 add_executable(Heterogeneous_CG ${EXECUTABLE_FILES})
