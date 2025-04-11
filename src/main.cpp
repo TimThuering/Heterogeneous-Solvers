@@ -47,6 +47,9 @@ int main(int argc, char *argv[])
         throw std::runtime_error("No path to .txt file for right-hand side b specified");
     }
 
+    hws::system_hardware_sampler sampler{hws::sample_category::general};
+
+    sampler.start_sampling();
 
     queue gpuQueue(gpu_selector_v);
     queue cpuQueue(cpu_selector_v);
@@ -58,21 +61,9 @@ int main(int argc, char *argv[])
     algorithm.solve();
 
 
-    // sycl::queue gpuQueue(sycl::gpu_selector_v);
-    // sycl::queue cpuQueue(sycl::cpu_selector_v);
-    //
-    // hws::system_hardware_sampler sampler{hws::sample_category::power};
-    //
-    // sampler.start_sampling();
-    //
-    // std::cout << "GPU: " << gpuQueue.get_device().get_info<sycl::info::device::name>() << std::endl;
-    //
-    // std::cout << "CPU: " << cpuQueue.get_device().get_info<sycl::info::device::name>() << std::endl;
-    //
-    //
-    // sleep(3);
-    //
-    // sampler.stop_sampling();
+
+
+    sampler.stop_sampling();
     // sampler.dump_yaml("test.yaml");
 
     return 0;
