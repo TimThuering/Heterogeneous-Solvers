@@ -1,11 +1,11 @@
 #include <sycl/sycl.hpp>
 
-#include "MatrixOperations.hpp"
+#include "MatrixVectorOperations.hpp"
 #include "SymmetricMatrix.hpp"
 
 using namespace sycl;
 
-void MatrixOperations::matrixVectorBlock(queue& queue, const conf::fp_type* A, const conf::fp_type* b,
+void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type* A, const conf::fp_type* b,
                                          conf::fp_type* result,
                                          const int blockStart_i,
                                          const int blockStart_j, const int blockCount_i, const int blockCount_j,
@@ -91,7 +91,7 @@ void MatrixOperations::matrixVectorBlock(queue& queue, const conf::fp_type* A, c
     });
 }
 
-void MatrixOperations::scaleVectorBlock(queue& queue, const conf::fp_type* x, const conf::fp_type alpha,
+void MatrixVectorOperations::scaleVectorBlock(queue& queue, const conf::fp_type* x, const conf::fp_type alpha,
                                         conf::fp_type* result, const int blockStart_i, const int blockCount_i)
 {
     // global range corresponds to number of rows in the (sub) vector
@@ -113,7 +113,7 @@ void MatrixOperations::scaleVectorBlock(queue& queue, const conf::fp_type* x, co
     });
 }
 
-void MatrixOperations::addVectorBlock(queue& queue, const conf::fp_type* x, const conf::fp_type* y, conf::fp_type* result,
+void MatrixVectorOperations::addVectorBlock(queue& queue, const conf::fp_type* x, const conf::fp_type* y, conf::fp_type* result,
     const int blockStart_i, const int blockCount_i)
 {
     // global range corresponds to number of rows in the (sub) vector
@@ -135,7 +135,7 @@ void MatrixOperations::addVectorBlock(queue& queue, const conf::fp_type* x, cons
     });
 }
 
-void MatrixOperations::subVectorBlock(queue& queue, const conf::fp_type* x, const conf::fp_type* y,
+void MatrixVectorOperations::subVectorBlock(queue& queue, const conf::fp_type* x, const conf::fp_type* y,
     conf::fp_type* result, const int blockStart_i, const int blockCount_i)
 {
     // global range corresponds to number of rows in the (sub) vector

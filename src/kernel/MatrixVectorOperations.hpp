@@ -8,7 +8,7 @@
 #include "SymmetricMatrix.hpp"
 
 
-class MatrixOperations
+class MatrixVectorOperations
 {
 public:
     static void matrixVectorBlock(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b, conf::fp_type* result,

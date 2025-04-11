@@ -29,8 +29,8 @@ set(LIBRARY_FILES src/matrixData/SymmetricMatrix.cpp
         src/utility/MatrixParser.hpp
         src/solver/cg/CG.cpp
         src/solver/cg/CG.hpp
-        src/kernel/MatrixOperations.cpp
-        src/kernel/MatrixOperations.hpp
+        src/kernel/MatrixVectorOperations.cpp
+        src/kernel/MatrixVectorOperations.hpp
         src/matrixData/RightHandSide.cpp
         src/matrixData/RightHandSide.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})

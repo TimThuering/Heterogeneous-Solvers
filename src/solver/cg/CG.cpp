@@ -4,7 +4,7 @@
 #include <sycl/sycl.hpp>
 
 #include "MatrixParser.hpp"
-#include "MatrixOperations.hpp"
+#include "MatrixVectorOperations.hpp"
 using namespace sycl;
 
 CG::CG(std::string& path_A, std::string& path_b, queue &cpuQueue, queue &gpuQueue): A(MatrixParser::parseSymmetricMatrix(path_A, cpuQueue)),
@@ -30,7 +30,7 @@ void CG::solve()
     result.resize(b.rightHandSideData.size());
 
 
-    MatrixOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,0,A.blockCountXY,A.blockCountXY, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,0,A.blockCountXY,A.blockCountXY, A.blockCountXY);
 
     cpuQueue.wait();
     std::string path2 = "../matrixGenerator/matrixBlocked.txt";

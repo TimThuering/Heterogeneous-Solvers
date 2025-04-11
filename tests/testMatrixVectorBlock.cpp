@@ -2,7 +2,7 @@
 #include <sycl/sycl.hpp>
 #include <vector>
 
-#include "MatrixOperations.hpp"
+#include "MatrixVectorOperations.hpp"
 #include "MatrixParser.hpp"
 #include "SymmetricMatrix.hpp"
 #include "RightHandSide.hpp"
@@ -32,7 +32,7 @@ TEST_F(MatrixVectorTest, fullMatrixVector)
     result.resize(b.rightHandSideData.size());
 
 
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
                                         A.blockCountXY, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
@@ -66,7 +66,7 @@ TEST_F(MatrixVectorTest, upperMatrixVector)
 
 
     // upper 3 blocks of A times full b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
                                         3, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
@@ -100,7 +100,7 @@ TEST_F(MatrixVectorTest, lowerMatrixVector)
 
 
     // lower 2 blocks of A times full b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
                                         2, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
@@ -135,7 +135,7 @@ TEST_F(MatrixVectorTest, topLeftMatrixTopVector)
 
 
     // upper left 3x3 blocks of A times upper 3 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
                                         3, 3, A.blockCountXY);
     queue.wait();
 
@@ -169,7 +169,7 @@ TEST_F(MatrixVectorTest, lowerRightMatrixBottomVector)
 
 
     // lower right 2x2 blocks of A times lower 2 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
                                         2, 2, A.blockCountXY);
     queue.wait();
 
@@ -203,7 +203,7 @@ TEST_F(MatrixVectorTest, upperRightMatrixBottomVector)
 
 
     // upper right 3x2 blocks of A times lower 2 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
                                         3, 2, A.blockCountXY);
     queue.wait();
 
@@ -237,7 +237,7 @@ TEST_F(MatrixVectorTest, lowerLeftMatrixTopVector)
 
 
     // lower left 2x3 blocks of A times upper 2 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
                                         2, 3, A.blockCountXY);
     queue.wait();
 
@@ -270,22 +270,22 @@ TEST_F(MatrixVectorTest, fullMatrixVectorBlocked)
     result.resize(b.rightHandSideData.size());
 
     // upper left 3x3 blocks of A times upper 3 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
                                         3, 3, A.blockCountXY);
 
     // lower right 2x2 blocks of A times lower 2 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
                                         2, 2, A.blockCountXY);
 
     queue.wait();
 
     // upper right 3x2 blocks of A times lower 2 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
                                         3, 2, A.blockCountXY);
 
 
     // lower left 2x3 blocks of A times upper 2 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
                                         2, 3, A.blockCountXY);
     queue.wait();
 
@@ -322,7 +322,7 @@ TEST_F(MatrixVectorTest, fullMatrixVectorPadding)
     result.resize(b.rightHandSideData.size());
 
 
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
                                         A.blockCountXY, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
@@ -359,7 +359,7 @@ TEST_F(MatrixVectorTest, upperMatrixVectorPadding)
 
 
     // upper 3 blocks of A times full b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
                                         3, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
@@ -396,7 +396,7 @@ TEST_F(MatrixVectorTest, lowerMatrixVectorPadding)
 
 
     // lower 2 blocks of A times full b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
                                         1, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
@@ -430,7 +430,7 @@ TEST_F(MatrixVectorTest, topLeftMatrixTopVectorPadding)
 
 
     // upper left 3x3 blocks of A times upper 3 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
                                         3, 3, A.blockCountXY);
     queue.wait();
 
@@ -468,7 +468,7 @@ TEST_F(MatrixVectorTest, lowerRightMatrixBottomVectorPadding)
 
 
     // lower right 1x1 block of A times lower 1 block of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
                                         1, 1, A.blockCountXY);
     queue.wait();
 
@@ -502,7 +502,7 @@ TEST_F(MatrixVectorTest, upperRightMatrixBottomVectorPadding)
 
 
     // upper right 3x1 blocks of A times lower 1 block of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
                                         3, 1, A.blockCountXY);
     queue.wait();
 
@@ -538,7 +538,7 @@ TEST_F(MatrixVectorTest, lowerLeftMatrixTopVectorPadding)
 
 
     // lower left 1x3 blocks of A times upper 1 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
                                         1, 3, A.blockCountXY);
     queue.wait();
 
@@ -571,22 +571,22 @@ TEST_F(MatrixVectorTest, fullMatrixVectorBlockedPadding)
     result.resize(b.rightHandSideData.size());
 
     // upper left 3x3 blocks of A times upper 3 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
                                         3, 3, A.blockCountXY);
 
     // lower right 1x1 blocks of A times lower 1 block of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
                                         1, 1, A.blockCountXY);
 
     queue.wait();
 
     // upper right 3x1 blocks of A times lower 1 block of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
                                         3, 1, A.blockCountXY);
 
 
     // lower left 1x3 blocks of A times upper 3 blocks of b vector
-    MatrixOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
                                         1, 3, A.blockCountXY);
     queue.wait();
 
