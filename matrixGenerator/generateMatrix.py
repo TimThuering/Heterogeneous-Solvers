@@ -52,6 +52,7 @@ if __name__ == '__main__':
     # result = A[0:12,12:] @ b[12:]
     # result = A[0:18,18:] @ b[18:]
     # result = A[12:,0:12] @ b[0:12]
-    result = A[18:,0:18] @ b[0:18]
+    # result = A[18:,0:18] @ b[0:18]
+    result = b[12:] * 1.23456
     s = np.sum(A, axis=0)
     print(np.array2string(result,precision=15, separator=','))

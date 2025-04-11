@@ -70,7 +70,8 @@ target_link_libraries(Heterogeneous_CG_lib PUBLIC hws::hws)
 if (${ENABLE_TESTS})
     set(TEST_SOURCE_FILES
             tests/testSymmetricMatrix.cpp
-            tests/testMatrixVectorBlock.cpp)
+            tests/testMatrixVectorBlock.cpp
+            tests/testVectorOperations.cpp)
 
     FetchContent_Declare(
             googletest
