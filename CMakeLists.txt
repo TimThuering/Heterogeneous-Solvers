@@ -23,22 +23,24 @@ include(FetchContent)
 set(EXECUTABLE_FILES src/main.cpp)
 
 # define all library files that will be linked to the executable
-set(LIBRARY_FILES src/matrixData/SymmetricMatrix.cpp
+set(LIBRARY_FILES
         src/utility/Configuration.hpp
         src/utility/MatrixParser.cpp
         src/utility/MatrixParser.hpp
         src/solver/cg/CG.cpp
         src/solver/cg/CG.hpp
-        src/kernel/MatrixVectorOperations.cpp
-        src/kernel/MatrixVectorOperations.hpp
-        src/matrixData/RightHandSide.cpp
-        src/matrixData/RightHandSide.hpp
+        src/dataStructures/SymmetricMatrix.cpp
+        src/dataStructures/SymmetricMatrix.hpp
+        src/dataStructures/RightHandSide.cpp
+        src/dataStructures/RightHandSide.hpp
         src/kernel/VectorOperations.cpp
-        src/kernel/VectorOperations.hpp)
+        src/kernel/VectorOperations.hpp
+        src/kernel/MatrixVectorOperations.cpp
+        src/kernel/MatrixVectorOperations.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)
-include_directories(src/matrixData)
+include_directories(src/dataStructures)
 include_directories(src/utility)
 include_directories(src/solver)
 include_directories(src/solver/cg)
