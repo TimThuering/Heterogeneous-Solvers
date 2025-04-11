@@ -25,9 +25,6 @@ CG::CG(std::string& path_A, std::string& path_b, queue &cpuQueue, queue &gpuQueu
 
 void CG::solve()
 {
-    std::cout << b.N << std::endl;
-    std::cout << b.rightHandSideData[0] << std::endl;
-
     const usm_allocator<conf::fp_type, usm::alloc::host> allocator{cpuQueue};
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
     result.resize(b.rightHandSideData.size());
