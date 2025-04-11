@@ -2,7 +2,7 @@
 #include <sycl/sycl.hpp>
 #include <vector>
 
-#include "MatrixVectorOperations.hpp"
+#include "VectorOperations.hpp"
 #include "MatrixParser.hpp"
 #include "SymmetricMatrix.hpp"
 #include "RightHandSide.hpp"
@@ -32,7 +32,7 @@ TEST_F(vectorOperationsTest, scaleFullVector)
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
     result.resize(b.rightHandSideData.size());
 
-    MatrixVectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 0, b.blockCountX);
+    VectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 0, b.blockCountX);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -63,7 +63,7 @@ TEST_F(vectorOperationsTest, scaleUpperVector)
     result.resize(b.rightHandSideData.size());
 
     // scale upper 3 blocks of b
-    MatrixVectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 0, 3);
+    VectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 0, 3);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -94,7 +94,7 @@ TEST_F(vectorOperationsTest, scaleLowerVector)
     result.resize(b.rightHandSideData.size());
 
     // scale lower 2 blocks of b
-    MatrixVectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 3, 2);
+    VectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 3, 2);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -127,7 +127,7 @@ TEST_F(vectorOperationsTest, addFullVector)
     result.resize(b.rightHandSideData.size());
 
     // add complete vectors b + b
-    MatrixVectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
+    VectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
                                      b.blockCountX);
     queue.wait();
 
@@ -159,7 +159,7 @@ TEST_F(vectorOperationsTest, addUpperVector)
     result.resize(b.rightHandSideData.size());
 
     // add upper 3 blocks of b + b
-    MatrixVectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
+    VectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
                                      3);
     queue.wait();
 
@@ -191,7 +191,7 @@ TEST_F(vectorOperationsTest, addLowerVector)
     result.resize(b.rightHandSideData.size());
 
     // add lower 2 blocks of b + b
-    MatrixVectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 3,
+    VectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 3,
                                      2);
     queue.wait();
 
@@ -233,7 +233,7 @@ TEST_F(vectorOperationsTest, subFullVector)
     result.resize(b.rightHandSideData.size());
 
     // add complete vectors b - y
-    MatrixVectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 0,
+    VectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 0,
                                      b.blockCountX);
     queue.wait();
 
@@ -274,7 +274,7 @@ TEST_F(vectorOperationsTest, subUpperVector)
     result.resize(b.rightHandSideData.size());
 
     // add upper 3 blocks of b - y
-    MatrixVectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 0,
+    VectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 0,
                                      3);
     queue.wait();
 
@@ -315,7 +315,7 @@ TEST_F(vectorOperationsTest, subLowerVector)
     result.resize(b.rightHandSideData.size());
 
     // sub lower 2 blocks of b - y
-    MatrixVectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 3,
+    VectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 3,
                                      2);
     queue.wait();
 
@@ -351,7 +351,7 @@ TEST_F(vectorOperationsTest, scaleFullVectorPadding)
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
     result.resize(b.rightHandSideData.size());
 
-    MatrixVectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 0, b.blockCountX);
+    VectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 0, b.blockCountX);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -384,7 +384,7 @@ TEST_F(vectorOperationsTest, scaleUpperVectorPadding)
     result.resize(b.rightHandSideData.size());
 
     // scale upper 3 blocks of b
-    MatrixVectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 0, 2);
+    VectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 0, 2);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -417,7 +417,7 @@ TEST_F(vectorOperationsTest, scaleLowerVectorPadding)
     result.resize(b.rightHandSideData.size());
 
     // scale lower 2 blocks of b
-    MatrixVectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 2, 2);
+    VectorOperations::scaleVectorBlock(queue, b.rightHandSideData.data(), 1.23456, result.data(), 2, 2);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -452,7 +452,7 @@ TEST_F(vectorOperationsTest, addFullVectorPadding)
     result.resize(b.rightHandSideData.size());
 
     // add complete vectors b + b
-    MatrixVectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
+    VectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
                                      b.blockCountX);
     queue.wait();
 
@@ -486,7 +486,7 @@ TEST_F(vectorOperationsTest, addUpperVectorPadding)
     result.resize(b.rightHandSideData.size());
 
     // add upper 3 blocks of b + b
-    MatrixVectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
+    VectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
                                      2);
     queue.wait();
 
@@ -520,7 +520,7 @@ TEST_F(vectorOperationsTest, addLowerVectorPadding)
     result.resize(b.rightHandSideData.size());
 
     // add lower 2 blocks of b + b
-    MatrixVectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 2,
+    VectorOperations::addVectorBlock(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 2,
                                      2);
     queue.wait();
 
@@ -564,7 +564,7 @@ TEST_F(vectorOperationsTest, subFullVectorPadding)
     result.resize(b.rightHandSideData.size());
 
     // add complete vectors b - y
-    MatrixVectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 0,
+    VectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 0,
                                      b.blockCountX);
     queue.wait();
 
@@ -607,7 +607,7 @@ TEST_F(vectorOperationsTest, subUpperVectorPadding)
     result.resize(b.rightHandSideData.size());
 
     // add upper 3 blocks of b - y
-    MatrixVectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 0,
+    VectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 0,
                                      2);
     queue.wait();
 
@@ -650,7 +650,7 @@ TEST_F(vectorOperationsTest, subLowerVectorPadding)
     result.resize(b.rightHandSideData.size());
 
     // sub lower 2 blocks of b - y
-    MatrixVectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 2,
+    VectorOperations::subVectorBlock(queue, b.rightHandSideData.data(), y.data(), result.data(), 2,
                                      2);
     queue.wait();
 
