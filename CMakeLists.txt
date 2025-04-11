@@ -70,6 +70,16 @@ target_include_directories(Heterogeneous_CG PUBLIC ${hws_SOURCE_DIR}/include)
 target_link_libraries(Heterogeneous_CG PUBLIC hws::hws)
 target_link_libraries(Heterogeneous_CG_lib PUBLIC hws::hws)
 
+# include the cxxopts library for cli arguments
+FetchContent_Declare(
+        cxxopts
+        GIT_REPOSITORY https://github.com/jarro2783/cxxopts
+        GIT_TAG v3.2.0
+)
+FetchContent_MakeAvailable(cxxopts)
+add_dependencies(Heterogeneous_CG cxxopts)
+target_include_directories(Heterogeneous_CG PUBLIC ${cxxopts_SOURCE_DIR}/include)
+
 # Tests
 if (${ENABLE_TESTS})
     set(TEST_SOURCE_FILES
