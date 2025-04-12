@@ -35,18 +35,23 @@
  */
 class SymmetricMatrix {
 public:
+
     /**
      * Constructor of the class.
      * Automatically resizes the vector matrixData to the correct size.
+     *
+     * @param N dimension N of the NxN symmetric matrix
+     * @param blockSize the block size of the blocks the matrix is divided in for storage
+     * @param queue SYCL queue for allocating memory
      */
     SymmetricMatrix(std::size_t N, int blockSize, sycl::queue &queue);
 
     const std::size_t N; /// Size N of the NxN symmetric matrix
     const int blockSize; /// The matrix will be partitioned in blockSize x blockSize blocks
     const int blockCountXY; /// block Count in X/Y direction (if the matrix would be stored completely)
-    sycl::queue &cpuQueue;
 
-    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>> matrixData; /// internal matrix data structure allocated as SYCL host memory
+    /// internal matrix data structure allocated as SYCL host memory
+    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>> matrixData;
 };
 
 #endif //SYMMETRICMATRIX_HPP
