@@ -2,9 +2,8 @@
 
 using namespace sycl;
 
-void VectorOperations::scaleVectorBlock(queue& queue, const conf::fp_type* x, const conf::fp_type alpha,
-                                        conf::fp_type* result, const int blockStart_i, const int blockCount_i)
-{
+void VectorOperations::scaleVectorBlock(queue &queue, const conf::fp_type *x, const conf::fp_type alpha,
+                                        conf::fp_type *result, const int blockStart_i, const int blockCount_i) {
     // global range corresponds to number of rows in the (sub) vector
     const range globalRange(blockCount_i * conf::matrixBlockSize);
     const range localRange(conf::workGroupSize);
@@ -12,10 +11,8 @@ void VectorOperations::scaleVectorBlock(queue& queue, const conf::fp_type* x, co
 
     const int matrixBlockSize = conf::matrixBlockSize;
 
-    queue.submit([&](handler& h)
-    {
-        h.parallel_for(kernelRange, [=](auto& nd_item)
-        {
+    queue.submit([&](handler &h) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             // row i in the matrix
             const int i = nd_item.get_global_id() + blockStart_i * matrixBlockSize;
 
@@ -24,10 +21,9 @@ void VectorOperations::scaleVectorBlock(queue& queue, const conf::fp_type* x, co
     });
 }
 
-void VectorOperations::addVectorBlock(queue& queue, const conf::fp_type* x, const conf::fp_type* y,
-                                      conf::fp_type* result,
-                                      const int blockStart_i, const int blockCount_i)
-{
+void VectorOperations::addVectorBlock(queue &queue, const conf::fp_type *x, const conf::fp_type *y,
+                                      conf::fp_type *result,
+                                      const int blockStart_i, const int blockCount_i) {
     // global range corresponds to number of rows in the (sub) vector
     const range globalRange(blockCount_i * conf::matrixBlockSize);
     const range localRange(conf::workGroupSize);
@@ -35,10 +31,8 @@ void VectorOperations::addVectorBlock(queue& queue, const conf::fp_type* x, cons
 
     const int matrixBlockSize = conf::matrixBlockSize;
 
-    queue.submit([&](handler& h)
-    {
-        h.parallel_for(kernelRange, [=](auto& nd_item)
-        {
+    queue.submit([&](handler &h) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             // row i in the matrix
             const int i = nd_item.get_global_id() + blockStart_i * matrixBlockSize;
 
@@ -47,9 +41,8 @@ void VectorOperations::addVectorBlock(queue& queue, const conf::fp_type* x, cons
     });
 }
 
-void VectorOperations::subVectorBlock(queue& queue, const conf::fp_type* x, const conf::fp_type* y,
-                                      conf::fp_type* result, const int blockStart_i, const int blockCount_i)
-{
+void VectorOperations::subVectorBlock(queue &queue, const conf::fp_type *x, const conf::fp_type *y,
+                                      conf::fp_type *result, const int blockStart_i, const int blockCount_i) {
     // global range corresponds to number of rows in the (sub) vector
     const range globalRange(blockCount_i * conf::matrixBlockSize);
     const range localRange(conf::workGroupSize);
@@ -57,10 +50,8 @@ void VectorOperations::subVectorBlock(queue& queue, const conf::fp_type* x, cons
 
     const int matrixBlockSize = conf::matrixBlockSize;
 
-    queue.submit([&](handler& h)
-    {
-        h.parallel_for(kernelRange, [=](auto& nd_item)
-        {
+    queue.submit([&](handler &h) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             // row i in the matrix
             const int i = nd_item.get_global_id() + blockStart_i * matrixBlockSize;
 

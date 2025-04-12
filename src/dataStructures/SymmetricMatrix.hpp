@@ -33,8 +33,7 @@
  * | 0 | 1 | 2 | 3 | 4 | 5 |
  *
  */
-class SymmetricMatrix
-{
+class SymmetricMatrix {
 public:
     /**
      * Constructor of the class.
@@ -45,7 +44,7 @@ public:
     const std::size_t N; /// Size N of the NxN symmetric matrix
     const int blockSize; /// The matrix will be partitioned in blockSize x blockSize blocks
     const int blockCountXY; /// block Count in X/Y direction (if the matrix would be stored completely)
-    sycl::queue& cpuQueue;
+    sycl::queue &cpuQueue;
 
     std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>> matrixData; /// internal matrix data structure allocated as SYCL host memory
 };

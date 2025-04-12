@@ -4,8 +4,7 @@
 /**
  * Namespace that contains everything regarding the configuration of the program execution
  */
-namespace conf
-{
+namespace conf {
 #ifdef USE_DOUBLE
     typedef double fp_type; /// use double precision for all floating point operations
 #else

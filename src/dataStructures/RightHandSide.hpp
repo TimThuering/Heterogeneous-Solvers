@@ -6,14 +6,13 @@
 
 #include "Configuration.hpp"
 
-class RightHandSide
-{
+class RightHandSide {
 public:
     /**
      * Constructor of the class.
      * Automatically resizes the vector rightHandSideData to the correct size.
      */
-    RightHandSide(std::size_t N, int blockSize, sycl::queue& queue);
+    RightHandSide(std::size_t N, int blockSize, sycl::queue &queue);
 
     const std::size_t N; /// Size N of the Nx1 right hand size
     const int blockSize; /// The right hand side can be partitioned in blockSize blocks
