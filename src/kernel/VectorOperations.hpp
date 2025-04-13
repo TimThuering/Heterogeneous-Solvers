@@ -48,6 +48,19 @@ public:
     static void subVectorBlock(sycl::queue &queue, const conf::fp_type *x, const conf::fp_type *y,
                                conf::fp_type *result,
                                int blockStart_i, int blockCount_i);
+
+    /**
+     *
+     * @param queue
+     * @param x
+     * @param y
+     * @param result
+     * @param blockStart_i
+     * @param blockCount_i
+     */
+    static void scalarProduct(sycl::queue &queue, const conf::fp_type *x, const conf::fp_type *y,
+                              conf::fp_type result,
+                              int blockStart_i, int blockCount_i);
 };
 
 
