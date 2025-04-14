@@ -12,13 +12,13 @@ using namespace sycl;
 
 class CG {
 public:
-    CG(std::string &path_A, std::string &path_b, queue &cpuQueue, queue &gpuQueue);
+    CG(std::string& path_A, std::string& path_b, queue& cpuQueue, queue& gpuQueue);
 
     SymmetricMatrix A;
     RightHandSide b;
 
-    queue &cpuQueue;
-    queue &gpuQueue;
+    queue& cpuQueue;
+    queue& gpuQueue;
 
 
     void solve();

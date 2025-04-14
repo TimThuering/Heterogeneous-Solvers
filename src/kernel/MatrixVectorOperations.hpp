@@ -23,9 +23,8 @@ public:
      * @param blockCountXY block count in x and y direction of the complete symmetric matrix
      */
     static void
-    matrixVectorBlock(sycl::queue &queue, const conf::fp_type *A, const conf::fp_type *b, conf::fp_type *result,
+    matrixVectorBlock(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b, conf::fp_type* result,
                       int blockStart_i, int blockStart_j, int blockCount_i, int blockCount_j, int blockCountXY);
-
 };
 
 

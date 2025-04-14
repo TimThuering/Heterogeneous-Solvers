@@ -18,7 +18,7 @@ public:
      * @param blockStart_i first block in the vector to apply the scaling to
      * @param blockCount_i amount of blocks after first block to be scaled
      */
-    static void scaleVectorBlock(sycl::queue &queue, const conf::fp_type *x, conf::fp_type alpha, conf::fp_type *result,
+    static void scaleVectorBlock(sycl::queue& queue, const conf::fp_type* x, conf::fp_type alpha, conf::fp_type* result,
                                  int blockStart_i, int blockCount_i);
 
     /**
@@ -31,8 +31,8 @@ public:
      * @param blockStart_i first block on which the addition should be performed
      * @param blockCount_i amount of blocks from after first block to be added
      */
-    static void addVectorBlock(sycl::queue &queue, const conf::fp_type *x, const conf::fp_type *y,
-                               conf::fp_type *result,
+    static void addVectorBlock(sycl::queue& queue, const conf::fp_type* x, const conf::fp_type* y,
+                               conf::fp_type* result,
                                int blockStart_i, int blockCount_i);
 
     /**
@@ -45,8 +45,8 @@ public:
      * @param blockStart_i first block on which the subtraction should be performed
      * @param blockCount_i amount of blocks from after first block to be subtracted
      */
-    static void subVectorBlock(sycl::queue &queue, const conf::fp_type *x, const conf::fp_type *y,
-                               conf::fp_type *result,
+    static void subVectorBlock(sycl::queue& queue, const conf::fp_type* x, const conf::fp_type* y,
+                               conf::fp_type* result,
                                int blockStart_i, int blockCount_i);
 
     /**
@@ -58,7 +58,7 @@ public:
      * @param blockStart_i
      * @param blockCount_i
      */
-    static void scalarProduct(sycl::queue &queue, const conf::fp_type *x, const conf::fp_type *y,
+    static void scalarProduct(sycl::queue& queue, const conf::fp_type* x, const conf::fp_type* y,
                               conf::fp_type result,
                               int blockStart_i, int blockCount_i);
 };

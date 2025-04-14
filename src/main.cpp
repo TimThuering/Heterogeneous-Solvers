@@ -9,7 +9,7 @@
 
 using namespace sycl;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 #ifdef USE_DOUBLE
     std::cout << "Using FP64 double precision" << std::endl;
 #else
@@ -20,12 +20,12 @@ int main(int argc, char *argv[]) {
     cxxopts::Options argumentOptions("Heterogeneous Conjugate Gradients", "CG Algorithm with CPU-GPU co-execution");
 
     argumentOptions.add_options()
-            ("A,path_A", "path to .txt file containing symmetric positive definite matrix A",
-             cxxopts::value<std::string>())
-            ("b,path_b", "path to .txt file containing the right-hand side b", cxxopts::value<std::string>())
-            ("o,output", "path to the output directory", cxxopts::value<std::string>())
-            ("d,device", "Specifies which devices the solver will use. Has to be 'cpu', 'gpu' or 'mixed'.",
-             cxxopts::value<std::string>());
+        ("A,path_A", "path to .txt file containing symmetric positive definite matrix A",
+         cxxopts::value<std::string>())
+        ("b,path_b", "path to .txt file containing the right-hand side b", cxxopts::value<std::string>())
+        ("o,output", "path to the output directory", cxxopts::value<std::string>())
+        ("d,device", "Specifies which devices the solver will use. Has to be 'cpu', 'gpu' or 'mixed'.",
+         cxxopts::value<std::string>());
 
     const auto arguments = argumentOptions.parse(argc, argv);
 

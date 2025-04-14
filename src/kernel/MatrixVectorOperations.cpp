@@ -5,8 +5,8 @@
 
 using namespace sycl;
 
-void MatrixVectorOperations::matrixVectorBlock(queue &queue, const conf::fp_type *A, const conf::fp_type *b,
-                                               conf::fp_type *result,
+void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type* A, const conf::fp_type* b,
+                                               conf::fp_type* result,
                                                const int blockStart_i,
                                                const int blockStart_j, const int blockCount_i, const int blockCount_j,
                                                const int blockCountXY) {
@@ -18,8 +18,8 @@ void MatrixVectorOperations::matrixVectorBlock(queue &queue, const conf::fp_type
     const int matrixBlockSize = conf::matrixBlockSize;
 
 
-    queue.submit([&](handler &h) {
-        h.parallel_for(kernelRange, [=](auto &nd_item) {
+    queue.submit([&](handler& h) {
+        h.parallel_for(kernelRange, [=](auto& nd_item) {
             // row i in the matrix
             const int i = nd_item.get_global_id() + blockStart_i * matrixBlockSize;
 
