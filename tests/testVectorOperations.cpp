@@ -10,8 +10,7 @@
 
 using namespace sycl;
 
-class vectorOperationsTest : public ::testing::Test
-{
+class vectorOperationsTest : public ::testing::Test {
 protected:
     std::string path_A = "../tests/testData/testMatrixSymmetric20x20.txt";
     std::string path_b = "../tests/testData/testVector_20.txt";
@@ -21,8 +20,7 @@ protected:
 
 // vector scale
 
-TEST_F(vectorOperationsTest, scaleFullVector)
-{
+TEST_F(vectorOperationsTest, scaleFullVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
@@ -45,14 +43,12 @@ TEST_F(vectorOperationsTest, scaleFullVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, scaleUpperVector)
-{
+TEST_F(vectorOperationsTest, scaleUpperVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
@@ -76,14 +72,12 @@ TEST_F(vectorOperationsTest, scaleUpperVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, scaleLowerVector)
-{
+TEST_F(vectorOperationsTest, scaleLowerVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
@@ -107,16 +101,14 @@ TEST_F(vectorOperationsTest, scaleLowerVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
 // vector add
 
-TEST_F(vectorOperationsTest, addFullVector)
-{
+TEST_F(vectorOperationsTest, addFullVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
@@ -141,14 +133,12 @@ TEST_F(vectorOperationsTest, addFullVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, addUpperVector)
-{
+TEST_F(vectorOperationsTest, addUpperVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
@@ -173,14 +163,12 @@ TEST_F(vectorOperationsTest, addUpperVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, addLowerVector)
-{
+TEST_F(vectorOperationsTest, addLowerVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
@@ -205,16 +193,14 @@ TEST_F(vectorOperationsTest, addLowerVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
 // vector sub
 
-TEST_F(vectorOperationsTest, subFullVector)
-{
+TEST_F(vectorOperationsTest, subFullVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
@@ -224,8 +210,7 @@ TEST_F(vectorOperationsTest, subFullVector)
     y.resize(b.rightHandSideData.size());
 
     // initialize y with some data
-    for (unsigned int i = 0; i < y.size(); ++i)
-    {
+    for (unsigned int i = 0; i < y.size(); ++i) {
         y[i] = std::sqrt(i);
     }
 
@@ -247,14 +232,12 @@ TEST_F(vectorOperationsTest, subFullVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, subUpperVector)
-{
+TEST_F(vectorOperationsTest, subUpperVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
@@ -264,8 +247,7 @@ TEST_F(vectorOperationsTest, subUpperVector)
     y.resize(b.rightHandSideData.size());
 
     // initialize y with some data
-    for (unsigned int i = 0; i < y.size(); ++i)
-    {
+    for (unsigned int i = 0; i < y.size(); ++i) {
         y[i] = std::sqrt(i);
     }
 
@@ -288,14 +270,12 @@ TEST_F(vectorOperationsTest, subUpperVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, subLowerVector)
-{
+TEST_F(vectorOperationsTest, subLowerVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
@@ -305,8 +285,7 @@ TEST_F(vectorOperationsTest, subLowerVector)
     y.resize(b.rightHandSideData.size());
 
     // initialize y with some data
-    for (unsigned int i = 0; i < y.size(); ++i)
-    {
+    for (unsigned int i = 0; i < y.size(); ++i) {
         y[i] = std::sqrt(i);
     }
 
@@ -329,8 +308,7 @@ TEST_F(vectorOperationsTest, subLowerVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
@@ -339,8 +317,7 @@ TEST_F(vectorOperationsTest, subLowerVector)
 
 // vector scale
 
-TEST_F(vectorOperationsTest, scaleFullVectorPadding)
-{
+TEST_F(vectorOperationsTest, scaleFullVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -365,14 +342,12 @@ TEST_F(vectorOperationsTest, scaleFullVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, scaleUpperVectorPadding)
-{
+TEST_F(vectorOperationsTest, scaleUpperVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -398,14 +373,12 @@ TEST_F(vectorOperationsTest, scaleUpperVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, scaleLowerVectorPadding)
-{
+TEST_F(vectorOperationsTest, scaleLowerVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -424,23 +397,21 @@ TEST_F(vectorOperationsTest, scaleLowerVectorPadding)
         0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0,
-       -0.420412824157762, 0.712165080209142, -0.485935583099414, -0.114819291125534,
+        -0.420412824157762, 0.712165080209142, -0.485935583099414, -0.114819291125534,
         -0.903594964493081, -0.239225662903664, -0.732204596141706, -0.586876884848221,
         0.0, 0.0, 0.0, 0.0
     };
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
 // vector add
 
-TEST_F(vectorOperationsTest, addFullVectorPadding)
-{
+TEST_F(vectorOperationsTest, addFullVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -467,14 +438,12 @@ TEST_F(vectorOperationsTest, addFullVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, addUpperVectorPadding)
-{
+TEST_F(vectorOperationsTest, addUpperVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -501,14 +470,12 @@ TEST_F(vectorOperationsTest, addUpperVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, addLowerVectorPadding)
-{
+TEST_F(vectorOperationsTest, addLowerVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -535,16 +502,14 @@ TEST_F(vectorOperationsTest, addLowerVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
 // vector sub
 
-TEST_F(vectorOperationsTest, subFullVectorPadding)
-{
+TEST_F(vectorOperationsTest, subFullVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -555,8 +520,7 @@ TEST_F(vectorOperationsTest, subFullVectorPadding)
     y.resize(b.rightHandSideData.size());
 
     // initialize y with some data
-    for (unsigned int i = 0; i < 20; ++i)
-    {
+    for (unsigned int i = 0; i < 20; ++i) {
         y[i] = std::sqrt(i);
     }
 
@@ -579,14 +543,12 @@ TEST_F(vectorOperationsTest, subFullVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, subUpperVectorPadding)
-{
+TEST_F(vectorOperationsTest, subUpperVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -597,8 +559,7 @@ TEST_F(vectorOperationsTest, subUpperVectorPadding)
     y.resize(b.rightHandSideData.size());
 
     // initialize y with some data
-    for (unsigned int i = 0; i < 20; ++i)
-    {
+    for (unsigned int i = 0; i < 20; ++i) {
         y[i] = std::sqrt(i);
     }
 
@@ -622,14 +583,12 @@ TEST_F(vectorOperationsTest, subUpperVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(vectorOperationsTest, subLowerVectorPadding)
-{
+TEST_F(vectorOperationsTest, subLowerVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -640,8 +599,7 @@ TEST_F(vectorOperationsTest, subLowerVectorPadding)
     y.resize(b.rightHandSideData.size());
 
     // initialize y with some data
-    for (unsigned int i = 0; i < 20; ++i)
-    {
+    for (unsigned int i = 0; i < 20; ++i) {
         y[i] = std::sqrt(i);
     }
 
@@ -665,8 +623,29 @@ TEST_F(vectorOperationsTest, subLowerVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
+}
+
+// Test scalar product
+
+TEST_F(vectorOperationsTest, scalarProuctFull) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSizeVector = 4;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
+
+    VectorOperations::scalarProduct(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                    b.blockCountX);
+    queue.wait();
+    VectorOperations::sumFinalScalarProduct(queue, result.data());
+    queue.wait();
+
+    EXPECT_NEAR(result[0], 5.680372795233107, 1e-12);
 }

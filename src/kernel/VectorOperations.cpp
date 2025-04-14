@@ -60,35 +60,80 @@ void VectorOperations::subVectorBlock(queue& queue, const conf::fp_type* x, cons
     });
 }
 
-void VectorOperations::scalarProduct(queue& queue, const conf::fp_type* x, const conf::fp_type* y, conf::fp_type result,
-                                     int blockStart_i, int blockCount_i) {
+void VectorOperations::scalarProduct(queue& queue, const conf::fp_type* x, const conf::fp_type* y,
+                                     conf::fp_type* result,
+                                     const int blockStart_i, const int blockCount_i) {
+    const int matrixBlockSize = conf::matrixBlockSize;
+    const int workGroupSize = conf::workGroupSizeVector;
+
     // global range corresponds to half (!) of the number of rows in the (sub) vector
     // each work-item will perform the first add operation when loading data from global memory
-    const range globalRange(blockCount_i * conf::matrixBlockSize / 2);
-    const range localRange(conf::workGroupSize);
+    const range globalRange(blockCount_i * matrixBlockSize / 2);
+    const range localRange(workGroupSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
-    const int matrixBlockSize = conf::matrixBlockSize;
 
     // based on https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     queue.submit([&](handler& h) {
-        local_accessor<conf::fp_type> cache(conf::matrixBlockSize, h);
+        local_accessor<conf::fp_type> cache(workGroupSize, h);
 
-        h.parallel_for(kernelRange, [=](sycl::nd_item<1>& nd_item) {
+        h.parallel_for(kernelRange, [=](nd_item<1>& nd_item) {
             // row i in the matrix
             const int offset = blockStart_i * matrixBlockSize;
-            int globalIndex = offset + nd_item.get_group(1) * (conf::matrixBlockSize * 2) + nd_item.get_local_id();
+            const unsigned localID = nd_item.get_local_id();
+            const unsigned int globalIndex = offset + nd_item.get_group(0) * (workGroupSize * 2) + localID;
 
-            cache[nd_item.get_local_id()] = x[globalIndex] * y[globalIndex] + x[globalIndex + conf::matrixBlockSize] *
-                y[globalIndex + conf::matrixBlockSize];
+            cache[localID] = x[globalIndex] * y[globalIndex] + x[globalIndex + workGroupSize] * y[globalIndex +
+                workGroupSize];
 
             nd_item.barrier();
 
-            for (unsigned int stride = conf::matrixBlockSize / 2; stride > 0; stride = stride / 2) {
-                if (nd_item.get_local_id() < stride) {
-                    cache[nd_item.get_local_id()] += cache[nd_item.get_local_id() + stride];
+            for (unsigned int stride = workGroupSize / 2; stride > 0; stride = stride / 2) {
+                if (localID < stride) {
+                    cache[localID] += cache[localID + stride];
                 }
                 nd_item.barrier();
+            }
+
+            if (localID == 0) {
+                result[nd_item.get_group(0)] = cache[0];
+            }
+        });
+    });
+}
+
+void VectorOperations::sumFinalScalarProduct(queue& queue, conf::fp_type* result) {
+
+    const int workGroupSize = conf::workGroupSizeVector;
+
+    // global range corresponds to half (!) of the number of rows in the (sub) vector
+    // each work-item will perform the first add operation when loading data from global memory
+    const range globalRange(workGroupSize / 2);
+    const range localRange(workGroupSize / 2);
+    const auto kernelRange = nd_range{globalRange, localRange};
+
+
+    // based on https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    queue.submit([&](handler& h) {
+        local_accessor<conf::fp_type> cache(workGroupSize, h);
+
+        h.parallel_for(kernelRange, [=](nd_item<1>& nd_item) {
+            // row i in the matrix
+            const unsigned localID = nd_item.get_local_id();
+            const unsigned int globalIndex = localID;
+
+            cache[localID] = result[globalIndex] + result[globalIndex + nd_item.get_local_range(0)];
+            nd_item.barrier();
+
+            for (unsigned int stride =  nd_item.get_local_range(0) / 2; stride > 0; stride = stride / 2) {
+                if (localID < stride) {
+                    cache[localID] += cache[localID + stride];
+                }
+                nd_item.barrier();
+            }
+
+            if (localID == 0) {
+                result[nd_item.get_group(0)] = cache[0];
             }
         });
     });

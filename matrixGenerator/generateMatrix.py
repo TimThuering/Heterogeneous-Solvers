@@ -54,7 +54,9 @@ if __name__ == '__main__':
     # result = A[12:,0:12] @ b[0:12]
     # result = A[18:,0:18] @ b[0:18]
     # result = b + b
-    y = [np.sqrt(i) for i in range(N)]
-    result = b - y
+    # y = [np.sqrt(i) for i in range(N)]
+    # result = b - y
+    result = [i ** 2 for i in b]
+    print(sum(result[16:20]))
     s = np.sum(A, axis=0)
-    print(np.array2string(result,precision=15, separator=','))
+    # print(np.array2string(result,precision=15, separator=','))

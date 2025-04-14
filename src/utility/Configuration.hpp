@@ -14,6 +14,8 @@ namespace conf {
     inline int matrixBlockSize = 4; /// Block size for storing the symmetric matrix in memory
 
     inline int workGroupSize = 4;
+
+    inline int workGroupSizeVector = 4;
 }
 
 #endif //CONFIGURATION_HPP

@@ -50,17 +50,28 @@ public:
                                int blockStart_i, int blockCount_i);
 
     /**
+     * Computes the first part of the scalar product x*y. The result are partial sums of each work-group that have to be
+     * summed up to obtain the final result.
      *
-     * @param queue
-     * @param x
-     * @param y
-     * @param result
-     * @param blockStart_i
-     * @param blockCount_i
+     * @param queue SYCL queue that determines the device for the parallel execution
+     * @param x vector x
+     * @param y vector y
+     * @param result vector that stores the partial sums of each work-group
+     * @param blockStart_i start block of the vector
+     * @param blockCount_i block count of the vector
      */
     static void scalarProduct(sycl::queue& queue, const conf::fp_type* x, const conf::fp_type* y,
-                              conf::fp_type result,
+                              conf::fp_type* result,
                               int blockStart_i, int blockCount_i);
+
+    /**
+     * Sums up the partial results from the first part of the scalar product computation to obtain the final scalar product.
+     * The result will be stored in result[0]
+     *
+     * @param queue SYCL queue that determines the device for the parallel execution
+     * @param result vector that stores the partial sums of each work-group
+     */
+    static void sumFinalScalarProduct(sycl::queue& queue, conf::fp_type* result);
 };
 
 
