@@ -87,7 +87,6 @@ void CG::solve_CPU() {
     std::size_t iteration = 0;
 
     while (iteration < conf::iMax && delta_new > epsilon2 * delta_zero) {
-
         auto startIteration = std::chrono::steady_clock::now();
 
 
@@ -116,7 +115,8 @@ void CG::solve_CPU() {
             MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), x.data(), r.data(),
                                                       0, 0, A.blockCountXY, A.blockCountXY, A.blockCountXY);
             cpuQueue.wait();
-            VectorOperations::subVectorBlock(cpuQueue, b.rightHandSideData.data(), r.data(), r.data(), 0, A.blockCountXY);
+            VectorOperations::subVectorBlock(cpuQueue, b.rightHandSideData.data(), r.data(), r.data(), 0,
+                                             A.blockCountXY);
             cpuQueue.wait();
         } else {
             // compute residual without an additional matrix vector product
@@ -153,9 +153,6 @@ void CG::solve_CPU() {
         auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
 
         std::cout << "Iteration time: " << iterationTime << "ms" << std::endl;
-
-
-        // std::cout << "iteration: " << iteration << std::endl;
     }
 
     auto end = std::chrono::steady_clock::now();
@@ -163,4 +160,171 @@ void CG::solve_CPU() {
     std::cout << "Total time: " << totalTime << "ms (" << iteration << " iterations)" << std::endl;
 
     cpuQueue.wait();
+}
+
+void CG::solve_GPU() {
+    auto start = std::chrono::steady_clock::now();
+
+    // Matrix A GPU
+    auto* A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
+    gpuQueue.submit([&](handler& h) {
+        h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
+    }).wait();
+
+    // Right-hand side b GPU
+    auto* b_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+    gpuQueue.submit([&](handler& h) {
+        h.memcpy(b_gpu, b.rightHandSideData.data(), b.rightHandSideData.size() * sizeof(conf::fp_type));
+    }).wait();
+
+    // result vector x
+    auto* x = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+
+    // residual vector r
+    auto* r = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+
+    // vector d
+    auto* d = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+
+    // vector q
+    auto* q = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+
+    // temporary vector
+    auto* tmp = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+
+
+    if ((b.blockCountX * conf::matrixBlockSize / 2) % conf::workGroupSizeVector != 0) {
+        throw std::invalid_argument("Wrong work group size and block size combination");
+    }
+    const int workGroupCountScalarProduct = (b.blockCountX * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
+
+    conf::fp_type delta_new = 0;
+    conf::fp_type delta_old = 0;
+    conf::fp_type delta_zero = 0;
+    conf::fp_type alpha = 0;
+    conf::fp_type beta = 0;
+
+    conf::fp_type epsilon2 = conf::epsilon * conf::epsilon;
+
+
+    // r = b - Ax
+    MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, x, r,
+                                              0, 0, A.blockCountXY, A.blockCountXY, A.blockCountXY);
+    gpuQueue.wait();
+    VectorOperations::subVectorBlock(gpuQueue, b_gpu, r, r, 0, A.blockCountXY);
+    gpuQueue.wait();
+
+    // d = r
+    gpuQueue.submit([&](handler& h) {
+        h.memcpy(d, r, b.rightHandSideData.size() * sizeof(conf::fp_type));
+    }).wait();
+
+    // δ_new = r^T * r
+    // δ_0 = δ_new
+    VectorOperations::scalarProduct(gpuQueue, r, r, tmp, 0, A.blockCountXY);
+    gpuQueue.wait();
+    VectorOperations::sumFinalScalarProduct(gpuQueue, tmp, workGroupCountScalarProduct);
+    gpuQueue.wait();
+
+    // get value of δ_new from gpu
+    gpuQueue.submit([&](handler& h) {
+        h.memcpy(&delta_new, tmp, sizeof(conf::fp_type));
+    }).wait();
+    delta_zero = delta_new;
+
+    std::size_t iteration = 0;
+
+    while (iteration < conf::iMax && delta_new > epsilon2 * delta_zero) {
+        auto startIteration = std::chrono::steady_clock::now();
+
+
+        // q = Ad
+        MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d, q, 0, 0,
+                                                  A.blockCountXY, A.blockCountXY, A.blockCountXY);
+        gpuQueue.wait();
+
+        // 𝛼 = δ_new / d^T * q
+        VectorOperations::scalarProduct(gpuQueue, d, q, tmp, 0, A.blockCountXY);
+        gpuQueue.wait();
+        VectorOperations::sumFinalScalarProduct(gpuQueue, tmp, workGroupCountScalarProduct);
+        gpuQueue.wait();
+        conf::fp_type result = 0;
+        gpuQueue.submit([&](handler& h) {
+            h.memcpy(&result, tmp, sizeof(conf::fp_type));
+        }).wait();
+        alpha = delta_new / result;
+
+        // x = x + 𝛼d
+        VectorOperations::scaleVectorBlock(gpuQueue, d, alpha, tmp, 0, b.blockCountX);
+        gpuQueue.wait();
+        VectorOperations::addVectorBlock(gpuQueue, x, tmp, x, 0, b.blockCountX);
+        gpuQueue.wait();
+
+        if (iteration % 50 == 0) {
+            // compute real residual every 50 iterations --> requires additional matrix vector product
+
+            // r = b - Ax
+            MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, x, r,
+                                                      0, 0, A.blockCountXY, A.blockCountXY, A.blockCountXY);
+            gpuQueue.wait();
+            VectorOperations::subVectorBlock(gpuQueue, b_gpu, r, r, 0,
+                                             A.blockCountXY);
+            gpuQueue.wait();
+        } else {
+            // compute residual without an additional matrix vector product
+
+            // r = r - 𝛼q
+            VectorOperations::scaleVectorBlock(gpuQueue, q, alpha, tmp, 0, b.blockCountX);
+            gpuQueue.wait();
+            VectorOperations::subVectorBlock(gpuQueue, r, tmp, r, 0, b.blockCountX);
+            gpuQueue.wait();
+        }
+
+        // δ_old = δ_new
+        delta_old = delta_new;
+
+        // δ_new = r^T * r
+        VectorOperations::scalarProduct(gpuQueue, r, r, tmp, 0, A.blockCountXY);
+        gpuQueue.wait();
+        VectorOperations::sumFinalScalarProduct(gpuQueue, tmp, workGroupCountScalarProduct);
+        gpuQueue.wait();
+        // get value of δ_new from gpu
+        gpuQueue.submit([&](handler& h) {
+            h.memcpy(&delta_new, tmp, sizeof(conf::fp_type));
+        }).wait();
+        // β = δ_new / δ_old
+        beta = delta_new / delta_old;
+
+        // d = r + βd
+        VectorOperations::scaleVectorBlock(gpuQueue, d, beta, d, 0, b.blockCountX);
+        gpuQueue.wait();
+        VectorOperations::addVectorBlock(gpuQueue, r, d, d, 0, b.blockCountX);
+        gpuQueue.wait();
+
+        iteration++;
+
+        auto endIteration = std::chrono::steady_clock::now();
+        auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
+
+        std::cout << "Iteration time: " << iterationTime << "ms" << std::endl;
+    }
+
+    auto end = std::chrono::steady_clock::now();
+    auto totalTime = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "Total time: " << totalTime << "ms (" << iteration << " iterations)" << std::endl;
+
+    gpuQueue.wait();
+
+    std::vector<conf::fp_type> result(b.rightHandSideData.size());
+    gpuQueue.submit([&](handler& h) {
+        h.memcpy(result.data(), x, b.rightHandSideData.size() * sizeof(conf::fp_type));
+    }).wait();
+
+    sycl::free(A_gpu, gpuQueue);
+    sycl::free(b_gpu, gpuQueue);
+    sycl::free(x, gpuQueue);
+    sycl::free(r, gpuQueue);
+    sycl::free(d, gpuQueue);
+    sycl::free(q, gpuQueue);
+    sycl::free(tmp, gpuQueue);
 }
