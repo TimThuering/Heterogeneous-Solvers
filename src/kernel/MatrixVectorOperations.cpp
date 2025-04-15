@@ -38,6 +38,8 @@ void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type
             // first index for block columns
             int block_j = blockStart_j;
 
+            conf::fp_type resultValue = 0;
+
             // First step: Process all matrix blocks up to the diagonal block (included) or the most left block that should be processed
             // the blocks can be interpreted as they are stored in memory
             for (; block_j <= min(block_i, blockStart_j + blockCount_j - 1); ++block_j) {
@@ -56,7 +58,7 @@ void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type
 
                 // go through all columns of the block and compute the matrix vector product
                 for (int j = 0; j < matrixBlockSize; ++j) {
-                    result[i] += A[rowStartIndex + j] * b[block_j * matrixBlockSize + j];
+                    resultValue += A[rowStartIndex + j] * b[block_j * matrixBlockSize + j];
                 }
             }
 
@@ -77,9 +79,12 @@ void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type
                 // go through all columns of the block and compute the matrix vector product
                 // the block in storage now has to be interpreted as transposed since we are working on the data of the symmetric block
                 for (int j = 0; j < matrixBlockSize; ++j) {
-                    result[i] += A[blockStartIndex + j * matrixBlockSize + iInBlock] * b[block_j * matrixBlockSize + j];
+                    resultValue += A[blockStartIndex + j * matrixBlockSize + iInBlock] * b[block_j * matrixBlockSize + j];
                 }
             }
+
+            // store the result
+            result[i] = resultValue;
         });
     });
 }

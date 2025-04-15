@@ -1,6 +1,7 @@
 import sys
 from sklearn.datasets import make_spd_matrix
 import numpy as np
+import scipy.sparse.linalg as sp
 
 
 def generateMatrix(N, path):
@@ -57,6 +58,11 @@ if __name__ == '__main__':
     # y = [np.sqrt(i) for i in range(N)]
     # result = b - y
     result = [i ** 2 for i in b]
-    print(sum(result[6:20]))
+    # print(sum(result[12:20]))
     s = np.sum(A, axis=0)
+    print(sp.cg(A,b))
+    x = np.zeros(N)
+    r = b - A @ x
+    print(r.T @ r)
+    print()
     # print(np.array2string(result,precision=15, separator=','))

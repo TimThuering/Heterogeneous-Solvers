@@ -639,12 +639,13 @@ TEST_F(vectorOperationsTest, scalarProuctFull) {
 
     const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
-    result.resize(b.rightHandSideData.size());
+    result.resize(b.rightHandSideData.size(), -100);
 
     VectorOperations::scalarProduct(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
                                     b.blockCountX);
     queue.wait();
-    VectorOperations::sumFinalScalarProduct(queue, result.data());
+    int workGroupCount = (b.blockCountX * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
+    VectorOperations::sumFinalScalarProduct(queue, result.data(),workGroupCount);
     queue.wait();
 
     EXPECT_NEAR(result[0], 5.680372795233107, 1e-12);
@@ -653,7 +654,7 @@ TEST_F(vectorOperationsTest, scalarProuctFull) {
 TEST_F(vectorOperationsTest, scalarProuctLowerVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
-    conf::workGroupSizeVector = 4;
+    conf::workGroupSizeVector = 2;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
 
@@ -661,11 +662,12 @@ TEST_F(vectorOperationsTest, scalarProuctLowerVector) {
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
     result.resize(b.rightHandSideData.size());
 
-    VectorOperations::scalarProduct(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 1,
-                                    b.blockCountX);
+    VectorOperations::scalarProduct(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 2, 2);
     queue.wait();
-    VectorOperations::sumFinalScalarProduct(queue, result.data());
+    int workGroupCount = (2 * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
+
+    VectorOperations::sumFinalScalarProduct(queue, result.data(),workGroupCount);
     queue.wait();
 
-    EXPECT_NEAR(result[0], 3.3913638510962625, 1e-12);
+    EXPECT_NEAR(result[0], 1.7632937679652674, 1e-12);
 }

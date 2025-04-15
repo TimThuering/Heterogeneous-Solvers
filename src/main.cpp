@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
     std::cout << "CPU: " << cpuQueue.get_device().get_info<info::device::name>() << std::endl;
 
     CG algorithm(path_A, path_b, cpuQueue, gpuQueue);
-    algorithm.solve();
+    algorithm.solve_CPU();
 
 
     sampler.stop_sampling();

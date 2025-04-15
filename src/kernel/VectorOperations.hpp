@@ -70,8 +70,9 @@ public:
      *
      * @param queue SYCL queue that determines the device for the parallel execution
      * @param result vector that stores the partial sums of each work-group
+     * @param workGroupCount work-group count from the previous step
      */
-    static void sumFinalScalarProduct(sycl::queue& queue, conf::fp_type* result);
+    static void sumFinalScalarProduct(sycl::queue& queue, conf::fp_type* result, int workGroupCount);
 };
 
 

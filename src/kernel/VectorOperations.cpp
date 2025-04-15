@@ -102,9 +102,13 @@ void VectorOperations::scalarProduct(queue& queue, const conf::fp_type* x, const
     });
 }
 
-void VectorOperations::sumFinalScalarProduct(queue& queue, conf::fp_type* result) {
+void VectorOperations::sumFinalScalarProduct(queue& queue, conf::fp_type* result, const int workGroupCount) {
 
-    const int workGroupSize = conf::workGroupSizeVector;
+    int workGroupSize = conf::workGroupSizeVector;
+
+    if (workGroupSize < workGroupCount) {
+        workGroupSize = workGroupCount;
+    }
 
     // global range corresponds to half (!) of the number of rows in the (sub) vector
     // each work-item will perform the first add operation when loading data from global memory
@@ -122,7 +126,13 @@ void VectorOperations::sumFinalScalarProduct(queue& queue, conf::fp_type* result
             const unsigned localID = nd_item.get_local_id();
             const unsigned int globalIndex = localID;
 
-            cache[localID] = result[globalIndex] + result[globalIndex + nd_item.get_local_range(0)];
+            cache[localID] = 0;
+            if (globalIndex < workGroupCount) {
+                cache[localID] += result[globalIndex];
+            }
+            if (globalIndex + nd_item.get_local_range(0) < workGroupCount) {
+                cache[localID] += result[globalIndex + nd_item.get_local_range(0)];
+            }
             nd_item.barrier();
 
             for (unsigned int stride =  nd_item.get_local_range(0) / 2; stride > 0; stride = stride / 2) {

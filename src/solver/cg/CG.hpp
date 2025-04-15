@@ -21,7 +21,7 @@ public:
     queue& gpuQueue;
 
 
-    void solve();
+    void solve_CPU();
 };
 
 
