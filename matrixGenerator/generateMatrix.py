@@ -15,7 +15,7 @@ def generateMatrix(N, path):
     output.write('# {}\n'.format(N))
     for i in range(N):
         output.write(np.array2string(matrix[i][0:i + 1], max_line_width=sys.maxsize, precision=20, suppress_small=False,
-                                     floatmode='fixed', separator=';')[1:-1] + "\n")
+                                     floatmode='fixed', separator=';', threshold=sys.maxsize)[1:-1] + "\n")
 
     return matrix
 
@@ -29,7 +29,7 @@ def generateRightHandSide(N, path):
     output.write('# {}\n'.format(N))
 
     output.write(np.array2string(b, max_line_width=sys.maxsize, precision=20, suppress_small=False, floatmode='fixed',
-                                 separator=';')[1:-1] + "\n")
+                                 separator=';', threshold=sys.maxsize)[1:-1] + "\n")
 
     return b
 
@@ -40,7 +40,8 @@ if __name__ == '__main__':
     if len(sys.argv) >= 3:
         path = str(sys.argv[2])
     else:
-        path = '.'
+        path = './datasets'
+
     A = generateMatrix(N, path)
     b = generateRightHandSide(N, path)
 
@@ -57,12 +58,12 @@ if __name__ == '__main__':
     # result = b + b
     # y = [np.sqrt(i) for i in range(N)]
     # result = b - y
-    result = [i ** 2 for i in b]
-    # print(sum(result[12:20]))
-    s = np.sum(A, axis=0)
-    print(sp.cg(A,b))
-    x = np.zeros(N)
-    r = b - A @ x
-    print(r.T @ r)
+    # result = [i ** 2 for i in b]
+    # # print(sum(result[12:20]))
+    # s = np.sum(A, axis=0)
+    # print(sp.cg(A,b))
+    # x = np.zeros(N)
+    # r = b - A @ x
+    # print(r.T @ r)
     print()
     # print(np.array2string(result,precision=15, separator=','))

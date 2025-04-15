@@ -27,6 +27,8 @@ CG::CG(std::string& path_A, std::string& path_b, queue& cpuQueue, queue& gpuQueu
 }
 
 void CG::solve_CPU() {
+    auto start = std::chrono::steady_clock::now();
+
     const usm_allocator<conf::fp_type, usm::alloc::host> allocatorHost{cpuQueue};
 
     // result vector x
@@ -49,6 +51,9 @@ void CG::solve_CPU() {
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> tmp(allocatorHost);
     tmp.resize(b.rightHandSideData.size());
 
+    if ((b.blockCountX * conf::matrixBlockSize / 2) % conf::workGroupSizeVector != 0) {
+        throw std::invalid_argument("Wrong work group size and block size combination");
+    }
     const int workGroupCountScalarProduct = (b.blockCountX * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
 
     conf::fp_type delta_new = 0;
@@ -82,6 +87,10 @@ void CG::solve_CPU() {
     std::size_t iteration = 0;
 
     while (iteration < conf::iMax && delta_new > epsilon2 * delta_zero) {
+
+        auto startIteration = std::chrono::steady_clock::now();
+
+
         // q = Ad
         MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), d.data(), q.data(), 0, 0,
                                                   A.blockCountXY, A.blockCountXY, A.blockCountXY);
@@ -140,10 +149,18 @@ void CG::solve_CPU() {
 
         iteration++;
 
+        auto endIteration = std::chrono::steady_clock::now();
+        auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
+
+        std::cout << "Iteration time: " << iterationTime << "ms" << std::endl;
+
+
         // std::cout << "iteration: " << iteration << std::endl;
-        std::cout << delta_new << std::endl;
     }
 
+    auto end = std::chrono::steady_clock::now();
+    auto totalTime = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "Total time: " << totalTime << "ms (" << iteration << " iterations)" << std::endl;
 
     cpuQueue.wait();
 }
