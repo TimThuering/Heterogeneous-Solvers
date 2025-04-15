@@ -57,6 +57,6 @@ if __name__ == '__main__':
     # y = [np.sqrt(i) for i in range(N)]
     # result = b - y
     result = [i ** 2 for i in b]
-    print(sum(result[16:20]))
+    print(sum(result[6:20]))
     s = np.sum(A, axis=0)
     # print(np.array2string(result,precision=15, separator=','))

@@ -649,3 +649,23 @@ TEST_F(vectorOperationsTest, scalarProuctFull) {
 
     EXPECT_NEAR(result[0], 5.680372795233107, 1e-12);
 }
+
+TEST_F(vectorOperationsTest, scalarProuctLowerVector) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSizeVector = 4;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
+
+    VectorOperations::scalarProduct(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 1,
+                                    b.blockCountX);
+    queue.wait();
+    VectorOperations::sumFinalScalarProduct(queue, result.data());
+    queue.wait();
+
+    EXPECT_NEAR(result[0], 3.3913638510962625, 1e-12);
+}
