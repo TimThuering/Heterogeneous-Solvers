@@ -6,6 +6,7 @@
 #include "MatrixParser.hpp"
 #include "SymmetricMatrix.hpp"
 #include "CG.hpp"
+#include "../cmake-build-release/_deps/hws-src/include/hws/cpu/hardware_sampler.hpp"
 
 using namespace sycl;
 
@@ -43,9 +44,9 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("No path to .txt file for right-hand side b specified");
     }
 
-    hws::system_hardware_sampler sampler{hws::sample_category::general};
-
-    sampler.start_sampling();
+    // hws::system_hardware_sampler sampler{hws::sample_category::idle_state};
+    //
+    // sampler.start_sampling();
 
     queue gpuQueue(gpu_selector_v);
     queue cpuQueue(cpu_selector_v);
@@ -54,11 +55,22 @@ int main(int argc, char* argv[]) {
     std::cout << "CPU: " << cpuQueue.get_device().get_info<info::device::name>() << std::endl;
 
     CG algorithm(path_A, path_b, cpuQueue, gpuQueue);
-    algorithm.solve_GPU();
+    algorithm.solve_CPU();
+    // algorithm.solve_GPU();
+    // sleep(3);
 
 
-    sampler.stop_sampling();
+
+
+
+    // sampler.stop_sampling();
     // sampler.dump_yaml("test.yaml");
+
+    // auto* cpu_sampler =  dynamic_cast<hws::cpu_hardware_sampler*>(sampler.samplers()[0].get());
+    // hws::cpu_power_samples power_samples = cpu_sampler->power_samples();
+    // auto power = power_samples.get_power_total_energy_consumption().value_or(std::vector<double>(1));
+    //
+    // std::cout << power[power.size() - 1] << std::endl;
 
     return 0;
 }

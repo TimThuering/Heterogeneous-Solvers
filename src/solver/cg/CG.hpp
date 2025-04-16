@@ -23,6 +23,7 @@ public:
 
     void solve_CPU();
     void solve_GPU();
+    void solveHeterogeneous_static();
 };
 
 

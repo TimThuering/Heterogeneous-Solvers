@@ -11,11 +11,11 @@ namespace conf {
     typedef float fp_type; /// use single precision for all floating point operations
 #endif
 
-    inline int matrixBlockSize = 512; /// Block size for storing the symmetric matrix in memory
+    inline int matrixBlockSize = 128; /// Block size for storing the symmetric matrix in memory
 
-    inline int workGroupSize = 512;
+    inline int workGroupSize = 128;
 
-    inline int workGroupSizeVector = 512;
+    inline int workGroupSizeVector = 128;
 
     inline std::size_t iMax = 1e5;
 
