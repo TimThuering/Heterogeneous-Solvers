@@ -152,7 +152,7 @@ void CG::solve_CPU() {
         auto endIteration = std::chrono::steady_clock::now();
         auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
 
-        std::cout << "Iteration time: " << iterationTime << "ms" << std::endl;
+        std::cout << (iteration - 1) << ": Iteration time: " << iterationTime << "ms" << std::endl;
     }
 
     auto end = std::chrono::steady_clock::now();
@@ -306,7 +306,7 @@ void CG::solve_GPU() {
         auto endIteration = std::chrono::steady_clock::now();
         auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
 
-        std::cout << "Iteration time: " << iterationTime << "ms" << std::endl;
+        std::cout << (iteration - 1) << ": Iteration time: " << iterationTime << "ms" << std::endl;
     }
 
     auto end = std::chrono::steady_clock::now();
@@ -344,9 +344,11 @@ void CG::solveHeterogeneous_static() {
     // ---- GPU data structures ----
 
     // Matrix A GPU
-    auto* A_gpu = malloc_device<conf::fp_type>(blockCountGPUTotal * conf::matrixBlockSize * conf::matrixBlockSize, gpuQueue);
+    auto* A_gpu = malloc_device<conf::fp_type>(blockCountGPUTotal * conf::matrixBlockSize * conf::matrixBlockSize,
+                                               gpuQueue);
     gpuQueue.submit([&](handler& h) {
-        h.memcpy(A_gpu, A.matrixData.data(), blockCountGPUTotal * conf::matrixBlockSize * conf::matrixBlockSize * sizeof(conf::fp_type));
+        h.memcpy(A_gpu, A.matrixData.data(),
+                 blockCountGPUTotal * conf::matrixBlockSize * conf::matrixBlockSize * sizeof(conf::fp_type));
     }).wait();
 
     // Right-hand side b GPU
@@ -505,7 +507,8 @@ void CG::solveHeterogeneous_static() {
         gpuQueue.wait();
         cpuQueue.wait();
         VectorOperations::addVectorBlock(gpuQueue, x_gpu, tmp_gpu, x_gpu, 0, blockCountGPU);
-        VectorOperations::addVectorBlock(cpuQueue, x_cpu.data(), tmp_cpu.data(), x_cpu.data(), blockStartCPU, blockCountCPU);
+        VectorOperations::addVectorBlock(cpuQueue, x_cpu.data(), tmp_cpu.data(), x_cpu.data(), blockStartCPU,
+                                         blockCountCPU);
         gpuQueue.wait();
         cpuQueue.wait();
 
@@ -532,7 +535,8 @@ void CG::solveHeterogeneous_static() {
             gpuQueue.wait();
             cpuQueue.wait();
             VectorOperations::subVectorBlock(gpuQueue, b_gpu, r_gpu, r_gpu, 0, blockCountGPU);
-            VectorOperations::subVectorBlock(cpuQueue, b.rightHandSideData.data(), r_cpu.data(), r_cpu.data(), blockStartCPU, blockCountCPU);
+            VectorOperations::subVectorBlock(cpuQueue, b.rightHandSideData.data(), r_cpu.data(), r_cpu.data(),
+                                             blockStartCPU, blockCountCPU);
             gpuQueue.wait();
             cpuQueue.wait();
         } else {
@@ -540,11 +544,13 @@ void CG::solveHeterogeneous_static() {
 
             // r = r - 𝛼q
             VectorOperations::scaleVectorBlock(gpuQueue, q_gpu, alpha, tmp_gpu, 0, blockCountGPU);
-            VectorOperations::scaleVectorBlock(cpuQueue, q_cpu.data(), alpha, tmp_cpu.data(), blockStartCPU, blockCountCPU);
+            VectorOperations::scaleVectorBlock(cpuQueue, q_cpu.data(), alpha, tmp_cpu.data(), blockStartCPU,
+                                               blockCountCPU);
             gpuQueue.wait();
             cpuQueue.wait();
             VectorOperations::subVectorBlock(gpuQueue, r_gpu, tmp_gpu, r_gpu, 0, blockCountGPU);
-            VectorOperations::subVectorBlock(cpuQueue, r_cpu.data(), tmp_cpu.data(), r_cpu.data(), blockStartCPU, blockCountCPU);
+            VectorOperations::subVectorBlock(cpuQueue, r_cpu.data(), tmp_cpu.data(), r_cpu.data(), blockStartCPU,
+                                             blockCountCPU);
             gpuQueue.wait();
             cpuQueue.wait();
         }
@@ -554,7 +560,8 @@ void CG::solveHeterogeneous_static() {
 
         // δ_new = r^T * r
         VectorOperations::scalarProduct(gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
-        VectorOperations::scalarProduct(cpuQueue, r_cpu.data(), r_cpu.data(), tmp_cpu.data(), blockStartCPU, blockCountCPU);
+        VectorOperations::scalarProduct(cpuQueue, r_cpu.data(), r_cpu.data(), tmp_cpu.data(), blockStartCPU,
+                                        blockCountCPU);
         gpuQueue.wait();
         cpuQueue.wait();
         VectorOperations::sumFinalScalarProduct(gpuQueue, tmp_gpu, workGroupCountScalarProduct_GPU);
@@ -575,7 +582,8 @@ void CG::solveHeterogeneous_static() {
         gpuQueue.wait();
         cpuQueue.wait();
         VectorOperations::addVectorBlock(gpuQueue, r_gpu, d_gpu, d_gpu, 0, blockCountGPU);
-        VectorOperations::addVectorBlock(cpuQueue, r_cpu.data(), d_cpu.data(), d_cpu.data(), blockStartCPU, blockCountCPU);
+        VectorOperations::addVectorBlock(cpuQueue, r_cpu.data(), d_cpu.data(), d_cpu.data(), blockStartCPU,
+                                         blockCountCPU);
         gpuQueue.wait();
         cpuQueue.wait();
 
@@ -584,7 +592,7 @@ void CG::solveHeterogeneous_static() {
         auto endIteration = std::chrono::steady_clock::now();
         auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
 
-        std::cout << "Iteration time: " << iterationTime << "ms" << std::endl;
+        std::cout << (iteration - 1) << ": Iteration time: " << iterationTime << "ms" << std::endl;
     }
 
     auto end = std::chrono::steady_clock::now();

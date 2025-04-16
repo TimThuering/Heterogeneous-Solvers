@@ -67,3 +67,33 @@ if __name__ == '__main__':
     # print(r.T @ r)
     print()
     # print(np.array2string(result,precision=15, separator=','))
+
+    r = np.zeros(N)
+    d = np.zeros(N)
+    x = np.zeros(N)
+    q = np.zeros(N)
+
+    r = b - A @ x
+    d = r
+    delta_new = r.T @ r
+    delta_zero = delta_new
+
+    iteration = 0
+    while delta_new > (1 * 10 ** -6) ** 2 * delta_zero:
+        q = A @ d
+        alpha = delta_new / (d.T @ q)
+        x = x + alpha * d
+        if iteration % 50 == 0:
+            r = b - A @ x
+        else:
+            r = r - alpha * q
+
+        delta_old = delta_new
+        delta_new = r.T @ r
+        if delta_new > delta_old:
+            print(iteration, ": " ,delta_new , "<--" , delta_old)
+        beta = delta_new / delta_old
+        d = r + beta * d
+        iteration += 1
+
+    print(iteration)
