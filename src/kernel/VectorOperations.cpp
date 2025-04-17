@@ -60,15 +60,24 @@ void VectorOperations::subVectorBlock(queue& queue, const conf::fp_type* x, cons
     });
 }
 
-void VectorOperations::scalarProduct(queue& queue, const conf::fp_type* x, const conf::fp_type* y,
+unsigned int VectorOperations::scalarProduct(queue& queue, const conf::fp_type* x, const conf::fp_type* y,
                                      conf::fp_type* result,
                                      const int blockStart_i, const int blockCount_i) {
-    const int matrixBlockSize = conf::matrixBlockSize;
-    const int workGroupSize = conf::workGroupSizeVector;
+    const unsigned int matrixBlockSize = conf::matrixBlockSize;
+    const unsigned int workGroupSize = conf::workGroupSizeVector;
+    const unsigned int vectorLength = blockCount_i * matrixBlockSize;
+
+    assert((vectorLength) % 2 == 0);
+
+    const unsigned int globalSize = vectorLength / 2;
+    const unsigned int workGroupCount = std::ceil(static_cast<conf::fp_type>(globalSize) / static_cast<conf::fp_type>(workGroupSize));
+    const unsigned int globalSizePadding = workGroupCount * workGroupSize;
+
+    assert(globalSizePadding % workGroupSize == 0);
 
     // global range corresponds to half (!) of the number of rows in the (sub) vector
     // each work-item will perform the first add operation when loading data from global memory
-    const range globalRange(blockCount_i * matrixBlockSize / 2);
+    const range globalRange(globalSizePadding);
     const range localRange(workGroupSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
@@ -80,12 +89,16 @@ void VectorOperations::scalarProduct(queue& queue, const conf::fp_type* x, const
         h.parallel_for(kernelRange, [=](nd_item<1>& nd_item) {
             // row i in the matrix
             const int offset = blockStart_i * matrixBlockSize;
-            const unsigned localID = nd_item.get_local_id();
+            const unsigned int localID = nd_item.get_local_id();
             const unsigned int globalIndex = offset + nd_item.get_group(0) * (workGroupSize * 2) + localID;
 
-            cache[localID] = x[globalIndex] * y[globalIndex] + x[globalIndex + workGroupSize] * y[globalIndex +
-                workGroupSize];
-
+            cache[localID] = 0;
+            if (globalIndex < offset + vectorLength) {
+                cache[localID] += x[globalIndex] * y[globalIndex];
+            }
+            if (globalIndex + workGroupSize < offset + vectorLength) {
+                cache[localID] += x[globalIndex + workGroupSize] * y[globalIndex + workGroupSize];
+            }
             nd_item.barrier();
 
             for (unsigned int stride = workGroupSize / 2; stride > 0; stride = stride / 2) {
@@ -100,20 +113,21 @@ void VectorOperations::scalarProduct(queue& queue, const conf::fp_type* x, const
             }
         });
     });
+
+    return workGroupCount;
 }
 
-void VectorOperations::sumFinalScalarProduct(queue& queue, conf::fp_type* result, const int workGroupCount) {
+void VectorOperations::sumFinalScalarProduct(queue& queue, conf::fp_type* result, const unsigned int workGroupCount) {
 
-    int workGroupSize = conf::workGroupSizeVector;
+    const unsigned int workGroupSize = conf::workGroupSizeFinalScalarProduct;
 
-    if (workGroupSize < workGroupCount) {
-        workGroupSize = workGroupCount;
+    if (2 * workGroupSize < workGroupCount) {
+        throw std::runtime_error("Workgroup size for final scalar product is too small");
     }
 
-    // global range corresponds to half (!) of the number of rows in the (sub) vector
-    // each work-item will perform the first add operation when loading data from global memory
-    const range globalRange(workGroupSize / 2);
-    const range localRange(workGroupSize / 2);
+    // use maximum available global range
+    const range globalRange(workGroupSize);
+    const range localRange(workGroupSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
 
@@ -123,19 +137,19 @@ void VectorOperations::sumFinalScalarProduct(queue& queue, conf::fp_type* result
 
         h.parallel_for(kernelRange, [=](nd_item<1>& nd_item) {
             // row i in the matrix
-            const unsigned localID = nd_item.get_local_id();
+            const unsigned int localID = nd_item.get_local_id();
             const unsigned int globalIndex = localID;
 
             cache[localID] = 0;
             if (globalIndex < workGroupCount) {
                 cache[localID] += result[globalIndex];
             }
-            if (globalIndex + nd_item.get_local_range(0) < workGroupCount) {
-                cache[localID] += result[globalIndex + nd_item.get_local_range(0)];
+            if (globalIndex + workGroupSize < workGroupCount) {
+                cache[localID] += result[globalIndex + workGroupSize];
             }
             nd_item.barrier();
 
-            for (unsigned int stride =  nd_item.get_local_range(0) / 2; stride > 0; stride = stride / 2) {
+            for (unsigned int stride =  workGroupSize / 2; stride > 0; stride = stride / 2) {
                 if (localID < stride) {
                     cache[localID] += cache[localID + stride];
                 }

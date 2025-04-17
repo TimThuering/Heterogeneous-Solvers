@@ -51,10 +51,8 @@ void CG::solve_CPU() {
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> tmp(allocatorHost);
     tmp.resize(b.rightHandSideData.size());
 
-    if ((b.blockCountX * conf::matrixBlockSize / 2) % conf::workGroupSizeVector != 0) {
-        throw std::invalid_argument("Wrong work group size and block size combination");
-    }
-    const int workGroupCountScalarProduct = (b.blockCountX * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
+
+    unsigned int workGroupCountScalarProduct;
 
     conf::fp_type delta_new = 0;
     conf::fp_type delta_old = 0;
@@ -77,7 +75,7 @@ void CG::solve_CPU() {
 
     // δ_new = r^T * r
     // δ_0 = δ_new
-    VectorOperations::scalarProduct(cpuQueue, r.data(), r.data(), tmp.data(), 0, A.blockCountXY);
+    workGroupCountScalarProduct = VectorOperations::scalarProduct(cpuQueue, r.data(), r.data(), tmp.data(), 0, A.blockCountXY);
     cpuQueue.wait();
     VectorOperations::sumFinalScalarProduct(cpuQueue, tmp.data(), workGroupCountScalarProduct);
     cpuQueue.wait();
@@ -96,7 +94,7 @@ void CG::solve_CPU() {
         cpuQueue.wait();
 
         // 𝛼 = δ_new / d^T * q
-        VectorOperations::scalarProduct(cpuQueue, d.data(), q.data(), tmp.data(), 0, A.blockCountXY);
+        workGroupCountScalarProduct = VectorOperations::scalarProduct(cpuQueue, d.data(), q.data(), tmp.data(), 0, A.blockCountXY);
         cpuQueue.wait();
         VectorOperations::sumFinalScalarProduct(cpuQueue, tmp.data(), workGroupCountScalarProduct);
         cpuQueue.wait();
@@ -132,7 +130,7 @@ void CG::solve_CPU() {
         delta_old = delta_new;
 
         // δ_new = r^T * r
-        VectorOperations::scalarProduct(cpuQueue, r.data(), r.data(), tmp.data(), 0, A.blockCountXY);
+        workGroupCountScalarProduct = VectorOperations::scalarProduct(cpuQueue, r.data(), r.data(), tmp.data(), 0, A.blockCountXY);
         cpuQueue.wait();
         VectorOperations::sumFinalScalarProduct(cpuQueue, tmp.data(), workGroupCountScalarProduct);
         cpuQueue.wait();
@@ -193,10 +191,7 @@ void CG::solve_GPU() {
     auto* tmp = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
 
-    if ((b.blockCountX * conf::matrixBlockSize / 2) % conf::workGroupSizeVector != 0) {
-        throw std::invalid_argument("Wrong work group size and block size combination");
-    }
-    const int workGroupCountScalarProduct = (b.blockCountX * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
+    unsigned int workGroupCountScalarProduct;
 
     conf::fp_type delta_new = 0;
     conf::fp_type delta_old = 0;
@@ -221,7 +216,7 @@ void CG::solve_GPU() {
 
     // δ_new = r^T * r
     // δ_0 = δ_new
-    VectorOperations::scalarProduct(gpuQueue, r, r, tmp, 0, A.blockCountXY);
+    workGroupCountScalarProduct = VectorOperations::scalarProduct(gpuQueue, r, r, tmp, 0, A.blockCountXY);
     gpuQueue.wait();
     VectorOperations::sumFinalScalarProduct(gpuQueue, tmp, workGroupCountScalarProduct);
     gpuQueue.wait();
@@ -244,7 +239,7 @@ void CG::solve_GPU() {
         gpuQueue.wait();
 
         // 𝛼 = δ_new / d^T * q
-        VectorOperations::scalarProduct(gpuQueue, d, q, tmp, 0, A.blockCountXY);
+        workGroupCountScalarProduct = VectorOperations::scalarProduct(gpuQueue, d, q, tmp, 0, A.blockCountXY);
         gpuQueue.wait();
         VectorOperations::sumFinalScalarProduct(gpuQueue, tmp, workGroupCountScalarProduct);
         gpuQueue.wait();
@@ -284,7 +279,7 @@ void CG::solve_GPU() {
         delta_old = delta_new;
 
         // δ_new = r^T * r
-        VectorOperations::scalarProduct(gpuQueue, r, r, tmp, 0, A.blockCountXY);
+        workGroupCountScalarProduct = VectorOperations::scalarProduct(gpuQueue, r, r, tmp, 0, A.blockCountXY);
         gpuQueue.wait();
         VectorOperations::sumFinalScalarProduct(gpuQueue, tmp, workGroupCountScalarProduct);
         gpuQueue.wait();
@@ -403,8 +398,8 @@ void CG::solveHeterogeneous_static() {
     if ((blockCountCPU * conf::matrixBlockSize / 2) % conf::workGroupSizeVector != 0) {
         throw std::invalid_argument("Wrong work group size and block size combination");
     }
-    const int workGroupCountScalarProduct_GPU = (blockCountGPU * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
-    const int workGroupCountScalarProduct_CPU = (blockCountCPU * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
+    unsigned int workGroupCountScalarProduct_GPU;
+    unsigned int workGroupCountScalarProduct_CPU;
 
     conf::fp_type delta_new = 0;
     conf::fp_type delta_old = 0;
@@ -441,8 +436,8 @@ void CG::solveHeterogeneous_static() {
 
     // δ_new = r^T * r
     // δ_0 = δ_new
-    VectorOperations::scalarProduct(gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
-    VectorOperations::scalarProduct(cpuQueue, r_cpu.data(), r_cpu.data(), tmp_cpu.data(), blockStartCPU, blockCountCPU);
+    workGroupCountScalarProduct_GPU = VectorOperations::scalarProduct(gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
+    workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct(cpuQueue, r_cpu.data(), r_cpu.data(), tmp_cpu.data(), blockStartCPU, blockCountCPU);
     gpuQueue.wait();
     cpuQueue.wait();
     VectorOperations::sumFinalScalarProduct(gpuQueue, tmp_gpu, workGroupCountScalarProduct_GPU);
@@ -485,8 +480,8 @@ void CG::solveHeterogeneous_static() {
         cpuQueue.wait();
 
         // 𝛼 = δ_new / d^T * q
-        VectorOperations::scalarProduct(gpuQueue, d_gpu, q_gpu, tmp_gpu, 0, blockCountGPU);
-        VectorOperations::scalarProduct(cpuQueue, d_cpu.data(), q_cpu.data(), tmp_cpu.data(), blockStartCPU,
+        workGroupCountScalarProduct_GPU = VectorOperations::scalarProduct(gpuQueue, d_gpu, q_gpu, tmp_gpu, 0, blockCountGPU);
+        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct(cpuQueue, d_cpu.data(), q_cpu.data(), tmp_cpu.data(), blockStartCPU,
                                         blockCountCPU);
         gpuQueue.wait();
         cpuQueue.wait();
@@ -559,8 +554,8 @@ void CG::solveHeterogeneous_static() {
         delta_old = delta_new;
 
         // δ_new = r^T * r
-        VectorOperations::scalarProduct(gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
-        VectorOperations::scalarProduct(cpuQueue, r_cpu.data(), r_cpu.data(), tmp_cpu.data(), blockStartCPU,
+        workGroupCountScalarProduct_GPU = VectorOperations::scalarProduct(gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
+        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct(cpuQueue, r_cpu.data(), r_cpu.data(), tmp_cpu.data(), blockStartCPU,
                                         blockCountCPU);
         gpuQueue.wait();
         cpuQueue.wait();

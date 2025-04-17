@@ -10,8 +10,7 @@
 
 using namespace sycl;
 
-class MatrixVectorTest : public ::testing::Test
-{
+class MatrixVectorTest : public ::testing::Test {
 protected:
     std::string path_A = "../tests/testData/testMatrixSymmetric20x20.txt";
     std::string path_b = "../tests/testData/testVector_20.txt";
@@ -19,10 +18,10 @@ protected:
 
 // Block size 4 --> no padding
 
-TEST_F(MatrixVectorTest, fullMatrixVector)
-{
+TEST_F(MatrixVectorTest, fullMatrixVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
@@ -32,8 +31,9 @@ TEST_F(MatrixVectorTest, fullMatrixVector)
     result.resize(b.rightHandSideData.size());
 
 
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
-                                        A.blockCountXY, A.blockCountXY, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              0,
+                                              A.blockCountXY, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -46,16 +46,16 @@ TEST_F(MatrixVectorTest, fullMatrixVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, upperMatrixVector)
-{
+TEST_F(MatrixVectorTest, upperMatrixVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
@@ -66,8 +66,9 @@ TEST_F(MatrixVectorTest, upperMatrixVector)
 
 
     // upper 3 blocks of A times full b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
-                                        3, A.blockCountXY, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              0,
+                                              3, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -80,16 +81,16 @@ TEST_F(MatrixVectorTest, upperMatrixVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, lowerMatrixVector)
-{
+TEST_F(MatrixVectorTest, lowerMatrixVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
@@ -100,8 +101,9 @@ TEST_F(MatrixVectorTest, lowerMatrixVector)
 
 
     // lower 2 blocks of A times full b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
-                                        2, A.blockCountXY, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              0,
+                                              2, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -114,17 +116,17 @@ TEST_F(MatrixVectorTest, lowerMatrixVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
 
-TEST_F(MatrixVectorTest, topLeftMatrixTopVector)
-{
+TEST_F(MatrixVectorTest, topLeftMatrixTopVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
@@ -135,8 +137,9 @@ TEST_F(MatrixVectorTest, topLeftMatrixTopVector)
 
 
     // upper left 3x3 blocks of A times upper 3 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
-                                        3, 3, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              0,
+                                              3, 3, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -149,16 +152,16 @@ TEST_F(MatrixVectorTest, topLeftMatrixTopVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, lowerRightMatrixBottomVector)
-{
+TEST_F(MatrixVectorTest, lowerRightMatrixBottomVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
@@ -169,8 +172,9 @@ TEST_F(MatrixVectorTest, lowerRightMatrixBottomVector)
 
 
     // lower right 2x2 blocks of A times lower 2 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
-                                        2, 2, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              3,
+                                              2, 2, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -183,16 +187,16 @@ TEST_F(MatrixVectorTest, lowerRightMatrixBottomVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, upperRightMatrixBottomVector)
-{
+TEST_F(MatrixVectorTest, upperRightMatrixBottomVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
@@ -203,8 +207,9 @@ TEST_F(MatrixVectorTest, upperRightMatrixBottomVector)
 
 
     // upper right 3x2 blocks of A times lower 2 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
-                                        3, 2, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              3,
+                                              3, 2, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -217,16 +222,16 @@ TEST_F(MatrixVectorTest, upperRightMatrixBottomVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, lowerLeftMatrixTopVector)
-{
+TEST_F(MatrixVectorTest, lowerLeftMatrixTopVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
@@ -237,8 +242,9 @@ TEST_F(MatrixVectorTest, lowerLeftMatrixTopVector)
 
 
     // lower left 2x3 blocks of A times upper 2 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
-                                        2, 3, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              0,
+                                              2, 3, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -251,16 +257,16 @@ TEST_F(MatrixVectorTest, lowerLeftMatrixTopVector)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, fullMatrixVectorBlocked)
-{
+TEST_F(MatrixVectorTest, fullMatrixVectorBlocked) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
@@ -270,23 +276,27 @@ TEST_F(MatrixVectorTest, fullMatrixVectorBlocked)
     result.resize(b.rightHandSideData.size());
 
     // upper left 3x3 blocks of A times upper 3 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
-                                        3, 3, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              0,
+                                              3, 3, A.blockCountXY, true);
 
     // lower right 2x2 blocks of A times lower 2 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
-                                        2, 2, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              3,
+                                              2, 2, A.blockCountXY, true);
 
     queue.wait();
 
     // upper right 3x2 blocks of A times lower 2 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
-                                        3, 2, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              3,
+                                              3, 2, A.blockCountXY, false);
 
 
     // lower left 2x3 blocks of A times upper 2 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
-                                        2, 3, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              0,
+                                              2, 3, A.blockCountXY, false);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -299,8 +309,7 @@ TEST_F(MatrixVectorTest, fullMatrixVectorBlocked)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
@@ -308,8 +317,7 @@ TEST_F(MatrixVectorTest, fullMatrixVectorBlocked)
 
 // Block size 6 --> padding
 
-TEST_F(MatrixVectorTest, fullMatrixVectorPadding)
-{
+TEST_F(MatrixVectorTest, fullMatrixVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -322,8 +330,9 @@ TEST_F(MatrixVectorTest, fullMatrixVectorPadding)
     result.resize(b.rightHandSideData.size());
 
 
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
-                                        A.blockCountXY, A.blockCountXY, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              0,
+                                              A.blockCountXY, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -338,14 +347,12 @@ TEST_F(MatrixVectorTest, fullMatrixVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, upperMatrixVectorPadding)
-{
+TEST_F(MatrixVectorTest, upperMatrixVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -359,8 +366,9 @@ TEST_F(MatrixVectorTest, upperMatrixVectorPadding)
 
 
     // upper 3 blocks of A times full b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
-                                        3, A.blockCountXY, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              0,
+                                              3, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -375,14 +383,12 @@ TEST_F(MatrixVectorTest, upperMatrixVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, lowerMatrixVectorPadding)
-{
+TEST_F(MatrixVectorTest, lowerMatrixVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -396,8 +402,9 @@ TEST_F(MatrixVectorTest, lowerMatrixVectorPadding)
 
 
     // lower 2 blocks of A times full b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
-                                        1, A.blockCountXY, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              0,
+                                              1, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -409,14 +416,12 @@ TEST_F(MatrixVectorTest, lowerMatrixVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, topLeftMatrixTopVectorPadding)
-{
+TEST_F(MatrixVectorTest, topLeftMatrixTopVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -430,8 +435,9 @@ TEST_F(MatrixVectorTest, topLeftMatrixTopVectorPadding)
 
 
     // upper left 3x3 blocks of A times upper 3 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
-                                        3, 3, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              0,
+                                              3, 3, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -446,15 +452,13 @@ TEST_F(MatrixVectorTest, topLeftMatrixTopVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
 
-TEST_F(MatrixVectorTest, lowerRightMatrixBottomVectorPadding)
-{
+TEST_F(MatrixVectorTest, lowerRightMatrixBottomVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -468,8 +472,9 @@ TEST_F(MatrixVectorTest, lowerRightMatrixBottomVectorPadding)
 
 
     // lower right 1x1 block of A times lower 1 block of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
-                                        1, 1, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              3,
+                                              1, 1, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -481,14 +486,12 @@ TEST_F(MatrixVectorTest, lowerRightMatrixBottomVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, upperRightMatrixBottomVectorPadding)
-{
+TEST_F(MatrixVectorTest, upperRightMatrixBottomVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -502,8 +505,9 @@ TEST_F(MatrixVectorTest, upperRightMatrixBottomVectorPadding)
 
 
     // upper right 3x1 blocks of A times lower 1 block of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
-                                        3, 1, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              3,
+                                              3, 1, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -517,14 +521,12 @@ TEST_F(MatrixVectorTest, upperRightMatrixBottomVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, lowerLeftMatrixTopVectorPadding)
-{
+TEST_F(MatrixVectorTest, lowerLeftMatrixTopVectorPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -538,8 +540,9 @@ TEST_F(MatrixVectorTest, lowerLeftMatrixTopVectorPadding)
 
 
     // lower left 1x3 blocks of A times upper 1 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
-                                        1, 3, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              0,
+                                              1, 3, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -551,14 +554,12 @@ TEST_F(MatrixVectorTest, lowerLeftMatrixTopVectorPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
 
-TEST_F(MatrixVectorTest, fullMatrixVectorBlockedPadding)
-{
+TEST_F(MatrixVectorTest, fullMatrixVectorBlockedPadding) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 6;
     conf::workGroupSize = 3;
@@ -571,23 +572,27 @@ TEST_F(MatrixVectorTest, fullMatrixVectorBlockedPadding)
     result.resize(b.rightHandSideData.size());
 
     // upper left 3x3 blocks of A times upper 3 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 0,
-                                        3, 3, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              0,
+                                              3, 3, A.blockCountXY, true);
 
     // lower right 1x1 blocks of A times lower 1 block of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 3,
-                                        1, 1, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              3,
+                                              1, 1, A.blockCountXY, true);
 
     queue.wait();
 
     // upper right 3x1 blocks of A times lower 1 block of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0, 3,
-                                        3, 1, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
+                                              3,
+                                              3, 1, A.blockCountXY, false);
 
 
     // lower left 1x3 blocks of A times upper 3 blocks of b vector
-    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3, 0,
-                                        1, 3, A.blockCountXY);
+    MatrixVectorOperations::matrixVectorBlock(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 3,
+                                              0,
+                                              1, 3, A.blockCountXY, false);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -602,9 +607,7 @@ TEST_F(MatrixVectorTest, fullMatrixVectorBlockedPadding)
 
     EXPECT_EQ(result.size(), reference.size());
 
-    for (size_t i = 0; i < result.size(); i++)
-    {
+    for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
     }
 }
-

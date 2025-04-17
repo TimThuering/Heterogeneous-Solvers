@@ -59,8 +59,10 @@ public:
      * @param result vector that stores the partial sums of each work-group
      * @param blockStart_i start block of the vector
      * @param blockCount_i block count of the vector
+     *
+     * @return the work-group count used. Corresponds to the amount of sub results calculated
      */
-    static void scalarProduct(sycl::queue& queue, const conf::fp_type* x, const conf::fp_type* y,
+    static unsigned int scalarProduct(sycl::queue& queue, const conf::fp_type* x, const conf::fp_type* y,
                               conf::fp_type* result,
                               int blockStart_i, int blockCount_i);
 
@@ -72,7 +74,7 @@ public:
      * @param result vector that stores the partial sums of each work-group
      * @param workGroupCount work-group count from the previous step
      */
-    static void sumFinalScalarProduct(sycl::queue& queue, conf::fp_type* result, int workGroupCount);
+    static void sumFinalScalarProduct(sycl::queue& queue, conf::fp_type* result, unsigned int workGroupCount);
 };
 
 

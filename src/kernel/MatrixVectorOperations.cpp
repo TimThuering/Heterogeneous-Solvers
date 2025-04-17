@@ -9,13 +9,15 @@ void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type
                                                conf::fp_type* result,
                                                const int blockStart_i,
                                                const int blockStart_j, const int blockCount_i, const int blockCount_j,
-                                               const int blockCountXY) {
+                                               const int blockCountXY, const bool reset) {
     // global range corresponds to number of rows in the (sub) matrix
     const range globalRange(blockCount_i * conf::matrixBlockSize);
     const range localRange(conf::workGroupSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
     const int matrixBlockSize = conf::matrixBlockSize;
+
+    const bool addToPreviousEntries = !reset;
 
 
     queue.submit([&](handler& h) {
@@ -39,6 +41,9 @@ void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type
             int block_j = blockStart_j;
 
             conf::fp_type resultValue = 0;
+            if (addToPreviousEntries) {
+                resultValue += result[i];
+            }
 
             // First step: Process all matrix blocks up to the diagonal block (included) or the most left block that should be processed
             // the blocks can be interpreted as they are stored in memory

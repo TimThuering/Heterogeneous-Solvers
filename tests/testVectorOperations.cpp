@@ -641,11 +641,11 @@ TEST_F(vectorOperationsTest, scalarProuctFull) {
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
     result.resize(b.rightHandSideData.size(), -100);
 
-    VectorOperations::scalarProduct(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 0,
-                                    b.blockCountX);
+    unsigned int workGroupCount = VectorOperations::scalarProduct(queue, b.rightHandSideData.data(),
+                                                                  b.rightHandSideData.data(), result.data(), 0,
+                                                                  b.blockCountX);
     queue.wait();
-    int workGroupCount = (b.blockCountX * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
-    VectorOperations::sumFinalScalarProduct(queue, result.data(),workGroupCount);
+    VectorOperations::sumFinalScalarProduct(queue, result.data(), workGroupCount);
     queue.wait();
 
     EXPECT_NEAR(result[0], 5.680372795233107, 1e-12);
@@ -662,11 +662,11 @@ TEST_F(vectorOperationsTest, scalarProuctLowerVector) {
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
     result.resize(b.rightHandSideData.size());
 
-    VectorOperations::scalarProduct(queue, b.rightHandSideData.data(), b.rightHandSideData.data(), result.data(), 2, 2);
+    unsigned int workGroupCount = VectorOperations::scalarProduct(queue, b.rightHandSideData.data(),
+                                                                  b.rightHandSideData.data(), result.data(), 2, 2);
     queue.wait();
-    int workGroupCount = (2 * conf::matrixBlockSize / 2) / conf::workGroupSizeVector;
 
-    VectorOperations::sumFinalScalarProduct(queue, result.data(),workGroupCount);
+    VectorOperations::sumFinalScalarProduct(queue, result.data(), workGroupCount);
     queue.wait();
 
     EXPECT_NEAR(result[0], 1.7632937679652674, 1e-12);

@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
     CG algorithm(path_A, path_b, cpuQueue, gpuQueue);
     // algorithm.solveHeterogeneous_static();
     // algorithm.solve_GPU();
-    algorithm.solve_CPU();
+    algorithm.solveHeterogeneous_static();
     // sleep(3);
 
 
