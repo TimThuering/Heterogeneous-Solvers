@@ -671,3 +671,62 @@ TEST_F(vectorOperationsTest, scalarProuctLowerVector) {
 
     EXPECT_NEAR(result[0], 1.7632937679652674, 1e-12);
 }
+
+TEST_F(vectorOperationsTest, scalarProuctLongVector) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 128;
+    conf::workGroupSizeVector = 256;
+
+    std::vector<conf::fp_type> vector;
+    vector.resize(1024);
+
+    conf::fp_type resultValue = 0;
+    for (unsigned int i = 0; i < 1000; ++i) {
+        resultValue += std::sqrt(i) * std::sqrt(i);
+        vector[i] = std::sqrt(i);
+    }
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(1024, -100);
+
+    unsigned int workGroupCount = VectorOperations::scalarProduct(queue, vector.data(),
+                                                                  vector.data(), result.data(), 0, 8);
+    queue.wait();
+
+    VectorOperations::sumFinalScalarProduct(queue, result.data(), workGroupCount);
+    queue.wait();
+
+    EXPECT_NEAR(result[0], resultValue, 1e-12);
+}
+
+TEST_F(vectorOperationsTest, scalarProuctLowerLongVector) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 128;
+    conf::workGroupSizeVector = 256;
+
+    std::vector<conf::fp_type> vector;
+    vector.resize(1024);
+
+    conf::fp_type resultValue = 0;
+    for (unsigned int i = 0; i < 1000; ++i) {
+        if (i >= 512) {
+            resultValue += std::sqrt(i) * std::sqrt(i);
+        }
+        vector[i] = std::sqrt(i);
+    }
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(1024, -100);
+
+    unsigned int workGroupCount = VectorOperations::scalarProduct(queue, vector.data(),
+                                                                  vector.data(), result.data(), 4, 4);
+    queue.wait();
+
+    VectorOperations::sumFinalScalarProduct(queue, result.data(), workGroupCount);
+    queue.wait();
+
+    EXPECT_NEAR(result[0], resultValue, 1e-12);
+}
