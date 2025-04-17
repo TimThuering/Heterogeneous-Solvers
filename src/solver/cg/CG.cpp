@@ -309,18 +309,10 @@ void CG::compute_alpha(conf::fp_type& alpha, conf::fp_type& delta_new) {
 void CG::update_x(conf::fp_type alpha) {
     // x = x + 𝛼d
     if (blockCountGPU != 0) {
-        VectorOperations::scaleVectorBlock(gpuQueue, d_gpu, alpha, tmp_gpu, 0, blockCountGPU);
+        VectorOperations::scaleAndAddVectorBlock(gpuQueue, x_gpu, alpha, d_gpu, x_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::scaleVectorBlock(cpuQueue, d_cpu, alpha, tmp_cpu, blockStartCPU, blockCountCPU);
-    }
-    waitAllQueues();
-
-    if (blockCountGPU != 0) {
-        VectorOperations::addVectorBlock(gpuQueue, x_gpu, tmp_gpu, x_gpu, 0, blockCountGPU);
-    }
-    if (blockCountCPU != 0) {
-        VectorOperations::addVectorBlock(cpuQueue, x.data(), tmp_cpu, x.data(), blockStartCPU, blockCountCPU);
+        VectorOperations::scaleAndAddVectorBlock(cpuQueue, x.data(), alpha, d_cpu, x.data(), blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 }
@@ -363,18 +355,10 @@ void CG::computeRealResidual() {
 void CG::update_r(conf::fp_type alpha) {
     // r = r - 𝛼q
     if (blockCountGPU != 0) {
-        VectorOperations::scaleVectorBlock(gpuQueue, q_gpu, alpha, tmp_gpu, 0, blockCountGPU);
+        VectorOperations::scaleAndAddVectorBlock(gpuQueue, r_gpu, -1.0 * alpha, q_gpu, r_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::scaleVectorBlock(cpuQueue, q_cpu, alpha, tmp_cpu, blockStartCPU, blockCountCPU);
-    }
-    waitAllQueues();
-
-    if (blockCountGPU != 0) {
-        VectorOperations::subVectorBlock(gpuQueue, r_gpu, tmp_gpu, r_gpu, 0, blockCountGPU);
-    }
-    if (blockCountCPU != 0) {
-        VectorOperations::subVectorBlock(cpuQueue, r_cpu, tmp_cpu, r_cpu, blockStartCPU, blockCountCPU);
+        VectorOperations::scaleAndAddVectorBlock(cpuQueue, r_cpu, -1.0 * alpha, q_cpu, r_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 }
@@ -415,18 +399,10 @@ void CG::compute_delta_new(conf::fp_type& delta_new) {
 void CG::compute_d(conf::fp_type& beta) {
     // d = r + βd
     if (blockCountGPU != 0) {
-        VectorOperations::scaleVectorBlock(gpuQueue, d_gpu, beta, d_gpu, 0, blockCountGPU);
+        VectorOperations::scaleAndAddVectorBlock(gpuQueue, r_gpu, beta, d_gpu, d_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::scaleVectorBlock(cpuQueue, d_cpu, beta, d_cpu, blockStartCPU, blockCountCPU);
-    }
-    waitAllQueues();
-
-    if (blockCountGPU != 0) {
-        VectorOperations::addVectorBlock(gpuQueue, r_gpu, d_gpu, d_gpu, 0, blockCountGPU);
-    }
-    if (blockCountCPU != 0) {
-        VectorOperations::addVectorBlock(cpuQueue, r_cpu, d_cpu, d_cpu, blockStartCPU, blockCountCPU);
+        VectorOperations::scaleAndAddVectorBlock(cpuQueue, r_cpu, beta, d_cpu, d_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 }
