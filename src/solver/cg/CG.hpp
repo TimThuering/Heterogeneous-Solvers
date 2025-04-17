@@ -22,9 +22,6 @@ public:
     queue& cpuQueue;
     queue& gpuQueue;
 
-
-    void solve_CPU();
-    void solve_GPU();
     void solveHeterogeneous_static();
 
 private:
@@ -48,7 +45,7 @@ private:
     std::size_t blockCountCPU;
     std::size_t blockStartCPU;
 
-    void initGPUdataStructures(std::size_t blockCountGPU, std::size_t blockCountGPUTotal);
+    void initGPUdataStructures(std::size_t blockCountGPUTotal);
 
     void initCPUdataStructures();
 
@@ -69,7 +66,10 @@ private:
     void compute_delta_new(conf::fp_type& delta_new);
 
     void compute_d(conf::fp_type& beta);
+
+    void waitAllQueues();
 };
+
 
 
 #endif //CG_HPP
