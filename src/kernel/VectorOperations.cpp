@@ -60,9 +60,29 @@ void VectorOperations::subVectorBlock(queue& queue, const conf::fp_type* x, cons
     });
 }
 
+void VectorOperations::scaleAndAddVectorBlock(sycl::queue& queue, const conf::fp_type* x, conf::fp_type alpha,
+                                              const conf::fp_type* y, conf::fp_type* result, const int blockStart_i,
+                                              const int blockCount_i) {
+    // global range corresponds to number of rows in the (sub) vector
+    const range globalRange(blockCount_i * conf::matrixBlockSize);
+    const range localRange(conf::workGroupSize);
+    const auto kernelRange = nd_range{globalRange, localRange};
+
+    const int matrixBlockSize = conf::matrixBlockSize;
+
+    queue.submit([&](handler& h) {
+        h.parallel_for(kernelRange, [=](auto& nd_item) {
+            // row i in the vector
+            const int i = nd_item.get_global_id() + blockStart_i * matrixBlockSize;
+
+            result[i] = x[i] + y[i] * alpha;
+        });
+    });
+}
+
 unsigned int VectorOperations::scalarProduct(queue& queue, const conf::fp_type* x, const conf::fp_type* y,
-                                     conf::fp_type* result,
-                                     const int blockStart_i, const int blockCount_i) {
+                                             conf::fp_type* result,
+                                             const int blockStart_i, const int blockCount_i) {
     const unsigned int matrixBlockSize = conf::matrixBlockSize;
     const unsigned int workGroupSize = conf::workGroupSizeVector;
     const unsigned int vectorLength = blockCount_i * matrixBlockSize;
@@ -70,7 +90,8 @@ unsigned int VectorOperations::scalarProduct(queue& queue, const conf::fp_type* 
     assert((vectorLength) % 2 == 0);
 
     const unsigned int globalSize = vectorLength / 2;
-    const unsigned int workGroupCount = std::ceil(static_cast<conf::fp_type>(globalSize) / static_cast<conf::fp_type>(workGroupSize));
+    const unsigned int workGroupCount = std::ceil(
+        static_cast<conf::fp_type>(globalSize) / static_cast<conf::fp_type>(workGroupSize));
     const unsigned int globalSizePadding = workGroupCount * workGroupSize;
 
     assert(globalSizePadding % workGroupSize == 0);
@@ -118,7 +139,6 @@ unsigned int VectorOperations::scalarProduct(queue& queue, const conf::fp_type* 
 }
 
 void VectorOperations::sumFinalScalarProduct(queue& queue, conf::fp_type* result, const unsigned int workGroupCount) {
-
     const unsigned int workGroupSize = conf::workGroupSizeFinalScalarProduct;
 
     if (2 * workGroupSize < workGroupCount) {
@@ -149,7 +169,7 @@ void VectorOperations::sumFinalScalarProduct(queue& queue, conf::fp_type* result
             }
             nd_item.barrier();
 
-            for (unsigned int stride =  workGroupSize / 2; stride > 0; stride = stride / 2) {
+            for (unsigned int stride = workGroupSize / 2; stride > 0; stride = stride / 2) {
                 if (localID < stride) {
                     cache[localID] += cache[localID + stride];
                 }

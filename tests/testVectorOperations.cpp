@@ -23,6 +23,7 @@ protected:
 TEST_F(vectorOperationsTest, scaleFullVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
 
@@ -51,6 +52,7 @@ TEST_F(vectorOperationsTest, scaleFullVector) {
 TEST_F(vectorOperationsTest, scaleUpperVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
 
@@ -80,6 +82,7 @@ TEST_F(vectorOperationsTest, scaleUpperVector) {
 TEST_F(vectorOperationsTest, scaleLowerVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
 
@@ -106,11 +109,107 @@ TEST_F(vectorOperationsTest, scaleLowerVector) {
     }
 }
 
+TEST_F(vectorOperationsTest, scaleAndAddFullVector) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
+
+    VectorOperations::scaleAndAddVectorBlock(queue, b.rightHandSideData.data(), 1.23456, b.rightHandSideData.data(),
+                                             result.data(), 0, b.blockCountX);
+    queue.wait();
+
+    std::vector<conf::fp_type> reference = {
+        0.052832259380411, 2.013176314524164, -1.59029339160243,
+        2.005068217189999, -0.840947821190899, -0.342663300367683,
+        1.464542216094813, -0.405799955669854, 0.221640141453424,
+        -2.111395015823138, 1.132980504240752, 0.170467043974541,
+        -0.760949391159577, 1.28902248706595, -0.879545924516124,
+        -0.207823512164231, -1.635511569998751, -0.432999690009406,
+        -1.325294114789406, -1.062250203964522
+    };
+
+    EXPECT_EQ(result.size(), reference.size());
+
+    for (size_t i = 0; i < result.size(); i++) {
+        EXPECT_NEAR(result[i], reference[i], 1e-12);
+    }
+}
+
+TEST_F(vectorOperationsTest, scaleAndAddUpperVector) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
+
+    // scale upper 3 blocks of b
+    VectorOperations::scaleAndAddVectorBlock(queue, b.rightHandSideData.data(), 1.23456, b.rightHandSideData.data(),
+                                             result.data(), 0, 3);
+    queue.wait();
+
+    std::vector<conf::fp_type> reference = {
+        0.052832259380411, 2.013176314524164, -1.59029339160243,
+        2.005068217189999, -0.840947821190899, -0.342663300367683,
+        1.464542216094813, -0.405799955669854, 0.221640141453424,
+        -2.111395015823138, 1.132980504240752, 0.170467043974541,
+        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0
+    };
+
+    EXPECT_EQ(result.size(), reference.size());
+
+    for (size_t i = 0; i < result.size(); i++) {
+        EXPECT_NEAR(result[i], reference[i], 1e-12);
+    }
+}
+
+TEST_F(vectorOperationsTest, scaleAndAddLowerVector) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
+
+    // scale lower 2 blocks of b
+    VectorOperations::scaleAndAddVectorBlock(queue, b.rightHandSideData.data(), 1.23456, b.rightHandSideData.data(),
+                                             result.data(), 3, 2);
+    queue.wait();
+
+    std::vector<conf::fp_type> reference = {
+        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0,
+        -0.760949391159577, 1.28902248706595, -0.879545924516124,
+        -0.207823512164231, -1.635511569998751, -0.432999690009406,
+        -1.325294114789406, -1.062250203964522
+    };
+
+    EXPECT_EQ(result.size(), reference.size());
+
+    for (size_t i = 0; i < result.size(); i++) {
+        EXPECT_NEAR(result[i], reference[i], 1e-12);
+    }
+}
+
 // vector add
 
 TEST_F(vectorOperationsTest, addFullVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
 
@@ -141,6 +240,7 @@ TEST_F(vectorOperationsTest, addFullVector) {
 TEST_F(vectorOperationsTest, addUpperVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
 
@@ -171,6 +271,8 @@ TEST_F(vectorOperationsTest, addUpperVector) {
 TEST_F(vectorOperationsTest, addLowerVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
 
@@ -203,6 +305,8 @@ TEST_F(vectorOperationsTest, addLowerVector) {
 TEST_F(vectorOperationsTest, subFullVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
     const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
@@ -240,6 +344,8 @@ TEST_F(vectorOperationsTest, subFullVector) {
 TEST_F(vectorOperationsTest, subUpperVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
     const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
@@ -278,6 +384,8 @@ TEST_F(vectorOperationsTest, subUpperVector) {
 TEST_F(vectorOperationsTest, subLowerVector) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+
     RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
 
     const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
@@ -399,6 +507,108 @@ TEST_F(vectorOperationsTest, scaleLowerVectorPadding) {
         0.0, 0.0, 0.0, 0.0,
         -0.420412824157762, 0.712165080209142, -0.485935583099414, -0.114819291125534,
         -0.903594964493081, -0.239225662903664, -0.732204596141706, -0.586876884848221,
+        0.0, 0.0, 0.0, 0.0
+    };
+
+    EXPECT_EQ(result.size(), reference.size());
+
+    for (size_t i = 0; i < result.size(); i++) {
+        EXPECT_NEAR(result[i], reference[i], 1e-12);
+    }
+}
+
+// combined vector add and scale
+
+TEST_F(vectorOperationsTest, scaleAndAddFullVectorPadding) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSize = 3;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
+
+    VectorOperations::scaleAndAddVectorBlock(queue, b.rightHandSideData.data(), 1.23456, b.rightHandSideData.data(),
+                                             result.data(), 0, b.blockCountX);
+    queue.wait();
+
+    std::vector<conf::fp_type> reference = {
+        0.052832259380411, 2.013176314524164, -1.59029339160243,
+        2.005068217189999, -0.840947821190899, -0.342663300367683,
+        1.464542216094813, -0.405799955669854, 0.221640141453424,
+        -2.111395015823138, 1.132980504240752, 0.170467043974541,
+        -0.760949391159577, 1.28902248706595, -0.879545924516124,
+        -0.207823512164231, -1.635511569998751, -0.432999690009406,
+        -1.325294114789406, -1.062250203964522,
+        0.0, 0.0, 0.0, 0.0,
+    };
+
+    EXPECT_EQ(result.size(), reference.size());
+
+    for (size_t i = 0; i < result.size(); i++) {
+        EXPECT_NEAR(result[i], reference[i], 1e-12);
+    }
+}
+
+
+TEST_F(vectorOperationsTest, scaleAndAddUpperVectorPadding) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSize = 3;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
+
+    // scale upper 3 blocks of b
+    VectorOperations::scaleAndAddVectorBlock(queue, b.rightHandSideData.data(), 1.23456, b.rightHandSideData.data(),
+                                             result.data(), 0, 2);
+    queue.wait();
+
+    std::vector<conf::fp_type> reference = {
+        0.052832259380411, 2.013176314524164, -1.59029339160243,
+        2.005068217189999, -0.840947821190899, -0.342663300367683,
+        1.464542216094813, -0.405799955669854, 0.221640141453424,
+        -2.111395015823138, 1.132980504240752, 0.170467043974541,
+        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0
+    };
+
+    EXPECT_EQ(result.size(), reference.size());
+
+    for (size_t i = 0; i < result.size(); i++) {
+        EXPECT_NEAR(result[i], reference[i], 1e-12);
+    }
+}
+
+TEST_F(vectorOperationsTest, scaleAndAddLowerVectorPadding) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSize = 3;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
+
+    // scale lower 2 blocks of b
+    VectorOperations::scaleAndAddVectorBlock(queue, b.rightHandSideData.data(), 1.23456, b.rightHandSideData.data(),
+                                             result.data(), 2, 2);
+    queue.wait();
+
+    std::vector<conf::fp_type> reference = {
+        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0,
+        -0.760949391159577, 1.28902248706595 ,-0.879545924516124,
+        -0.207823512164231,-1.635511569998751,-0.432999690009406,
+        -1.325294114789406,-1.062250203964522,
         0.0, 0.0, 0.0, 0.0
     };
 

@@ -49,6 +49,22 @@ public:
                                conf::fp_type* result,
                                int blockStart_i, int blockCount_i);
 
+
+    /**
+     * Scales (part of) a vector with a scalar and adds the result to another vector in parallel:
+     * result = x + alpha * y
+     *
+     * @param queue SYCL queue that determines the device for the parallel execution
+     * @param x vector x to be scaled
+     * @param alpha scalar to scale the vector
+     * @param y vector y
+     * @param result result vector
+     * @param blockStart_i first block in the vector to apply the operation to
+     * @param blockCount_i amount of blocks after first block to be modified
+     */
+    static void scaleAndAddVectorBlock(sycl::queue& queue, const conf::fp_type* x, conf::fp_type alpha, const conf::fp_type* y, conf::fp_type* result,
+                                 int blockStart_i, int blockCount_i);
+
     /**
      * Computes the first part of the scalar product x*y. The result are partial sums of each work-group that have to be
      * summed up to obtain the final result.
