@@ -55,11 +55,15 @@ private:
 
     void compute_q();
 
+    void compute_q_CommunicationHiding();
+
     void compute_alpha(conf::fp_type& alpha, conf::fp_type& delta_new);
 
     void update_x(conf::fp_type alpha);
 
     void computeRealResidual();
+
+    void computeRealResidual_CommunicationHiding();
 
     void update_r(conf::fp_type alpha);
 

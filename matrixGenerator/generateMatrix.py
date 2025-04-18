@@ -65,8 +65,8 @@ if __name__ == '__main__':
     # x = np.zeros(N)
     # r = b - A @ x
     # print(r.T @ r)
-    result = b + 1.23456 *b
-    print(np.array2string(result,precision=15, separator=','))
+    # result = b + 1.23456 *b
+    # print(np.array2string(result,precision=15, separator=','))
 
     # r = np.zeros(N)
     # d = np.zeros(N)
