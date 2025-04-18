@@ -34,7 +34,7 @@ void CG::solveHeterogeneous_static() {
     const auto start = std::chrono::steady_clock::now();
 
     // static split:
-    constexpr double gpuProportion = 0;
+    constexpr double gpuProportion = 1;
     blockCountGPU = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
     blockCountCPU = A.blockCountXY - blockCountGPU;
     blockStartCPU = blockCountGPU;
@@ -250,7 +250,6 @@ void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
 
 void CG::compute_q() {
 
-    // auto startMV = std::chrono::steady_clock::now();
 
     if (blockCountGPU != 0 && blockCountCPU != 0) {
         // exchange parts of d vector so that both CPU and GPU hold the complete vector
@@ -265,9 +264,7 @@ void CG::compute_q() {
 
     waitAllQueues();
 
-    // auto endMV = std::chrono::steady_clock::now();
-    // auto iterationTime = std::chrono::duration<double, std::milli>(endMV - startMV).count();
-    // std::cout << "--------------------------------- MV time: " << iterationTime << "ms" << std::endl;
+
 
     // q = Ad
     if (blockCountGPU != 0) {
@@ -275,9 +272,16 @@ void CG::compute_q() {
                                                   blockCountGPU, A.blockCountXY, A.blockCountXY);
     }
     if (blockCountCPU != 0) {
+        auto startMV = std::chrono::steady_clock::now();
+
 
         MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
                                                   blockCountCPU, A.blockCountXY, A.blockCountXY);
+
+        cpuQueue.wait();
+        auto endMV = std::chrono::steady_clock::now();
+        auto iterationTime = std::chrono::duration<double, std::milli>(endMV - startMV).count();
+        std::cout << "--------------------------------- MV time: " << iterationTime << "ms" << std::endl;
 
     }
     waitAllQueues();

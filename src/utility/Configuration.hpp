@@ -20,7 +20,7 @@ namespace conf {
 
     inline int workGroupSizeFinalScalarProduct = 512;
 
-    inline std::size_t iMax = 50;
+    inline std::size_t iMax = 1e5;
 
     inline conf::fp_type epsilon = 1.0e-6;
 }
