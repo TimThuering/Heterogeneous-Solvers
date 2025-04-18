@@ -1,6 +1,7 @@
 #ifndef CONFIGURATION_HPP
 #define CONFIGURATION_HPP
 
+#include <cstdio>
 /**
  * Namespace that contains everything regarding the configuration of the program execution
  */
@@ -19,7 +20,7 @@ namespace conf {
 
     inline int workGroupSizeFinalScalarProduct = 512;
 
-    inline std::size_t iMax = 1e5;
+    inline std::size_t iMax = 50;
 
     inline conf::fp_type epsilon = 1.0e-6;
 }

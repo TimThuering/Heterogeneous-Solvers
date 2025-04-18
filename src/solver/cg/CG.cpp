@@ -12,7 +12,7 @@ using namespace sycl;
 CG::CG(std::string& path_A, std::string& path_b, queue& cpuQueue, queue& gpuQueue) : A(
         MatrixParser::parseSymmetricMatrix(path_A, cpuQueue)),
     b(MatrixParser::parseRightHandSide(path_b, cpuQueue)),
-    x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>(cpuQueue)),
+    x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>(cpuQueue)),
     cpuQueue(cpuQueue),
     gpuQueue(gpuQueue) {
     // check if dimensions match
@@ -34,10 +34,13 @@ void CG::solveHeterogeneous_static() {
     const auto start = std::chrono::steady_clock::now();
 
     // static split:
-    constexpr double gpuProportion = 0.98;
+    constexpr double gpuProportion = 0;
     blockCountGPU = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
     blockCountCPU = A.blockCountXY - blockCountGPU;
     blockStartCPU = blockCountGPU;
+
+    std::cout << "Block count GPU: " << blockCountGPU << std::endl;
+    std::cout << "Block count CPU: " << blockCountCPU << std::endl;
 
     // Total amount of blocks needed for the upper part of the matrix
     const std::size_t blockCountGPUTotal = (A.blockCountXY * (A.blockCountXY + 1) / 2) - (blockCountCPU * (blockCountCPU
@@ -273,9 +276,8 @@ void CG::compute_q() {
     }
     if (blockCountCPU != 0) {
 
-        MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
+        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
                                                   blockCountCPU, A.blockCountXY, A.blockCountXY);
-        cpuQueue.wait();
 
     }
     waitAllQueues();
@@ -302,7 +304,7 @@ void CG::compute_q_CommunicationHiding() {
 
         MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
                                                   blockCountGPU, blockCountGPU, A.blockCountXY);
-        MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU,
+        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU,
                                                   blockStartCPU,
                                                   blockCountCPU, blockCountCPU, A.blockCountXY);
 
@@ -314,7 +316,7 @@ void CG::compute_q_CommunicationHiding() {
         // perform missing partial matrix-vector products with the transferred data
         MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, blockCountGPU,
                                                   blockCountGPU, blockCountCPU, A.blockCountXY, false);
-        MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
+        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
                                                   blockCountCPU, blockCountGPU, A.blockCountXY, false);
         waitAllQueues();
 
@@ -323,7 +325,7 @@ void CG::compute_q_CommunicationHiding() {
                                                   blockCountGPU, A.blockCountXY, A.blockCountXY);
         waitAllQueues();
     } else if (blockCountCPU != 0 && blockCountGPU == 0) {
-        MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
+        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
                                                   blockCountCPU, A.blockCountXY, A.blockCountXY);
         waitAllQueues();
     } else {
@@ -398,7 +400,7 @@ void CG::computeRealResidual() {
                                                   A.blockCountXY);
     }
     if (blockCountCPU != 0) {
-        MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), x.data(), r_cpu, blockStartCPU, 0,
+        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), x.data(), r_cpu, blockStartCPU, 0,
                                                   blockCountCPU, A.blockCountXY, A.blockCountXY);
     }
     waitAllQueues();
@@ -414,24 +416,24 @@ void CG::computeRealResidual() {
 }
 
 void CG::computeRealResidual_CommunicationHiding() {
-    if (blockCountGPU != 0 && blockCountCPU != 0) {
-        // exchange parts of x vector so that both CPU and GPU hold the complete vector. Happens asynchronously.
-        gpuQueue.submit([&](handler& h) {
-            h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize],
-                     blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
-        });
-        gpuQueue.submit([&](handler& h) {
-            h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
-        });
-
-        // perform partial matrix-vector products with data that is already on the GPU / CPU
-    } else if (blockCountGPU != 0 && blockCountCPU == 0) {
-        waitAllQueues();
-    } else if (blockCountCPU != 0 && blockCountGPU == 0) {
-        waitAllQueues();
-    } else {
-        throw std::runtime_error("Invalid CPU/GPU proportion");
-    }
+    // if (blockCountGPU != 0 && blockCountCPU != 0) {
+    //     // exchange parts of x vector so that both CPU and GPU hold the complete vector. Happens asynchronously.
+    //     gpuQueue.submit([&](handler& h) {
+    //         h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize],
+    //                  blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
+    //     });
+    //     gpuQueue.submit([&](handler& h) {
+    //         h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
+    //     });
+    //
+    //     // perform partial matrix-vector products with data that is already on the GPU / CPU
+    // } else if (blockCountGPU != 0 && blockCountCPU == 0) {
+    //     waitAllQueues();
+    // } else if (blockCountCPU != 0 && blockCountGPU == 0) {
+    //     waitAllQueues();
+    // } else {
+    //     throw std::runtime_error("Invalid CPU/GPU proportion");
+    // }
 }
 
 void CG::update_r(conf::fp_type alpha) {
