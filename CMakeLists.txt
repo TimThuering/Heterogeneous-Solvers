@@ -41,7 +41,9 @@ set(LIBRARY_FILES
         src/loadBalancer/LoadBalancer.cpp
         src/loadBalancer/LoadBalancer.hpp
         src/loadBalancer/StaticLoadBalancer.cpp
-        src/loadBalancer/StaticLoadBalancer.hpp)
+        src/loadBalancer/StaticLoadBalancer.hpp
+        src/loadBalancer/UtilizationLoadBalancer.cpp
+        src/loadBalancer/UtilizationLoadBalancer.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)
@@ -50,6 +52,7 @@ include_directories(src/utility)
 include_directories(src/solver)
 include_directories(src/solver/cg)
 include_directories(src/kernel)
+include_directories(src/loadBalancer)
 
 # create and executable, add SYCL to executable and link OpenMP and custom library files
 add_executable(Heterogeneous_CG ${EXECUTABLE_FILES})

@@ -7,12 +7,13 @@
 #include "SymmetricMatrix.hpp"
 #include "RightHandSide.hpp"
 #include "Configuration.hpp"
+#include "LoadBalancer.hpp"
 
 using namespace sycl;
 
 class CG {
 public:
-    CG(std::string& path_A, std::string& path_b, queue& cpuQueue, queue& gpuQueue);
+    CG(std::string& path_A, std::string& path_b, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
 
     SymmetricMatrix A;
     RightHandSide b;
@@ -22,7 +23,9 @@ public:
     queue& cpuQueue;
     queue& gpuQueue;
 
-    void solveHeterogeneous_static();
+    std::shared_ptr<LoadBalancer> loadBalancer;
+
+    void solveHeterogeneous();
 
 private:
     // gpu data structures

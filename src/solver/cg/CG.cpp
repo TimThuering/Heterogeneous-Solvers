@@ -9,14 +9,13 @@
 
 using namespace sycl;
 
-CG::CG(std::string &path_A, std::string &path_b, queue &cpuQueue, queue &gpuQueue) : A(
-        MatrixParser::parseSymmetricMatrix(path_A, cpuQueue)),
-                                                                                     b(MatrixParser::parseRightHandSide(
-                                                                                             path_b, cpuQueue)),
-                                                                                     x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>(
-                                                                                             cpuQueue)),
-                                                                                     cpuQueue(cpuQueue),
-                                                                                     gpuQueue(gpuQueue) {
+CG::CG(std::string &path_A, std::string &path_b, queue &cpuQueue, queue &gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer) :
+        A(MatrixParser::parseSymmetricMatrix(path_A, cpuQueue)),
+        b(MatrixParser::parseRightHandSide(path_b, cpuQueue)),
+        x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>(cpuQueue)),
+        cpuQueue(cpuQueue),
+        gpuQueue(gpuQueue),
+        loadBalancer(std::move(loadBalancer)){
     // check if dimensions match
     if (A.N != b.N) {
         throw std::invalid_argument(
@@ -32,11 +31,11 @@ CG::CG(std::string &path_A, std::string &path_b, queue &cpuQueue, queue &gpuQueu
     x.resize(b.rightHandSideData.size());
 }
 
-void CG::solveHeterogeneous_static() {
+void CG::solveHeterogeneous() {
     const auto start = std::chrono::steady_clock::now();
 
-    // static split:
-    constexpr double gpuProportion = 1;
+    // get new GPU proportion of workload
+    double gpuProportion = loadBalancer->getNewProportionGPU();
     blockCountGPU = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
     blockCountCPU = A.blockCountXY - blockCountGPU;
     blockStartCPU = blockCountGPU;
@@ -44,7 +43,6 @@ void CG::solveHeterogeneous_static() {
     std::cout << "Block count GPU: " << blockCountGPU << std::endl;
     std::cout << "Block count CPU: " << blockCountCPU << std::endl;
 
-    std::cout << gpuQueue.get_device().get_info<sycl::info::device::global_mem_size>() <<std::endl;
     // Total amount of blocks needed for the upper part of the matrix
     const std::size_t blockCountGPUTotal = (A.blockCountXY * (A.blockCountXY + 1) / 2) - (blockCountCPU * (blockCountCPU
                                                                                                            + 1) / 2);
@@ -75,6 +73,15 @@ void CG::solveHeterogeneous_static() {
 
     while (iteration < conf::iMax && delta_new > epsilon2 * delta_zero) {
         auto startIteration = std::chrono::steady_clock::now();
+
+        if (iteration % loadBalancer->updateInterval == 0) {
+            // get new GPU proportion of workload
+            gpuProportion = loadBalancer->getNewProportionGPU();
+            blockCountGPU = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
+            blockCountCPU = A.blockCountXY - blockCountGPU;
+            blockStartCPU = blockCountGPU;
+            std::cout << "New GPU proportion: " << gpuProportion * 100 << "%" << std::endl;
+        }
 
         // compute_q(); // q = Ad
         compute_q(); // q = Ad
