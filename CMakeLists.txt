@@ -37,7 +37,11 @@ set(LIBRARY_FILES
         src/kernel/VectorOperations.cpp
         src/kernel/VectorOperations.hpp
         src/kernel/MatrixVectorOperations.cpp
-        src/kernel/MatrixVectorOperations.hpp)
+        src/kernel/MatrixVectorOperations.hpp
+        src/loadBalancer/LoadBalancer.cpp
+        src/loadBalancer/LoadBalancer.hpp
+        src/loadBalancer/StaticLoadBalancer.cpp
+        src/loadBalancer/StaticLoadBalancer.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)

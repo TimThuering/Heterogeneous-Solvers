@@ -1,0 +1,12 @@
+#ifndef HETEROGENEOUS_CONJUGATE_GRADIENTS_LOADBALANCER_HPP
+#define HETEROGENEOUS_CONJUGATE_GRADIENTS_LOADBALANCER_HPP
+
+#include "Configuration.hpp"
+
+class LoadBalancer {
+
+    virtual conf::fp_type getNewProportionGPU() = 0;
+};
+
+
+#endif //HETEROGENEOUS_CONJUGATE_GRADIENTS_LOADBALANCER_HPP
