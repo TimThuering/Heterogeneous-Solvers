@@ -43,7 +43,9 @@ set(LIBRARY_FILES
         src/loadBalancer/StaticLoadBalancer.cpp
         src/loadBalancer/StaticLoadBalancer.hpp
         src/loadBalancer/UtilizationLoadBalancer.cpp
-        src/loadBalancer/UtilizationLoadBalancer.hpp)
+        src/loadBalancer/UtilizationLoadBalancer.hpp
+        src/metricsTracker/MetricsTracker.cpp
+        src/metricsTracker/MetricsTracker.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)
@@ -53,6 +55,7 @@ include_directories(src/solver)
 include_directories(src/solver/cg)
 include_directories(src/kernel)
 include_directories(src/loadBalancer)
+include_directories(src/metricsTracker)
 
 # create and executable, add SYCL to executable and link OpenMP and custom library files
 add_executable(Heterogeneous_CG ${EXECUTABLE_FILES})
@@ -67,10 +70,11 @@ endif ()
 message("Building the hardware sampling library")
 # build and link the hws library
 set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
+set(HWS_SAMPLING_INTERVAL 10 CACHE INTERNAL "" FORCE)
 FetchContent_Declare(
         hws
         GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
-        GIT_TAG c78d3ec832a2b59259689ec7a3c96efda640f4d2
+        GIT_TAG 20e0bf233a9067044f064a1ae234070ba8d0da0e
 )
 FetchContent_MakeAvailable(hws)
 add_dependencies(Heterogeneous_CG hws)

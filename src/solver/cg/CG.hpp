@@ -8,6 +8,7 @@
 #include "RightHandSide.hpp"
 #include "Configuration.hpp"
 #include "LoadBalancer.hpp"
+#include "MetricsTracker.hpp"
 
 using namespace sycl;
 
@@ -24,6 +25,7 @@ public:
     queue& gpuQueue;
 
     std::shared_ptr<LoadBalancer> loadBalancer;
+    MetricsTracker metricsTracker;
 
     void solveHeterogeneous();
 

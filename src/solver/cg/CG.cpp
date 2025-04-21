@@ -71,6 +71,8 @@ void CG::solveHeterogeneous() {
 
     std::size_t iteration = 0;
 
+    metricsTracker.startTracking();
+
     while (iteration < conf::iMax && delta_new > epsilon2 * delta_zero) {
         auto startIteration = std::chrono::steady_clock::now();
 
@@ -100,11 +102,13 @@ void CG::solveHeterogeneous() {
         beta = delta_new / delta_old; // β = δ_new / δ_old
         compute_d(beta); // d = r + βd
 
-        iteration++;
 
         auto endIteration = std::chrono::steady_clock::now();
         auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
-        std::cout << (iteration - 1) << ": Iteration time: " << iterationTime << "ms" << std::endl;
+        metricsTracker.updateMetrics(iteration, blockCountGPU, blockCountCPU, iterationTime, loadBalancer->updateInterval);
+        std::cout << iteration << ": Iteration time: " << iterationTime << "ms" << std::endl;
+        iteration++;
+
     }
 
     auto end = std::chrono::steady_clock::now();
@@ -113,6 +117,7 @@ void CG::solveHeterogeneous() {
     std::cout << "Residual: " << delta_new << std::endl;
 
     waitAllQueues();
+    metricsTracker.endTracking();
 
     if (blockCountGPU != 0) {
         gpuQueue.submit([&](handler &h) {

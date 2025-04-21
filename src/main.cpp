@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("No path to .txt file for right-hand side b specified");
     }
 
-    hws::system_hardware_sampler samplerUtil{hws::sample_category::general};
+//    hws::system_hardware_sampler samplerUtil{hws::sample_category::general};
 
 
     queue gpuQueue(gpu_selector_v);

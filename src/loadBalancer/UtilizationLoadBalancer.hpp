@@ -4,12 +4,15 @@
 #include <hws/system_hardware_sampler.hpp>
 
 #include "LoadBalancer.hpp"
+#include "MetricsTracker.hpp"
+
 class UtilizationLoadBalancer : public LoadBalancer {
 
 public:
     UtilizationLoadBalancer(int updateInterval);
 
-    hws::system_hardware_sampler cpuUtilSampler;
+
+    conf::fp_type getNewProportionGPU(MetricsTracker &metricsTracker) override;
 
 };
 
