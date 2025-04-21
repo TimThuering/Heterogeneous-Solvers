@@ -9,13 +9,14 @@
 
 using namespace sycl;
 
-CG::CG(std::string &path_A, std::string &path_b, queue &cpuQueue, queue &gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer) :
+CG::CG(std::string &path_A, std::string &path_b, queue &cpuQueue, queue &gpuQueue,
+       std::shared_ptr<LoadBalancer> loadBalancer) :
         A(MatrixParser::parseSymmetricMatrix(path_A, cpuQueue)),
         b(MatrixParser::parseRightHandSide(path_b, cpuQueue)),
         x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>(cpuQueue)),
         cpuQueue(cpuQueue),
         gpuQueue(gpuQueue),
-        loadBalancer(std::move(loadBalancer)){
+        loadBalancer(std::move(loadBalancer)) {
     // check if dimensions match
     if (A.N != b.N) {
         throw std::invalid_argument(
@@ -35,7 +36,7 @@ void CG::solveHeterogeneous() {
     const auto start = std::chrono::steady_clock::now();
 
     // get new GPU proportion of workload
-    double gpuProportion = loadBalancer->getNewProportionGPU();
+    double gpuProportion = loadBalancer->currentProportionGPU;
     blockCountGPU = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
     blockCountCPU = A.blockCountXY - blockCountGPU;
     blockStartCPU = blockCountGPU;
@@ -73,19 +74,62 @@ void CG::solveHeterogeneous() {
 
     metricsTracker.startTracking();
 
+    bool firstIteration = true;
+
     while (iteration < conf::iMax && delta_new > epsilon2 * delta_zero) {
         auto startIteration = std::chrono::steady_clock::now();
 
-        if (iteration % loadBalancer->updateInterval == 0) {
+        if (iteration % loadBalancer->updateInterval == 0 && !firstIteration) {
             // get new GPU proportion of workload
-            gpuProportion = loadBalancer->getNewProportionGPU();
-            blockCountGPU = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
-            blockCountCPU = A.blockCountXY - blockCountGPU;
-            blockStartCPU = blockCountGPU;
+            gpuProportion = loadBalancer->getNewProportionGPU(metricsTracker);
+            std::size_t blockCountGPU_new = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
+            std::size_t blockCountCPU_new = A.blockCountXY - blockCountGPU_new;
+            std::size_t blockStartCPU_new = blockCountCPU_new;
+
+            if (blockCountGPU_new > blockCountGPU) {
+                std::size_t additionalBlocks = blockCountGPU_new - blockCountGPU;
+                // exchange missing parts of d vector
+                gpuQueue.submit([&](handler &h) {
+                    h.memcpy(&d_gpu[blockStartCPU * conf::matrixBlockSize], &d_cpu[blockStartCPU * conf::matrixBlockSize],
+                             additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                });
+
+                // exchange missing parts of x vector
+                gpuQueue.submit([&](handler &h) {
+                    h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize],
+                             additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                });
+
+            } else if (blockStartCPU_new > blockCountCPU) {
+                std::size_t additionalBlocks = blockCountCPU_new - blockCountCPU;
+
+                // exchange missing parts of d vector
+                gpuQueue.submit([&](handler &h) {
+                    h.memcpy(&d_cpu[blockStartCPU_new * conf::matrixBlockSize], &d_gpu[blockStartCPU_new * conf::matrixBlockSize],
+                             additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                });
+
+                // exchange missing parts of x vector
+                gpuQueue.submit([&](handler &h) {
+                    h.memcpy(&x_gpu[blockStartCPU_new * conf::matrixBlockSize], &x[blockStartCPU_new * conf::matrixBlockSize],
+                             additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                });
+
+            }
+
+            waitAllQueues();
+
+
+
+            blockCountGPU = blockCountGPU_new;
+            blockCountCPU = blockCountCPU_new;
+            blockStartCPU = blockStartCPU_new;
+
+            std::cout << "Block count GPU: " << blockCountGPU << std::endl;
+            std::cout << "Block count CPU: " << blockCountCPU << std::endl;
             std::cout << "New GPU proportion: " << gpuProportion * 100 << "%" << std::endl;
         }
 
-        // compute_q(); // q = Ad
         compute_q(); // q = Ad
         compute_alpha(alpha, delta_new); // 𝛼 = δ_new / d^T * q
         update_x(alpha); // x = x + 𝛼d
@@ -99,15 +143,21 @@ void CG::solveHeterogeneous() {
         }
         delta_old = delta_new; // δ_old = δ_new
         compute_delta_new(delta_new); // δ_new = r^T * r
+
         beta = delta_new / delta_old; // β = δ_new / δ_old
         compute_d(beta); // d = r + βd
 
 
+
         auto endIteration = std::chrono::steady_clock::now();
         auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
-        metricsTracker.updateMetrics(iteration, blockCountGPU, blockCountCPU, iterationTime, loadBalancer->updateInterval);
+        metricsTracker.updateMetrics(iteration, blockCountGPU, blockCountCPU, iterationTime,
+                                     loadBalancer->updateInterval);
         std::cout << iteration << ": Iteration time: " << iterationTime << "ms" << std::endl;
         iteration++;
+        firstIteration = false;
+        std::cout << delta_new << std::endl;
+
 
     }
 
@@ -119,6 +169,7 @@ void CG::solveHeterogeneous() {
     waitAllQueues();
     metricsTracker.endTracking();
 
+    // TODO check if correct with memory transfer if change in last iteration
     if (blockCountGPU != 0) {
         gpuQueue.submit([&](handler &h) {
             h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
@@ -134,33 +185,31 @@ void CG::initGPUdataStructures(const std::size_t blockCountGPUTotal) {
     }
 
     // Matrix A GPU
-    A_gpu = malloc_device<conf::fp_type>(blockCountGPUTotal * conf::matrixBlockSize * conf::matrixBlockSize,
-                                         gpuQueue);
+    A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
     gpuQueue.submit([&](handler &h) {
-        h.memcpy(A_gpu, A.matrixData.data(),
-                 blockCountGPUTotal * conf::matrixBlockSize * conf::matrixBlockSize * sizeof(conf::fp_type));
+        h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
     }).wait();
 
     // Right-hand side b GPU
-    b_gpu = malloc_device<conf::fp_type>(blockCountGPU * conf::matrixBlockSize, gpuQueue);
+    b_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
     gpuQueue.submit([&](handler &h) {
-        h.memcpy(b_gpu, b.rightHandSideData.data(), blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
+        h.memcpy(b_gpu, b.rightHandSideData.data(), b.rightHandSideData.size() * sizeof(conf::fp_type));
     }).wait();
 
     // result vector x
     x_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
     // residual vector r
-    r_gpu = malloc_device<conf::fp_type>(blockCountGPU * conf::matrixBlockSize, gpuQueue);
+    r_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
     // vector d
     d_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
     // vector q
-    q_gpu = malloc_device<conf::fp_type>(blockCountGPU * conf::matrixBlockSize, gpuQueue);
+    q_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
     // temporary vector
-    tmp_gpu = malloc_device<conf::fp_type>(blockCountGPU * conf::matrixBlockSize, gpuQueue);
+    tmp_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
     if (A_gpu == nullptr || b_gpu == nullptr || x_gpu == nullptr
         || r_gpu == nullptr || d_gpu == nullptr || q_gpu == nullptr || tmp_gpu == nullptr) {
@@ -282,7 +331,7 @@ void CG::initCG(conf::fp_type &delta_zero, conf::fp_type &delta_new) {
 void CG::compute_q() {
 
 
-    if (blockCountGPU != 0 && blockCountCPU != 0) {
+    if ((blockCountGPU != 0 && blockCountCPU != 0 )) {
         // exchange parts of d vector so that both CPU and GPU hold the complete vector
         gpuQueue.submit([&](handler &h) {
             h.memcpy(&d_gpu[blockStartCPU * conf::matrixBlockSize], &d_cpu[blockStartCPU * conf::matrixBlockSize],
@@ -296,23 +345,22 @@ void CG::compute_q() {
     waitAllQueues();
 
 
-
     // q = Ad
     if (blockCountGPU != 0) {
         MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
                                                   blockCountGPU, A.blockCountXY, A.blockCountXY);
     }
     if (blockCountCPU != 0) {
-        auto startMV = std::chrono::steady_clock::now();
+//        auto startMV = std::chrono::steady_clock::now();
 
 
         MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
                                                       blockCountCPU, A.blockCountXY, A.blockCountXY);
 
-        cpuQueue.wait();
-        auto endMV = std::chrono::steady_clock::now();
-        auto iterationTime = std::chrono::duration<double, std::milli>(endMV - startMV).count();
-        std::cout << "--------------------------------- MV time: " << iterationTime << "ms" << std::endl;
+//        cpuQueue.wait();
+//        auto endMV = std::chrono::steady_clock::now();
+//        auto iterationTime = std::chrono::duration<double, std::milli>(endMV - startMV).count();
+//        std::cout << "--------------------------------- MV time: " << iterationTime << "ms" << std::endl;
 
     }
     waitAllQueues();
@@ -416,7 +464,7 @@ void CG::update_x(conf::fp_type alpha) {
 }
 
 void CG::computeRealResidual() {
-    if (blockCountGPU != 0 && blockCountCPU != 0) {
+    if ((blockCountGPU != 0 && blockCountCPU != 0 )) {
         // exchange parts of x vector so that both CPU and GPU hold the complete vector
         gpuQueue.submit([&](handler &h) {
             h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize],
@@ -451,14 +499,14 @@ void CG::computeRealResidual() {
 }
 
 void CG::computeRealResidual_CommunicationHiding() {
-    // if (blockCountGPU != 0 && blockCountCPU != 0) {
+    // if (blockCountGPU != 0 && blockCountCPU != 0 || rebalanced) {
     //     // exchange parts of x vector so that both CPU and GPU hold the complete vector. Happens asynchronously.
     //     gpuQueue.submit([&](handler& h) {
-    //         h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize],
-    //                  blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
+    //         h.memcpy(&x_gpu[blockStartCPU_memoryTransfer * conf::matrixBlockSize], &x[blockStartCPU_memoryTransfer * conf::matrixBlockSize],
+    //                  blockCountCPU_memoryTransfer * conf::matrixBlockSize * sizeof(conf::fp_type));
     //     });
     //     gpuQueue.submit([&](handler& h) {
-    //         h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
+    //         h.memcpy(x.data(), x_gpu, blockCountGPU_memoryTransfer * conf::matrixBlockSize * sizeof(conf::fp_type));
     //     });
     //
     //     // perform partial matrix-vector products with data that is already on the GPU / CPU

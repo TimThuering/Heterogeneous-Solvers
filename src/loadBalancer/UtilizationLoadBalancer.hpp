@@ -9,7 +9,7 @@
 class UtilizationLoadBalancer : public LoadBalancer {
 
 public:
-    UtilizationLoadBalancer(int updateInterval);
+    UtilizationLoadBalancer(int updateInterval, double initialProportionGPU);
 
 
     conf::fp_type getNewProportionGPU(MetricsTracker &metricsTracker) override;

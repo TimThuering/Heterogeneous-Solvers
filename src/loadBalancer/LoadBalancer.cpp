@@ -1,5 +1,5 @@
 #include "LoadBalancer.hpp"
 
-LoadBalancer::LoadBalancer(int updateInterval) : updateInterval(updateInterval) {
+LoadBalancer::LoadBalancer(int updateInterval, double initialProportionGPU) : updateInterval(updateInterval), currentProportionGPU(initialProportionGPU) {
 
 }

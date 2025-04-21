@@ -50,6 +50,8 @@ private:
     std::size_t blockCountCPU;
     std::size_t blockStartCPU;
 
+
+
     void initGPUdataStructures(std::size_t blockCountGPUTotal);
 
     void initCPUdataStructures();
