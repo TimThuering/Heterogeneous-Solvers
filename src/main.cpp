@@ -12,6 +12,7 @@
 #include "LoadBalancer.hpp"
 #include "StaticLoadBalancer.hpp"
 #include "UtilizationLoadBalancer.hpp"
+#include "RuntimeLoadBalancer.hpp"
 
 using namespace sycl;
 
@@ -52,15 +53,16 @@ int main(int argc, char* argv[]) {
 //    hws::system_hardware_sampler samplerUtil{hws::sample_category::general};
 
 
-    queue gpuQueue(gpu_selector_v);
-    queue cpuQueue(cpu_selector_v);
+    queue gpuQueue(gpu_selector_v, sycl::property::queue::enable_profiling());
+    queue cpuQueue(cpu_selector_v, sycl::property::queue::enable_profiling());
 
     std::cout << "GPU: " << gpuQueue.get_device().get_info<info::device::name>() << std::endl;
     std::cout << "CPU: " << cpuQueue.get_device().get_info<info::device::name>() << std::endl;
 
     std::shared_ptr<LoadBalancer> loadBalancer;
 //    loadBalancer = std::make_shared<UtilizationLoadBalancer>(10,0.8);
-    loadBalancer = std::make_shared<StaticLoadBalancer>(0.8,10);
+    loadBalancer = std::make_shared<StaticLoadBalancer>(10,0.8);
+    loadBalancer = std::make_shared<RuntimeLoadBalancer>(10,0.8);
 
     CG algorithm(path_A, path_b, cpuQueue, gpuQueue, loadBalancer);
 

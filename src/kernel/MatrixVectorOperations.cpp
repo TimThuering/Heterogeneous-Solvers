@@ -5,7 +5,7 @@
 
 using namespace sycl;
 
-void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type* A, const conf::fp_type* b,
+sycl::event MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type* A, const conf::fp_type* b,
                                                conf::fp_type* result,
                                                const int blockStart_i,
                                                const int blockStart_j, const int blockCount_i, const int blockCount_j,
@@ -20,7 +20,7 @@ void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type
     const bool addToPreviousEntries = !reset;
 
 
-    queue.submit([&](handler& h) {
+    sycl::event event = queue.submit([&](handler& h) {
         h.parallel_for(kernelRange, [=](auto& nd_item) {
             // row i in the matrix
             const int i = nd_item.get_global_id() + blockStart_i * matrixBlockSize;
@@ -92,9 +92,11 @@ void MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type
             result[i] = resultValue;
         });
     });
+
+    return event;
 }
 
-void MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b,
+sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b,
     conf::fp_type* result, const int blockStart_i, const int blockStart_j, const int blockCount_i, const int blockCount_j, const int blockCountXY,
     const bool reset) {
 
@@ -107,7 +109,7 @@ void MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, const con
     const bool addToPreviousEntries = !reset;
 
 
-    queue.submit([&](handler& h) {
+    sycl::event event = queue.submit([&](handler& h) {
         h.parallel_for(kernelRange, [=](auto& id) {
             // row i in the matrix
             const int i = id[0] + blockStart_i * matrixBlockSize;
@@ -179,4 +181,6 @@ void MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, const con
             result[i] = resultValue;
         });
     });
+
+    return event;
 }

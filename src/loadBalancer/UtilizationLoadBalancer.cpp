@@ -11,7 +11,7 @@ UtilizationLoadBalancer::UtilizationLoadBalancer(int updateInterval, double init
 
 }
 
-conf::fp_type UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTracker) {
+double UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTracker) {
     if (metricsTracker.blockCounts_GPU.back() == 0 || metricsTracker.blockCounts_CPU.back() == 0) {
         // if only one component is used do not reevaluate the proportions
         return currentProportionGPU;

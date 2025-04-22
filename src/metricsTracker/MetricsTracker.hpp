@@ -23,6 +23,9 @@ public:
     std::vector<std::size_t > blockCounts_GPU;
     std::vector<std::size_t > blockCounts_CPU;
 
+    std::vector<double> matrixVectorTimes_GPU;
+    std::vector<double> matrixVectorTimes_CPU;
+
     std::vector<double> iterationTimes;
 
     void startTracking();

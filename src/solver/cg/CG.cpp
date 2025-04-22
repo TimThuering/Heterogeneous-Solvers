@@ -278,8 +278,6 @@ void CG::initCG(conf::fp_type &delta_zero, conf::fp_type &delta_new) {
 }
 
 void CG::compute_q() {
-
-
     if ((blockCountGPU != 0 && blockCountCPU != 0)) {
         // exchange parts of d vector so that both CPU and GPU hold the complete vector
         gpuQueue.submit([&](handler &h) {
@@ -290,29 +288,34 @@ void CG::compute_q() {
             h.memcpy(d_cpu, d_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
     }
-
     waitAllQueues();
 
 
+    sycl::event eventGPU;
+    sycl::event eventCPU;
     // q = Ad
     if (blockCountGPU != 0) {
-        MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
-                                                  blockCountGPU, A.blockCountXY, A.blockCountXY);
+        eventGPU = MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
+                                                             blockCountGPU, A.blockCountXY, A.blockCountXY);
     }
     if (blockCountCPU != 0) {
-//        auto startMV = std::chrono::steady_clock::now();
-
-
-        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
-                                                      blockCountCPU, A.blockCountXY, A.blockCountXY);
-
-//        cpuQueue.wait();
-//        auto endMV = std::chrono::steady_clock::now();
-//        auto iterationTime = std::chrono::duration<double, std::milli>(endMV - startMV).count();
-//        std::cout << "--------------------------------- MV time: " << iterationTime << "ms" << std::endl;
+        eventCPU = MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu,
+                                                                 blockStartCPU, 0,
+                                                                 blockCountCPU, A.blockCountXY, A.blockCountXY);
 
     }
     waitAllQueues();
+
+    metricsTracker.matrixVectorTimes_GPU.push_back(
+            static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
+                                eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
+    metricsTracker.matrixVectorTimes_CPU.push_back(
+            static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
+                                eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
+
+//    std::cout << std::endl;
+//    std::cout << "------------------------------------ MV time GPU: " << static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << std::endl;
+//    std::cout << "------------------------------------ MV time CPU: " << static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << std::endl;
 }
 
 void CG::compute_q_CommunicationHiding() {

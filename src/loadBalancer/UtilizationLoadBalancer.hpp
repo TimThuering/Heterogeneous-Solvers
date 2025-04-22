@@ -12,7 +12,7 @@ public:
     UtilizationLoadBalancer(int updateInterval, double initialProportionGPU);
 
 
-    conf::fp_type getNewProportionGPU(MetricsTracker &metricsTracker) override;
+    double getNewProportionGPU(MetricsTracker &metricsTracker) override;
 
 };
 

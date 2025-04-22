@@ -7,10 +7,11 @@
 class StaticLoadBalancer : public LoadBalancer {
 
 public:
-    StaticLoadBalancer(conf::fp_type gpuProportion, int updateInterval);
-    conf::fp_type gpuProportion;
+    StaticLoadBalancer(int updateInterval, double gpuProportion);
 
-    conf::fp_type getNewProportionGPU(MetricsTracker &metricsTracker) override;
+    double gpuProportion;
+
+    double getNewProportionGPU(MetricsTracker &metricsTracker) override;
 
     ~StaticLoadBalancer() {}
 
