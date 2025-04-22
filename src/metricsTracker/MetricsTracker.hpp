@@ -37,6 +37,9 @@ private:
     std::size_t nextTimePoint_GPU = 0;
     std::size_t nextTimePoint_CPU = 0;
 
+    std::size_t nextTimePointPower_GPU = 0;
+    std::size_t nextTimePointPower_CPU = 0;
+
 
 };
 

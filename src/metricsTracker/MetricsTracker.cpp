@@ -60,6 +60,27 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
             averageUtilization_CPU.push_back(averageUtil);
             std::cout << "Average CPU util: " << averageUtil << std::endl;
         }
+
+        auto *cpu_sampler_power = dynamic_cast<hws::cpu_hardware_sampler *>(powerSampler.samplers()[0].get());
+        auto *gpu_sampler_power = dynamic_cast<hws::gpu_nvidia_hardware_sampler *>(powerSampler.samplers()[1].get());
+
+        hws::cpu_power_samples powerSamples_CPU = cpu_sampler_power->power_samples();
+        hws::nvml_power_samples powerSamples_GPU = gpu_sampler_power->power_samples();
+
+        if (powerSamples_CPU.get_power_total_energy_consumption().has_value()) {
+            double powerDraw = 0.0;
+            if (nextTimePointPower_CPU < powerSamples_CPU.get_power_total_energy_consumption().value().size()) {
+
+                powerDraw = powerSamples_CPU.get_power_total_energy_consumption().value().back() -
+                            powerSamples_CPU.get_power_total_energy_consumption().value()[nextTimePointPower_CPU];
+            } else {
+                std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
+            }
+            nextTimePointPower_CPU = generalSamples_CPU.get_compute_utilization().value().size();
+            averagePowerDraw_CPU.push_back(powerDraw);
+            std::cout << "CPU Power draw " << powerDraw << std::endl;
+        }
+
     }
 
     utilizationSampler.resume_sampling();
