@@ -306,16 +306,22 @@ void CG::compute_q() {
     }
     waitAllQueues();
 
-    metricsTracker.matrixVectorTimes_GPU.push_back(
-            static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
-                                eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
-    metricsTracker.matrixVectorTimes_CPU.push_back(
-            static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
-                                eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
+    // append execution times
+    if (blockCountGPU != 0) {
+        metricsTracker.matrixVectorTimes_GPU.push_back(
+                static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
+                                    eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
+    } else {
+        metricsTracker.matrixVectorTimes_GPU.push_back(0);
+    }
+    if (blockCountCPU != 0) {
+        metricsTracker.matrixVectorTimes_CPU.push_back(
+                static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
+                                    eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
+    } else {
+        metricsTracker.matrixVectorTimes_CPU.push_back(0);
+    }
 
-//    std::cout << std::endl;
-//    std::cout << "------------------------------------ MV time GPU: " << static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << std::endl;
-//    std::cout << "------------------------------------ MV time CPU: " << static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << std::endl;
 }
 
 void CG::compute_q_CommunicationHiding() {
