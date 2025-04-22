@@ -34,11 +34,6 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                         generalSamples_GPU.get_compute_utilization().value().end());
                 averageUtil =
                         std::accumulate(GPU_util.begin(), GPU_util.end(), 0.0) / static_cast<double>(GPU_util.size());
-//                std::cout << "[";
-//                for (auto &util: GPU_util) {
-//                    std::cout << util << ", ";
-//                }
-//                std::cout << "]" << std::endl;
             } else {
                 std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!" << std::endl;
                 averageUtil = generalSamples_GPU.get_compute_utilization().value().back();

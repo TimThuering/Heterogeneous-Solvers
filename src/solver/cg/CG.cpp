@@ -117,6 +117,7 @@ void CG::solveHeterogeneous() {
 
     waitAllQueues();
     metricsTracker.endTracking();
+    std::cout << "Total Energy: " << metricsTracker.averageUtilization_GPU.back() +  metricsTracker.averageUtilization_CPU.back() << std::endl;
 
     // TODO check if correct with memory transfer if change in last iteration
     if (blockCountGPU != 0) {

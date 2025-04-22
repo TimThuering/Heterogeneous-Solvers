@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<LoadBalancer> loadBalancer;
 //    loadBalancer = std::make_shared<UtilizationLoadBalancer>(10,0.8);
-    loadBalancer = std::make_shared<StaticLoadBalancer>(10,0.8);
+//    loadBalancer = std::make_shared<StaticLoadBalancer>(10,0.9);
     loadBalancer = std::make_shared<RuntimeLoadBalancer>(10,0.8);
 
     CG algorithm(path_A, path_b, cpuQueue, gpuQueue, loadBalancer);
