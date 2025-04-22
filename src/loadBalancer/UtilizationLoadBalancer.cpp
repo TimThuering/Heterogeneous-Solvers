@@ -12,8 +12,19 @@ UtilizationLoadBalancer::UtilizationLoadBalancer(int updateInterval, double init
 }
 
 conf::fp_type UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTracker) {
-    double GPU_util = metricsTracker.averageUtilization_GPU.back();
-    double CPU_util = metricsTracker.averageUtilization_CPU.back();
+    if (currentProportionGPU == 1 || currentProportionGPU == 0) {
+        // if only one component is used do not reevaluate the proportions
+        return currentProportionGPU;
+    }
+    double GPU_util = 0;
+    double CPU_util = 0;
+    if (!metricsTracker.averageUtilization_GPU.empty() && !metricsTracker.averageUtilization_CPU.empty()) {
+        GPU_util = metricsTracker.averageUtilization_GPU.back();
+        CPU_util = metricsTracker.averageUtilization_CPU.back();
+    } else {
+        // return old proportion as fallback
+        return currentProportionGPU;
+    }
 
     double efficiencyGPU = GPU_util / currentProportionGPU;
     double efficiencyCPU = CPU_util / (1 - currentProportionGPU);
@@ -21,5 +32,5 @@ conf::fp_type UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker &metri
     currentProportionGPU = efficiencyCPU / (efficiencyGPU + efficiencyCPU);
 
     std::cout << efficiencyCPU / (efficiencyGPU + efficiencyCPU) << std::endl;
-    return 0.5;
+    return currentProportionGPU;
 }

@@ -84,7 +84,7 @@ void CG::solveHeterogeneous() {
             gpuProportion = loadBalancer->getNewProportionGPU(metricsTracker);
             std::size_t blockCountGPU_new = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
             std::size_t blockCountCPU_new = A.blockCountXY - blockCountGPU_new;
-            std::size_t blockStartCPU_new = blockCountCPU_new;
+            std::size_t blockStartCPU_new = blockCountGPU_new;
 
             if (blockCountGPU_new > blockCountGPU) {
                 std::size_t additionalBlocks = blockCountGPU_new - blockCountGPU;
@@ -100,7 +100,13 @@ void CG::solveHeterogeneous() {
                              additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
                 });
 
-            } else if (blockStartCPU_new > blockCountCPU) {
+                // exchange missing parts of r vector
+                gpuQueue.submit([&](handler &h) {
+                    h.memcpy(&r_gpu[blockStartCPU * conf::matrixBlockSize], &r_cpu[blockStartCPU * conf::matrixBlockSize],
+                             additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                });
+
+            } else if (blockCountCPU_new > blockCountCPU) {
                 std::size_t additionalBlocks = blockCountCPU_new - blockCountCPU;
 
                 // exchange missing parts of d vector
@@ -111,10 +117,15 @@ void CG::solveHeterogeneous() {
 
                 // exchange missing parts of x vector
                 gpuQueue.submit([&](handler &h) {
-                    h.memcpy(&x_gpu[blockStartCPU_new * conf::matrixBlockSize], &x[blockStartCPU_new * conf::matrixBlockSize],
+                    h.memcpy(&x[blockStartCPU_new * conf::matrixBlockSize], &x_gpu[blockStartCPU_new * conf::matrixBlockSize],
                              additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
                 });
 
+                // exchange missing parts of x vector
+                gpuQueue.submit([&](handler &h) {
+                    h.memcpy(&r_cpu[blockStartCPU_new * conf::matrixBlockSize], &r_gpu[blockStartCPU_new * conf::matrixBlockSize],
+                             additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                });
             }
 
             waitAllQueues();
@@ -156,9 +167,6 @@ void CG::solveHeterogeneous() {
         std::cout << iteration << ": Iteration time: " << iterationTime << "ms" << std::endl;
         iteration++;
         firstIteration = false;
-        std::cout << delta_new << std::endl;
-
-
     }
 
     auto end = std::chrono::steady_clock::now();
@@ -180,9 +188,9 @@ void CG::solveHeterogeneous() {
 }
 
 void CG::initGPUdataStructures(const std::size_t blockCountGPUTotal) {
-    if (blockCountGPU == 0) {
-        return;
-    }
+//    if (blockCountGPU == 0) {
+//        return;
+//    }
 
     // Matrix A GPU
     A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
@@ -218,9 +226,9 @@ void CG::initGPUdataStructures(const std::size_t blockCountGPUTotal) {
 }
 
 void CG::initCPUdataStructures() {
-    if (blockCountCPU == 0) {
-        return;
-    }
+//    if (blockCountCPU == 0) {
+//        return;
+//    }
 
     // residual vector r
     r_cpu = malloc_host<conf::fp_type>(b.rightHandSideData.size(), cpuQueue);

@@ -70,7 +70,7 @@ endif ()
 message("Building the hardware sampling library")
 # build and link the hws library
 set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
-set(HWS_SAMPLING_INTERVAL 10 CACHE INTERNAL "" FORCE)
+set(HWS_SAMPLING_INTERVAL 2 CACHE INTERNAL "" FORCE)
 FetchContent_Declare(
         hws
         GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
