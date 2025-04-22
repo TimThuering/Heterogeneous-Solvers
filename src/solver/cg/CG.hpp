@@ -51,6 +51,7 @@ private:
     std::size_t blockStartCPU;
 
 
+    void rebalanceProportions(double &gpuProportion);
 
     void initGPUdataStructures(std::size_t blockCountGPUTotal);
 

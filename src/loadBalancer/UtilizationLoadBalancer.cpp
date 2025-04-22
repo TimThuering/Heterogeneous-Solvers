@@ -12,7 +12,7 @@ UtilizationLoadBalancer::UtilizationLoadBalancer(int updateInterval, double init
 }
 
 conf::fp_type UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTracker) {
-    if (currentProportionGPU == 1 || currentProportionGPU == 0) {
+    if (metricsTracker.blockCounts_GPU.back() == 0 || metricsTracker.blockCounts_CPU.back() == 0) {
         // if only one component is used do not reevaluate the proportions
         return currentProportionGPU;
     }
@@ -32,5 +32,6 @@ conf::fp_type UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker &metri
     currentProportionGPU = efficiencyCPU / (efficiencyGPU + efficiencyCPU);
 
     std::cout << efficiencyCPU / (efficiencyGPU + efficiencyCPU) << std::endl;
-    return currentProportionGPU;
+    return 1;
+//    return currentProportionGPU;
 }

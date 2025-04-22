@@ -59,7 +59,8 @@ int main(int argc, char* argv[]) {
     std::cout << "CPU: " << cpuQueue.get_device().get_info<info::device::name>() << std::endl;
 
     std::shared_ptr<LoadBalancer> loadBalancer;
-    loadBalancer = std::make_shared<UtilizationLoadBalancer>(10,0.8);
+//    loadBalancer = std::make_shared<UtilizationLoadBalancer>(10,0.8);
+    loadBalancer = std::make_shared<StaticLoadBalancer>(0.8,10);
 
     CG algorithm(path_A, path_b, cpuQueue, gpuQueue, loadBalancer);
 
