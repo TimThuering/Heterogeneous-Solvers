@@ -117,6 +117,8 @@ void CG::solveHeterogeneous() {
 
     waitAllQueues();
     metricsTracker.endTracking();
+    std::string path = "./output";
+    metricsTracker.writeJSON(path);
     // TODO check if correct with memory transfer if change in last iteration
     if (blockCountGPU != 0) {
         gpuQueue.submit([&](handler &h) {
