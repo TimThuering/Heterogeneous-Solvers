@@ -208,13 +208,10 @@ std::string MetricsTracker::vectorToJSONString(std::vector<T> vector) {
 
     jsonString += "[";
     for (unsigned int i = 0; i < vector.size() - 1; ++i) {
-        jsonString += "\"";
         jsonString += std::to_string(vector[i]);
-        jsonString += "\", ";
+        jsonString += ", ";
     }
-    jsonString += "\"";
     jsonString += std::to_string(vector[vector.size() - 1]);
-    jsonString += "\"";
     jsonString += "]";
 
     return jsonString;
