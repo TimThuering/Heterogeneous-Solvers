@@ -169,36 +169,28 @@ void MetricsTracker::writeJSON(std::string &path) {
             powerSamples_CPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
 
     std::vector<long> timePointsGPU_general;
-    std::transform(gpu_sampler->sampling_time_points().begin(),
-                   gpu_sampler->sampling_time_points().end(), std::back_inserter(timePointsGPU_general),
-                   [](std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1L, 1000000000L>>> &x) {
-                       return x.time_since_epoch().count();
-                   });
+    for (auto &x: gpu_sampler->sampling_time_points()) {
+        timePointsGPU_general.push_back(x.time_since_epoch().count());
+    }
     metricsJSON << "\"timePointsGPU_general\":" + vectorToJSONString<long>(timePointsGPU_general) + ",\n";
 
-//    std::vector<long> timePointsCPU_general;
-//    std::transform(cpu_sampler->sampling_time_points().begin(),
-//                   cpu_sampler->sampling_time_points().end(), std::back_inserter(timePointsCPU_general),
-//                   [](std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1L, 1000000000L>>> &x) {
-//                       return x.time_since_epoch().count();
-//                   });
-//    metricsJSON << "\"timePointsCPU_general\":" + vectorToJSONString<long>(timePointsCPU_general) + ",\n";
+    std::vector<long> timePointsCPU_general;
+    for (auto &x: cpu_sampler->sampling_time_points()) {
+        timePointsCPU_general.push_back(x.time_since_epoch().count());
+    }
+    metricsJSON << "\"timePointsCPU_general\":" + vectorToJSONString<long>(timePointsCPU_general) + ",\n";
 
     std::vector<long> timePointsGPU_power;
-    std::transform(gpu_sampler_power->sampling_time_points().begin(),
-                   gpu_sampler_power->sampling_time_points().end(), std::back_inserter(timePointsGPU_power),
-                   [](std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1L, 1000000000L>>> &x) {
-                       return x.time_since_epoch().count();
-                   });
+    for (auto &x: gpu_sampler_power->sampling_time_points()) {
+        timePointsGPU_power.push_back(x.time_since_epoch().count());
+    }
     metricsJSON << "\"timePointsGPU_power\":" + vectorToJSONString<long>(timePointsGPU_power) + ",\n";
-//
-//    std::vector<long> timePointsCPU_power;
-//    std::transform(cpu_sampler_power->sampling_time_points().begin(),
-//                   cpu_sampler_power->sampling_time_points().end(), std::back_inserter(timePointsCPU_power),
-//                   [](std::chrono::time_point<std::chrono::_V2::steady_clock, std::chrono::duration<long, std::ratio<1L, 1000000000L>>> &x) {
-//                       return x.time_since_epoch().count();
-//                   });
-//    metricsJSON << "\"timePointsCPU_power\":" + vectorToJSONString<long>(timePointsCPU_power) + ",\n";
+
+    std::vector<long> timePointsCPU_power;
+    for (auto &x: cpu_sampler_power->sampling_time_points()) {
+        timePointsCPU_power.push_back(x.time_since_epoch().count());
+    }
+    metricsJSON << "\"timePointsCPU_power\":" + vectorToJSONString<long>(timePointsCPU_power) + "\n";
 
     metricsJSON << "}\n";
 
