@@ -31,15 +31,15 @@ int main(int argc, char *argv[]) {
              cxxopts::value<std::string>())
             ("b,path_b", "path to .txt file containing the right-hand side b", cxxopts::value<std::string>())
             ("o,output", "path to the output directory", cxxopts::value<std::string>())
-            ("m,mode","specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'")
-            ("b,matrix_bsz", "block size for the symmetric matrix storage", cxxopts::value<int>())
+            ("m,mode","specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'", cxxopts::value<std::string>())
+            ("z,matrix_bsz", "block size for the symmetric matrix storage", cxxopts::value<int>())
             ("w,wg_size", "work-group size for matrix-vector operations", cxxopts::value<int>())
             ("v,wg_size_vec", "work-group size for vector-vector operations", cxxopts::value<int>())
             ("s,wg_size_sp", "work-group size for the final scalar product step on GPUs", cxxopts::value<int>())
             ("i,i_max", "maximum number of iterations", cxxopts::value<int>())
             ("e,eps", "epsilon value for the termination of the cg algorithm", cxxopts::value<double>())
             ("u,update_int", "interval in which CPU/GPU distribution will be rebalanced", cxxopts::value<int>())
-            ("g,init_gpu_perc", "initial proportion of work assigned to gpu for dynamic load balancing", cxxopts::value<double>())
+            ("g,init_gpu_perc", "initial proportion of work assigned to gpu", cxxopts::value<double>())
             ;
 
     const auto arguments = argumentOptions.parse(argc, argv);

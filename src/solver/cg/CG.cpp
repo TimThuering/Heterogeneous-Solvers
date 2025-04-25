@@ -83,10 +83,16 @@ void CG::solveHeterogeneous() {
             rebalanceProportions(gpuProportion);
         }
 
+        auto timePoint1 = std::chrono::steady_clock::now();
         compute_q(); // q = Ad
+
+        auto timePoint2 = std::chrono::steady_clock::now();
         compute_alpha(alpha, delta_new); // 𝛼 = δ_new / d^T * q
+
+        auto timePoint3 = std::chrono::steady_clock::now();
         update_x(alpha); // x = x + 𝛼d
 
+        auto timePoint4 = std::chrono::steady_clock::now();
         if (iteration % 50 == 0) {
             // compute real residual every 50 iterations --> requires additional matrix vector product
             computeRealResidual(); // r = b - Ax
@@ -94,8 +100,11 @@ void CG::solveHeterogeneous() {
             // compute residual without an additional matrix vector product
             update_r(alpha); // r = r - 𝛼q
         }
+
+        auto timePoint5 = std::chrono::steady_clock::now();
         delta_old = delta_new; // δ_old = δ_new
         compute_delta_new(delta_new); // δ_new = r^T * r
+        auto timePoint6 = std::chrono::steady_clock::now();
         beta = delta_new / delta_old; // β = δ_new / δ_old
         compute_d(beta); // d = r + βd
 
@@ -104,6 +113,20 @@ void CG::solveHeterogeneous() {
         metricsTracker.updateMetrics(iteration, blockCountGPU, blockCountCPU, iterationTime,
                                      loadBalancer->updateInterval);
         std::cout << iteration << ": Iteration time: " << iterationTime << "ms" << std::endl;
+
+        auto time_q = std::chrono::duration<double, std::milli>(timePoint2 - timePoint1).count();
+        auto time_alpha = std::chrono::duration<double, std::milli>(timePoint3 - timePoint2).count();
+        auto time_x = std::chrono::duration<double, std::milli>(timePoint4 - timePoint3).count();
+        auto time_r = std::chrono::duration<double, std::milli>(timePoint5 - timePoint4).count();
+        auto time_delta = std::chrono::duration<double, std::milli>(timePoint6 - timePoint5).count();
+        auto time_d = std::chrono::duration<double, std::milli>(endIteration - timePoint6).count();
+
+        metricsTracker.times_q.push_back(time_q);
+        metricsTracker.times_alpha.push_back(time_alpha);
+        metricsTracker.times_x.push_back(time_x);
+        metricsTracker.times_r.push_back(time_r);
+        metricsTracker.times_delta.push_back(time_delta);
+        metricsTracker.times_d.push_back(time_d);
 
 
         iteration++;
@@ -278,6 +301,8 @@ void CG::initCG(conf::fp_type &delta_zero, conf::fp_type &delta_new) {
 }
 
 void CG::compute_q() {
+    auto startmemcpy = std::chrono::steady_clock::now();
+
     if ((blockCountGPU != 0 && blockCountCPU != 0)) {
         // exchange parts of d vector so that both CPU and GPU hold the complete vector
         gpuQueue.submit([&](handler &h) {
@@ -289,6 +314,10 @@ void CG::compute_q() {
         });
     }
     waitAllQueues();
+    auto endmemcpy = std::chrono::steady_clock::now();
+
+    auto memcpyTime = std::chrono::duration<double, std::milli>(endmemcpy - startmemcpy).count();
+    metricsTracker.memcopy_d.push_back(memcpyTime);
 
 
     sycl::event eventGPU;

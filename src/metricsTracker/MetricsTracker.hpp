@@ -26,6 +26,15 @@ public:
     std::vector<double> matrixVectorTimes_GPU;
     std::vector<double> matrixVectorTimes_CPU;
 
+    std::vector<double> times_q;
+    std::vector<double> times_alpha;
+    std::vector<double> times_x;
+    std::vector<double> times_r;
+    std::vector<double> times_delta;
+    std::vector<double> times_d;
+
+    std::vector<double> memcopy_d;
+
     std::vector<double> iterationTimes;
 
     void startTracking();

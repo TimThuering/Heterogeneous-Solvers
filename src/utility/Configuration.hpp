@@ -21,7 +21,7 @@ namespace conf {
         std::size_t iMax = 1e5; /// maximum number of iterations
         double epsilon = 1.0e-6; /// epsilon value for the termination of the cg algorithm
         int updateInterval = 10; /// interval in which CPU/GPU distribution will be rebalanced
-        double initialProportionGPU = 0.5; /// initial proportion of work assigned to gpu for dynamic load balancing
+        double initialProportionGPU = 0.5; /// initial proportion of work assigned to gpu
         std::string outputPath = "./output";
     };
 

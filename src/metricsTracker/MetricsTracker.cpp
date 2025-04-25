@@ -153,6 +153,15 @@ void MetricsTracker::writeJSON(std::string &path) {
     metricsJSON << "\"matrixVectorTimes_GPU\":" + vectorToJSONString<double>(matrixVectorTimes_GPU) + ",\n";
     metricsJSON << "\"matrixVectorTimes_CPU\":" + vectorToJSONString<double>(matrixVectorTimes_CPU) + ",\n";
 
+    metricsJSON << "\"times_q\":" + vectorToJSONString<double>(times_q) + ",\n";
+    metricsJSON << "\"times_alpha\":" + vectorToJSONString<double>(times_alpha) + ",\n";
+    metricsJSON << "\"times_x\":" + vectorToJSONString<double>(times_x) + ",\n";
+    metricsJSON << "\"times_r\":" + vectorToJSONString<double>(times_r) + ",\n";
+    metricsJSON << "\"times_delta\":" + vectorToJSONString<double>(times_delta) + ",\n";
+    metricsJSON << "\"times_d\":" + vectorToJSONString<double>(times_d) + ",\n";
+
+    metricsJSON << "\"memcopy_d\":" + vectorToJSONString<double>(memcopy_d) + ",\n";
+
     metricsJSON << "\"rawUtilizationData_GPU\":" + vectorToJSONString<unsigned int>(
             generalSamples_GPU.get_compute_utilization().value_or(std::vector<unsigned int>(0))) + ",\n";
     metricsJSON << "\"rawUtilizationData_CPU\":" + vectorToJSONString<double>(
