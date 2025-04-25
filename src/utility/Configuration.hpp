@@ -17,11 +17,11 @@ namespace conf {
         int matrixBlockSize = 128; /// Block size for storing the symmetric matrix in memory
         int workGroupSize = 128; /// Work-group size for matrix-vector operations
         int workGroupSizeVector = 128; /// Work-group size for vector-vector operations
-        int workGroupSizeFinalScalarProduct = 512; /// Work-group size for the scalar product on GPUs
+        int workGroupSizeFinalScalarProduct = 512; /// Work-group size for the final scalar product step on GPUs
         std::size_t iMax = 1e5; /// maximum number of iterations
-        conf::fp_type epsilon = 1.0e-6; /// epsilon value for the termination of the cg algorithm
-        int updateInterval = 10;
-        double initialProportionGPU = 0.5;
+        double epsilon = 1.0e-6; /// epsilon value for the termination of the cg algorithm
+        int updateInterval = 10; /// interval in which CPU/GPU distribution will be rebalanced
+        double initialProportionGPU = 0.5; /// initial proportion of work assigned to gpu for dynamic load balancing
         std::string outputPath = "./output";
     };
 
@@ -37,7 +37,7 @@ namespace conf {
 
     inline std::size_t& iMax = get().iMax;
 
-    inline conf::fp_type& epsilon = get().epsilon;
+    inline double& epsilon = get().epsilon;
 
     inline int& updateInterval = get().updateInterval;
 
