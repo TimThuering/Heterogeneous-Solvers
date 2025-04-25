@@ -48,6 +48,7 @@ void CG::solveHeterogeneous() {
     const std::size_t blockCountGPUTotal = (A.blockCountXY * (A.blockCountXY + 1) / 2) - (blockCountCPU * (blockCountCPU
                                                                                                            + 1) / 2);
 
+
     // initialize data structures
     initGPUdataStructures(blockCountGPUTotal);
     initCPUdataStructures();

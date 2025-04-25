@@ -940,3 +940,107 @@ TEST_F(vectorOperationsTest, scalarProuctLowerLongVector) {
 
     EXPECT_NEAR(result[0], resultValue, 1e-12);
 }
+
+
+// Test scalar product CPU
+TEST_F(vectorOperationsTest, scalarProductFull_CPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSizeVector = 4;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size(), -100);
+
+    unsigned int workGroupCount = VectorOperations::scalarProduct_CPU(queue, b.rightHandSideData.data(),
+                                                                  b.rightHandSideData.data(), result.data(), 0,
+                                                                  b.blockCountX);
+    queue.wait();
+    VectorOperations::sumFinalScalarProduct_CPU(queue, result.data(), workGroupCount);
+    queue.wait();
+
+    EXPECT_NEAR(result[0], 5.680372795233107, 1e-12);
+}
+
+TEST_F(vectorOperationsTest, scalarProductLowerVector_CPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSizeVector = 2;
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(b.rightHandSideData.size());
+
+    unsigned int workGroupCount = VectorOperations::scalarProduct_CPU(queue, b.rightHandSideData.data(),
+                                                                  b.rightHandSideData.data(), result.data(), 2, 2);
+    queue.wait();
+
+    VectorOperations::sumFinalScalarProduct_CPU(queue, result.data(), workGroupCount);
+    queue.wait();
+
+    EXPECT_NEAR(result[0], 1.7632937679652674, 1e-12);
+}
+
+TEST_F(vectorOperationsTest, scalarProductLongVector_CPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 128;
+    conf::workGroupSizeVector = 256;
+
+    std::vector<conf::fp_type> vector;
+    vector.resize(1024);
+
+    conf::fp_type resultValue = 0;
+    for (unsigned int i = 0; i < 1000; ++i) {
+        resultValue += std::sqrt(i) * std::sqrt(i);
+        vector[i] = std::sqrt(i);
+    }
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(1024, -100);
+
+    unsigned int workGroupCount = VectorOperations::scalarProduct_CPU(queue, vector.data(),
+                                                                  vector.data(), result.data(), 0, 8);
+    queue.wait();
+
+    VectorOperations::sumFinalScalarProduct_CPU(queue, result.data(), workGroupCount);
+    queue.wait();
+
+    EXPECT_NEAR(result[0], resultValue, 1e-12);
+}
+
+TEST_F(vectorOperationsTest, scalarProductLowerLongVector_CPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 128;
+    conf::workGroupSizeVector = 256;
+
+    std::vector<conf::fp_type> vector;
+    vector.resize(1024);
+
+    conf::fp_type resultValue = 0;
+    for (unsigned int i = 0; i < 1000; ++i) {
+        if (i >= 512) {
+            resultValue += std::sqrt(i) * std::sqrt(i);
+        }
+        vector[i] = std::sqrt(i);
+    }
+
+    const usm_allocator<conf::fp_type, usm::alloc::host> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result(allocator);
+    result.resize(1024, -100);
+
+    unsigned int workGroupCount = VectorOperations::scalarProduct_CPU(queue, vector.data(),
+                                                                  vector.data(), result.data(), 4, 4);
+    queue.wait();
+
+    VectorOperations::sumFinalScalarProduct_CPU(queue, result.data(), workGroupCount);
+    queue.wait();
+
+    EXPECT_NEAR(result[0], resultValue, 1e-12);
+
+}

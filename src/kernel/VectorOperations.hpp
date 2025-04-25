@@ -91,6 +91,13 @@ public:
      * @param workGroupCount work-group count from the previous step
      */
     static void sumFinalScalarProduct(sycl::queue& queue, conf::fp_type* result, unsigned int workGroupCount);
+
+    static unsigned int scalarProduct_CPU(sycl::queue& queue, const conf::fp_type* x, const conf::fp_type* y,
+                                      conf::fp_type* result,
+                                      int blockStart_i, int blockCount_i);
+
+    static void sumFinalScalarProduct_CPU(sycl::queue& queue, conf::fp_type* result, unsigned int workGroupCount);
+
 };
 
 
