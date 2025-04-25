@@ -31,13 +31,14 @@ int main(int argc, char* argv[]) {
          cxxopts::value<std::string>())
         ("b,path_b", "path to .txt file containing the right-hand side b", cxxopts::value<std::string>())
         ("o,output", "path to the output directory", cxxopts::value<std::string>())
-        ("d,device", "Specifies which devices the solver will use. Has to be 'cpu', 'gpu' or 'mixed'.",
+        ("m,mode", "Specifies the load balancing mode between CPU and GPU. Has to be 'static', 'runtime', 'power' or 'util'.",
          cxxopts::value<std::string>());
 
     const auto arguments = argumentOptions.parse(argc, argv);
 
     std::string path_A;
     std::string path_b;
+    std::string mode;
     if (arguments.count("path_A")) {
         path_A = arguments["path_A"].as<std::string>();
     } else {
@@ -50,7 +51,15 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("No path to .txt file for right-hand side b specified");
     }
 
-//    hws::system_hardware_sampler samplerUtil{hws::sample_category::general};
+    if (arguments.count("output")) {
+        conf::outputPath = arguments["output"].as<std::string>();
+    }
+
+    if (arguments.count("mode")) {
+        mode = arguments["mode"].as<std::string>();
+    } else {
+        mode = "runtime";
+    }
 
 
     queue gpuQueue(gpu_selector_v, sycl::property::queue::enable_profiling());
@@ -60,27 +69,22 @@ int main(int argc, char* argv[]) {
     std::cout << "CPU: " << cpuQueue.get_device().get_info<info::device::name>() << std::endl;
 
     std::shared_ptr<LoadBalancer> loadBalancer;
-//    loadBalancer = std::make_shared<UtilizationLoadBalancer>(10,0.8);
-//    loadBalancer = std::make_shared<StaticLoadBalancer>(10,0.9);
-    loadBalancer = std::make_shared<RuntimeLoadBalancer>(10,0.8);
+    if (mode == "static") {
+        loadBalancer = std::make_shared<StaticLoadBalancer>(conf::updateInterval,conf::initialProportionGPU);
+    } else if (mode == "runtime") {
+        loadBalancer = std::make_shared<RuntimeLoadBalancer>(conf::updateInterval,conf::initialProportionGPU);
+    } else if (mode == "util") {
+        loadBalancer = std::make_shared<UtilizationLoadBalancer>(conf::updateInterval,conf::initialProportionGPU);
+    } else if (mode == "power") {
+        throw std::runtime_error("Power load balancing not implemented yet");
+    } else {
+        throw std::runtime_error("Invalid mode selected: '" + mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
+    }
+
 
     CG algorithm(path_A, path_b, cpuQueue, gpuQueue, loadBalancer);
 
     algorithm.solveHeterogeneous();
-    // sleep(3);
-
-
-
-
-
-//     sampler.stop_sampling();
-//     sampler.dump_yaml("test.yaml");
-
-//     auto* cpu_sampler =  dynamic_cast<hws::cpu_hardware_sampler*>(sampler.samplers()[0].get());
-//     hws::cpu_power_samples power_samples = cpu_sampler->power_samples();
-//     auto power = power_samples.get_power_total_energy_consumption().value_or(std::vector<double>(1));
-
-    // std::cout << power[power.size() - 1] << std::endl;
 
     return 0;
 }

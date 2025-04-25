@@ -48,7 +48,6 @@ void CG::solveHeterogeneous() {
     const std::size_t blockCountGPUTotal = (A.blockCountXY * (A.blockCountXY + 1) / 2) - (blockCountCPU * (blockCountCPU
                                                                                                            + 1) / 2);
 
-
     // initialize data structures
     initGPUdataStructures(blockCountGPUTotal);
     initCPUdataStructures();
@@ -118,8 +117,7 @@ void CG::solveHeterogeneous() {
 
     waitAllQueues();
     metricsTracker.endTracking();
-    std::string path = "./output";
-    metricsTracker.writeJSON(path);
+    metricsTracker.writeJSON(conf::outputPath);
     // TODO check if correct with memory transfer if change in last iteration
     if (blockCountGPU != 0) {
         gpuQueue.submit([&](handler &h) {
@@ -254,7 +252,7 @@ void CG::initCG(conf::fp_type &delta_zero, conf::fp_type &delta_new) {
     }
     if (blockCountCPU != 0) {
         workGroupCountScalarProduct_CPU =
-                VectorOperations::scalarProduct(cpuQueue, r_cpu, r_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
+                VectorOperations::scalarProduct_CPU(cpuQueue, r_cpu, r_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 
@@ -262,7 +260,7 @@ void CG::initCG(conf::fp_type &delta_zero, conf::fp_type &delta_new) {
         VectorOperations::sumFinalScalarProduct(gpuQueue, tmp_gpu, workGroupCountScalarProduct_GPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::sumFinalScalarProduct(cpuQueue, tmp_cpu, workGroupCountScalarProduct_CPU);
+        VectorOperations::sumFinalScalarProduct_CPU(cpuQueue, tmp_cpu, workGroupCountScalarProduct_CPU);
     }
     waitAllQueues();
 
@@ -386,7 +384,7 @@ void CG::compute_alpha(conf::fp_type &alpha, conf::fp_type &delta_new) {
                 gpuQueue, d_gpu, q_gpu, tmp_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct(
+        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct_CPU(
                 cpuQueue, d_cpu, q_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
@@ -395,7 +393,7 @@ void CG::compute_alpha(conf::fp_type &alpha, conf::fp_type &delta_new) {
         VectorOperations::sumFinalScalarProduct(gpuQueue, tmp_gpu, workGroupCountScalarProduct_GPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::sumFinalScalarProduct(cpuQueue, tmp_cpu, workGroupCountScalarProduct_CPU);
+        VectorOperations::sumFinalScalarProduct_CPU(cpuQueue, tmp_cpu, workGroupCountScalarProduct_CPU);
     }
     waitAllQueues();
 
@@ -501,7 +499,7 @@ void CG::compute_delta_new(conf::fp_type &delta_new) {
                 gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct(
+        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct_CPU(
                 cpuQueue, r_cpu, r_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
@@ -510,7 +508,7 @@ void CG::compute_delta_new(conf::fp_type &delta_new) {
         VectorOperations::sumFinalScalarProduct(gpuQueue, tmp_gpu, workGroupCountScalarProduct_GPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::sumFinalScalarProduct(cpuQueue, tmp_cpu, workGroupCountScalarProduct_CPU);
+        VectorOperations::sumFinalScalarProduct_CPU(cpuQueue, tmp_cpu, workGroupCountScalarProduct_CPU);
     }
     waitAllQueues();
 

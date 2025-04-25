@@ -47,7 +47,8 @@ set(LIBRARY_FILES
         src/metricsTracker/MetricsTracker.cpp
         src/metricsTracker/MetricsTracker.hpp
         src/loadBalancer/RuntimeLoadBalancer.cpp
-        src/loadBalancer/RuntimeLoadBalancer.hpp)
+        src/loadBalancer/RuntimeLoadBalancer.hpp
+        src/utility/Configuration.cpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)
