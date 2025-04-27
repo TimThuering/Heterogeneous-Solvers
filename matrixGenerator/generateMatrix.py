@@ -7,9 +7,11 @@ import scipy.sparse.linalg as sp
 def generateMatrix(N, path):
     print(r'Generating SPD matrix A of size {}x{}'.format(N, N))
     seed = 123
-
-    matrix = make_spd_matrix(N, random_state=seed)
-    matrix = np.array(matrix)
+    np.random.seed(123)
+    # matrix = make_spd_matrix(N, random_state=seed)
+    matrix = np.random.randn(N,N)
+    matrix = np.dot(matrix, matrix.T)
+    matrix += np.eye(N,N)
 
     output = open(path + '/A_{}.txt'.format(N), "w")
     output.write('# {}\n'.format(N))
@@ -40,7 +42,7 @@ if __name__ == '__main__':
     if len(sys.argv) >= 3:
         path = str(sys.argv[2])
     else:
-        path = './datasets'
+        path = './datasets/new'
 
     A = generateMatrix(N, path)
     b = generateRightHandSide(N, path)
