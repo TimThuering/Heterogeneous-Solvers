@@ -1,23 +1,52 @@
 import sys
+
+from absl.logging import exception
 from sklearn.datasets import make_spd_matrix
 import numpy as np
 import scipy.sparse.linalg as sp
 
-
 def generateMatrix(N, path):
     print(r'Generating SPD matrix A of size {}x{}'.format(N, N))
     seed = 123
-    np.random.seed(123)
+    np.random.seed(seed)
+    # generator = np.random.default_rng(seed=123)
+    # matrix = random_spd_matrix(generator, dim=N)
     # matrix = make_spd_matrix(N, random_state=seed)
     matrix = np.random.randn(N,N)
     matrix = np.dot(matrix, matrix.T)
     matrix += np.eye(N,N)
 
-    output = open(path + '/A_{}.txt'.format(N), "w")
-    output.write('# {}\n'.format(N))
+    print("Start checking if matrix is symmetric positive definite...")
+
+    try:
+        np.linalg.cholesky(matrix)
+        print('Matrix is symmetric positive definite.')
+    except:
+        print('matrix is not symmetric positive definite')
+        sys.exit(-1)
+
+
+    print("Start generating matrix string...")
+
+    lines = []
     for i in range(N):
-        output.write(np.array2string(matrix[i][0:i + 1], max_line_width=sys.maxsize, precision=20, suppress_small=False,
-                                     floatmode='fixed', separator=';', threshold=sys.maxsize)[1:-1] + "\n")
+        numbers = matrix[i][0:i + 1]
+        line = ';'.join(np.char.mod('%.20f', numbers)) + '\n'
+        lines.append(line)
+
+    print("Start writing matrix...")
+
+    with open(f"{path}/A_{N}.txt", "w", buffering=1024 * 1024) as output:
+        output.write('# {}\n'.format(N))
+        output.writelines(lines)
+
+    # with open(path + '/A_{}.txt'.format(N), 'w', buffering=1024 * 1024 * 1024) as output:  # 1MB buffer
+    #
+    #     output = open(path + '/A_{}.txt'.format(N), "w")
+    #     output.write('# {}\n'.format(N))
+    #     for i in range(N):
+    #         output.write(np.array2string(matrix[i][0:i + 1], max_line_width=sys.maxsize, precision=20, suppress_small=False,
+    #                                      floatmode='fixed', separator=';', threshold=sys.maxsize)[1:-1] + "\n")
 
     return matrix
 

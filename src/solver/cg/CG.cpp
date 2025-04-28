@@ -333,7 +333,14 @@ void CG::compute_q() {
                                                                  blockCountCPU, A.blockCountXY, A.blockCountXY);
 
     }
+//    auto starttest = std::chrono::steady_clock::now();
+
     waitAllQueues();
+//    auto endtest = std::chrono::steady_clock::now();
+//    auto totalTrackingTime = std::chrono::duration<double, std::milli>(endtest - starttest).count();
+
+
+
 
     // append execution times
     if (blockCountGPU != 0) {
