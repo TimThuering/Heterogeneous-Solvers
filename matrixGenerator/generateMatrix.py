@@ -11,10 +11,10 @@ def generateMatrix(N, path):
     seed = 123
     np.random.seed(seed)
 
-    matrix = make_spd_matrix(N, random_state=seed)
-    # matrix = np.random.randn(N,N)
-    # matrix = np.dot(matrix, matrix.T)
-    # matrix += np.eye(N,N)
+    # matrix = make_spd_matrix(N, random_state=seed)
+    matrix = np.random.randn(N,N)
+    matrix = np.dot(matrix, matrix.T)
+    matrix += np.eye(N,N)
 
     print("Start checking if matrix is symmetric positive definite...")
 
