@@ -141,7 +141,6 @@ void CG::solveHeterogeneous() {
     waitAllQueues();
     metricsTracker.endTracking();
     metricsTracker.writeJSON(conf::outputPath);
-    // TODO check if correct with memory transfer if change in last iteration
     if (blockCountGPU != 0) {
         gpuQueue.submit([&](handler &h) {
             h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
@@ -621,7 +620,7 @@ void CG::rebalanceProportions(double &gpuProportion) {
                      additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
 
-        // exchange missing parts of x vector
+        // exchange missing parts of r vector
         gpuQueue.submit([&](handler &h) {
             h.memcpy(&r_cpu[blockStartCPU_new * conf::matrixBlockSize],
                      &r_gpu[blockStartCPU_new * conf::matrixBlockSize],
@@ -630,7 +629,6 @@ void CG::rebalanceProportions(double &gpuProportion) {
     }
 
     waitAllQueues();
-
 
     blockCountGPU = blockCountGPU_new;
     blockCountCPU = blockCountCPU_new;

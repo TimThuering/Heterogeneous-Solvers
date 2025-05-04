@@ -12,11 +12,11 @@ double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTracker) 
         // if only one component is used do not reevaluate the proportions
         return currentProportionGPU;
     }
-    if (metricsTracker.matrixVectorTimes_GPU.size() >= updateInterval &&
-        metricsTracker.matrixVectorTimes_CPU.size() >= updateInterval) {
+    if (metricsTracker.matrixVectorTimes_GPU.size() >= static_cast<unsigned long>(updateInterval) &&
+        metricsTracker.matrixVectorTimes_CPU.size() >= static_cast<unsigned long>(updateInterval)) {
 
 
-        std::size_t offset = metricsTracker.matrixVectorTimes_GPU.size() - updateInterval;
+        long offset = static_cast<long>(metricsTracker.matrixVectorTimes_GPU.size()) - updateInterval;
 
         double averageRuntime_GPU = std::accumulate(metricsTracker.matrixVectorTimes_GPU.begin() + offset,
                                                     metricsTracker.matrixVectorTimes_GPU.end(), 0.0) / updateInterval;
@@ -32,8 +32,8 @@ double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTracker) 
         std::cout << "GPU runtime " << averageRuntime_GPU << std::endl;
         std::cout << "CPU runtime " << averageRuntime_CPU << std::endl;
 
-
-        return (runtimePerBlock_CPU / runtimePerBlock_GPU) / ((runtimePerBlock_CPU / runtimePerBlock_GPU) + 1);
+        currentProportionGPU = (runtimePerBlock_CPU / runtimePerBlock_GPU) / ((runtimePerBlock_CPU / runtimePerBlock_GPU) + 1);
+        return currentProportionGPU;
     } else {
         return currentProportionGPU;
     }

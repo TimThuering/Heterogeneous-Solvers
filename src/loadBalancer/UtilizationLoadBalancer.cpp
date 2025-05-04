@@ -32,6 +32,6 @@ double UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTrack
     currentProportionGPU = efficiencyCPU / (efficiencyGPU + efficiencyCPU);
 
     std::cout << efficiencyCPU / (efficiencyGPU + efficiencyCPU) << std::endl;
-    return 1;
-//    return currentProportionGPU;
+//    return 1;
+    return currentProportionGPU;
 }
