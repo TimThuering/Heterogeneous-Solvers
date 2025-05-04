@@ -107,6 +107,10 @@ int main(int argc, char *argv[]) {
         conf::writeResult = arguments["write_result"].as<bool>();
     }
 
+    if ((conf::workGroupSize > conf::matrixBlockSize) || (conf::matrixBlockSize % conf::workGroupSize != 0)) {
+        throw std::runtime_error("Work-Group size must be smaller or equal than block size and divide the block size");
+    }
+
 
 
     queue gpuQueue(gpu_selector_v, sycl::property::queue::enable_profiling());
