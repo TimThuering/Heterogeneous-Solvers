@@ -1,5 +1,6 @@
 import sys
 
+import scipy.sparse.linalg
 from absl.logging import exception
 from sklearn.datasets import make_spd_matrix
 import numpy as np
@@ -9,12 +10,11 @@ def generateMatrix(N, path):
     print(r'Generating SPD matrix A of size {}x{}'.format(N, N))
     seed = 123
     np.random.seed(seed)
-    # generator = np.random.default_rng(seed=123)
-    # matrix = random_spd_matrix(generator, dim=N)
-    # matrix = make_spd_matrix(N, random_state=seed)
-    matrix = np.random.randn(N,N)
-    matrix = np.dot(matrix, matrix.T)
-    matrix += np.eye(N,N)
+
+    matrix = make_spd_matrix(N, random_state=seed)
+    # matrix = np.random.randn(N,N)
+    # matrix = np.dot(matrix, matrix.T)
+    # matrix += np.eye(N,N)
 
     print("Start checking if matrix is symmetric positive definite...")
 
@@ -75,6 +75,12 @@ if __name__ == '__main__':
 
     A = generateMatrix(N, path)
     b = generateRightHandSide(N, path)
+
+    x_ref = scipy.sparse.linalg.cg(A,b, rtol=1e-06)
+
+    x = np.loadtxt('../cmake-build-release/output/2025_05_04__15_17_51/x_result.txt')
+
+    print()
 
     # result = A[0:12,:] @ b
     # result = A[12:,:] @ b

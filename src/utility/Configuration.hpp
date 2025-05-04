@@ -22,7 +22,8 @@ namespace conf {
         double epsilon = 1.0e-6; /// epsilon value for the termination of the cg algorithm
         int updateInterval = 10; /// interval in which CPU/GPU distribution will be rebalanced
         double initialProportionGPU = 0.5; /// initial proportion of work assigned to gpu
-        std::string outputPath = "./output";
+        std::string outputPath = "./output"; /// path for all output files
+        bool writeResult = false; /// write the result vector into a .txt file
     };
 
     Configuration& get();
@@ -44,6 +45,8 @@ namespace conf {
     inline double& initialProportionGPU = get().initialProportionGPU;
 
     inline std::string& outputPath = get().outputPath;
+
+    inline bool& writeResult = get().writeResult;
 }
 
 #endif //CONFIGURATION_HPP

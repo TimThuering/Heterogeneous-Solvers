@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include "MetricsTracker.hpp"
+#include "UtilityFunctions.hpp"
 
 void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount_GPU, std::size_t blockCount_CPU,
                                    double iterationTime,
@@ -116,16 +117,8 @@ void MetricsTracker::endTracking() {
 
 void MetricsTracker::writeJSON(std::string &path) {
 
-    auto currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    auto timeStruct = *std::localtime(&currentTime);
 
-    std::ostringstream timeStringStream;
-    timeStringStream << std::put_time(&timeStruct, "%Y_%m_%d_%H-%M-%S");
-    std::string timeString = timeStringStream.str();
-    std::string filePath = path + "/" + timeString;
-    std::filesystem::create_directories(filePath);
-
-    std::ofstream metricsJSON(filePath + "/metrics.json");
+    std::ofstream metricsJSON(path + "/metrics.json");
 
     auto *cpu_sampler = dynamic_cast<hws::cpu_hardware_sampler *>(utilizationSampler.samplers()[0].get());
     auto *gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler *>(utilizationSampler.samplers()[1].get());

@@ -41,7 +41,8 @@ int main(int argc, char *argv[]) {
             ("i,i_max", "maximum number of iterations", cxxopts::value<int>())
             ("e,eps", "epsilon value for the termination of the cg algorithm", cxxopts::value<double>())
             ("u,update_int", "interval in which CPU/GPU distribution will be rebalanced", cxxopts::value<int>())
-            ("g,init_gpu_perc", "initial proportion of work assigned to gpu", cxxopts::value<double>());
+            ("g,init_gpu_perc", "initial proportion of work assigned to gpu", cxxopts::value<double>())
+            ("r,write_result", "write the result vector x to a .txt file", cxxopts::value<bool>());
 
     const auto arguments = argumentOptions.parse(argc, argv);
 
@@ -100,6 +101,10 @@ int main(int argc, char *argv[]) {
 
     if (arguments.count("init_gpu_perc")) {
         conf::initialProportionGPU = arguments["init_gpu_perc"].as<double>();
+    }
+
+    if (arguments.count("write_result")) {
+        conf::writeResult = arguments["write_result"].as<bool>();
     }
 
 

@@ -6,6 +6,7 @@
 #include "MatrixParser.hpp"
 #include "MatrixVectorOperations.hpp"
 #include "VectorOperations.hpp"
+#include "UtilityFunctions.hpp"
 
 using namespace sycl;
 
@@ -140,11 +141,18 @@ void CG::solveHeterogeneous() {
 
     waitAllQueues();
     metricsTracker.endTracking();
-    metricsTracker.writeJSON(conf::outputPath);
+    std::string timeString = UtilityFunctions::getTimeString();
+    std::string filePath = conf::outputPath + "/" + timeString;
+    std::filesystem::create_directories(filePath);
+    metricsTracker.writeJSON(filePath);
+
     if (blockCountGPU != 0) {
         gpuQueue.submit([&](handler &h) {
             h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         }).wait();
+    }
+    if (conf::writeResult) {
+        UtilityFunctions::writeResult(filePath, x);
     }
 
     freeDataStructures();
