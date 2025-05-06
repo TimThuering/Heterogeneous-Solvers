@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
 
     std::string path_A;
     std::string path_b;
-    std::string mode;
     if (arguments.count("path_A")) {
         path_A = arguments["path_A"].as<std::string>();
     } else {
@@ -66,9 +65,9 @@ int main(int argc, char *argv[]) {
     }
 
     if (arguments.count("mode")) {
-        mode = arguments["mode"].as<std::string>();
+        conf::mode = arguments["mode"].as<std::string>();
     } else {
-        mode = "runtime";
+        conf::mode = "runtime";
     }
 
     if (arguments.count("matrix_bsz")) {
@@ -120,17 +119,17 @@ int main(int argc, char *argv[]) {
     std::cout << "CPU: " << cpuQueue.get_device().get_info<info::device::name>() << std::endl;
 
     std::shared_ptr<LoadBalancer> loadBalancer;
-    if (mode == "static") {
+    if (conf::mode == "static") {
         loadBalancer = std::make_shared<StaticLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
-    } else if (mode == "runtime") {
+    } else if (conf::mode == "runtime") {
         loadBalancer = std::make_shared<RuntimeLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
-    } else if (mode == "util") {
+    } else if (conf::mode == "util") {
         loadBalancer = std::make_shared<UtilizationLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
-    } else if (mode == "power") {
+    } else if (conf::mode == "power") {
         throw std::runtime_error("Power load balancing not implemented yet");
     } else {
         throw std::runtime_error(
-                "Invalid mode selected: '" + mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
+                "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
     }
 
 

@@ -24,6 +24,8 @@ namespace conf {
         double initialProportionGPU = 0.5; /// initial proportion of work assigned to gpu
         std::string outputPath = "./output"; /// path for all output files
         bool writeResult = false; /// write the result vector into a .txt file
+        std::string mode = "runtime";
+        std::size_t N = 0;
     };
 
     Configuration& get();
@@ -47,6 +49,11 @@ namespace conf {
     inline std::string& outputPath = get().outputPath;
 
     inline bool& writeResult = get().writeResult;
+
+    inline std::string& mode = get().mode;
+
+    inline std::size_t& N = get().N;
+
 }
 
 #endif //CONFIGURATION_HPP

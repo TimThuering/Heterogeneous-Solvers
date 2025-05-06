@@ -24,7 +24,7 @@ SymmetricMatrix MatrixParser::parseSymmetricMatrix(std::string& path, sycl::queu
     std::size_t N = std::stoul(row.substr(2, row.size() - 2));
 
     std::cout << "-- Starting to parse symmetric matrix of size " << N << "x" << N << std::endl;
-
+    conf::N = N;
     // create symmetric matrix
     SymmetricMatrix matrix(N, conf::matrixBlockSize, queue);
 
