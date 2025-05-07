@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 project(Heterogeneous_Conjugate_Gradients)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 
 option(ENABLE_TESTS "Enable Test" ON)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)

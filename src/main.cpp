@@ -42,7 +42,9 @@ int main(int argc, char *argv[]) {
             ("e,eps", "epsilon value for the termination of the cg algorithm", cxxopts::value<double>())
             ("u,update_int", "interval in which CPU/GPU distribution will be rebalanced", cxxopts::value<int>())
             ("g,init_gpu_perc", "initial proportion of work assigned to gpu", cxxopts::value<double>())
-            ("r,write_result", "write the result vector x to a .txt file", cxxopts::value<bool>());
+            ("r,write_result", "write the result vector x to a .txt file", cxxopts::value<bool>())
+            ("f,cpu_lb_factor", "factor that scales the CPU times for runtime load balancing", cxxopts::value<double>())
+            ("t,block_update_th", "when block count change during re-balancing is equal or below this number, no re-balancing occurs", cxxopts::value<std::size_t>());
 
     const auto arguments = argumentOptions.parse(argc, argv);
 
@@ -104,6 +106,14 @@ int main(int argc, char *argv[]) {
 
     if (arguments.count("write_result")) {
         conf::writeResult = arguments["write_result"].as<bool>();
+    }
+
+    if (arguments.count("cpu_lb_factor")) {
+        conf::runtimeLBFactorCPU = arguments["cpu_lb_factor"].as<double>();
+    }
+
+    if (arguments.count("block_update_th")) {
+        conf::blockUpdateThreshold = arguments["block_update_th"].as<std::size_t>();
     }
 
     if ((conf::workGroupSize > conf::matrixBlockSize) || (conf::matrixBlockSize % conf::workGroupSize != 0)) {

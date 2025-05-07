@@ -24,13 +24,15 @@ namespace conf {
         double initialProportionGPU = 0.5; /// initial proportion of work assigned to gpu
         std::string outputPath = "./output"; /// path for all output files
         bool writeResult = false; /// write the result vector into a .txt file
-        std::string mode = "runtime";
-        std::size_t N = 0;
+        std::string mode = "runtime"; /// mode for the heterogeneous scheduling
+        std::size_t N = 0; /// size of the NxN matrix
+        double runtimeLBFactorCPU = 1.2; /// factor that scales the CPU runtimes to influence the scheduling
+        std::size_t blockUpdateThreshold = 1; /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
     };
 
     Configuration& get();
 
-    inline int& matrixBlockSize = get().matrixBlockSize; /// Block size for storing the symmetric matrix in memory
+    inline int& matrixBlockSize = get().matrixBlockSize;
 
     inline int& workGroupSize = get().workGroupSize;
 
@@ -53,6 +55,11 @@ namespace conf {
     inline std::string& mode = get().mode;
 
     inline std::size_t& N = get().N;
+
+    inline double& runtimeLBFactorCPU = get().runtimeLBFactorCPU;
+
+    inline std::size_t& blockUpdateThreshold = get().blockUpdateThreshold;
+
 
 }
 

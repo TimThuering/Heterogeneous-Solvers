@@ -16,7 +16,7 @@ SymmetricMatrix MatrixParser::parseSymmetricMatrix(std::string& path, sycl::queu
     // read first line
     std::getline(matrixInputStream, row);
 
-    if (!row.starts_with("#")) {
+    if (row[0] != '#' || row.empty()) {
         throw std::invalid_argument("Invalid matrix format. First line has to be '# <N>!'");
     }
 
@@ -48,7 +48,7 @@ RightHandSide MatrixParser::parseRightHandSide(std::string& path, sycl::queue& q
     // read first line
     std::getline(rhsInputStream, row);
 
-    if (!row.starts_with("#")) {
+    if (row[0] != '#' || row.empty()) {
         throw std::invalid_argument("Invalid right-hand side format. First line has to be '# <N>!'");
     }
 

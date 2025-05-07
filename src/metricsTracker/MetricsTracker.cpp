@@ -50,7 +50,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
             // update index where the new samples will begin for the next interval
             nextTimePoint_GPU = generalSamples_GPU.get_compute_utilization().value().size();
             averageUtilization_GPU.push_back(averageUtil);
-            std::cout << "Average GPU util: " << averageUtil << std::endl;
+            // std::cout << "Average GPU util: " << averageUtil << std::endl;
         }
 
         if (generalSamples_CPU.get_compute_utilization().has_value()) {
@@ -70,7 +70,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
             }
             nextTimePoint_CPU = generalSamples_CPU.get_compute_utilization().value().size();
             averageUtilization_CPU.push_back(averageUtil);
-            std::cout << "Average CPU util: " << averageUtil << std::endl;
+            // std::cout << "Average CPU util: " << averageUtil << std::endl;
         }
 
         if (powerSamples_CPU.get_power_total_energy_consumption().has_value()) {
@@ -84,7 +84,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
             }
             nextTimePointPower_CPU = powerSamples_CPU.get_power_total_energy_consumption().value().size();
             powerDraw_CPU.push_back(powerDraw);
-            std::cout << "CPU Power draw " << powerDraw << std::endl;
+            // std::cout << "CPU Power draw " << powerDraw << std::endl;
         }
 
         if (powerSamples_GPU.get_power_total_energy_consumption().has_value()) {
@@ -98,7 +98,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
             }
             nextTimePointPower_GPU = powerSamples_GPU.get_power_total_energy_consumption().value().size();
             powerDraw_GPU.push_back(powerDraw);
-            std::cout << "GPU Power draw " << powerDraw << std::endl;
+            // std::cout << "GPU Power draw " << powerDraw << std::endl;
         }
     }
 
@@ -152,6 +152,8 @@ void MetricsTracker::writeJSON(std::string& path) {
     metricsJSON << "\t \"epsilon\":                         " + std::to_string(conf::epsilon) + ",\n";
     metricsJSON << "\t \"updateInterval\":                  " + std::to_string(conf::updateInterval) + ",\n";
     metricsJSON << "\t \"initialProportionGPU\":            " + std::to_string(conf::initialProportionGPU) + ",\n";
+    metricsJSON << "\t \"runtimeLBFactorCPU\":              " + std::to_string(conf::runtimeLBFactorCPU) + ",\n";
+    metricsJSON << "\t \"blockUpdateThreshold\":            " + std::to_string(conf::blockUpdateThreshold) + ",\n";
     metricsJSON << std::string("\t \"mode\":                            ") + "\"" + conf::mode + "\"" + "\n";
 
 
