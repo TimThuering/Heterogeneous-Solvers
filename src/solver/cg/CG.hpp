@@ -14,10 +14,10 @@ using namespace sycl;
 
 class CG {
 public:
-    CG(std::string& path_A, std::string& path_b, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
+    CG(SymmetricMatrix& A,RightHandSide& b, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
 
-    SymmetricMatrix A;
-    RightHandSide b;
+    SymmetricMatrix& A;
+    RightHandSide& b;
 
     std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>> x;
 

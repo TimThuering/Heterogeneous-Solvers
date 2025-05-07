@@ -13,6 +13,7 @@
 #include "StaticLoadBalancer.hpp"
 #include "UtilizationLoadBalancer.hpp"
 #include "RuntimeLoadBalancer.hpp"
+#include "MatrixGenerator.hpp"
 
 using namespace sycl;
 
@@ -142,8 +143,15 @@ int main(int argc, char *argv[]) {
                 "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
     }
 
+    // conf::N = 10000;
+    // SymmetricMatrix A = MatrixGenerator::generateSPDMatrix(cpuQueue);
+    // RightHandSide b = MatrixGenerator::generateRHS(cpuQueue);
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A,cpuQueue);
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, cpuQueue);
+    // MatrixParser::writeBlockedMatrix("./out.txt", matrix);
 
-    CG algorithm(path_A, path_b, cpuQueue, gpuQueue, loadBalancer);
+
+    CG algorithm(A, b, cpuQueue, gpuQueue, loadBalancer);
     algorithm.solveHeterogeneous();
     return 0;
 }

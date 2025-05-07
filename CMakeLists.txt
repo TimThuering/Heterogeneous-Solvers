@@ -50,7 +50,9 @@ set(LIBRARY_FILES
         src/loadBalancer/RuntimeLoadBalancer.hpp
         src/utility/Configuration.cpp
         src/utility/UtilityFunctions.cpp
-        src/utility/UtilityFunctions.hpp)
+        src/utility/UtilityFunctions.hpp
+        src/utility/MatrixGenerator.cpp
+        src/utility/MatrixGenerator.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)

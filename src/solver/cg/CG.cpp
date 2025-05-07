@@ -10,10 +10,10 @@
 
 using namespace sycl;
 
-CG::CG(std::string& path_A, std::string& path_b, queue& cpuQueue, queue& gpuQueue,
+CG::CG(SymmetricMatrix& A,RightHandSide& b, queue& cpuQueue, queue& gpuQueue,
        std::shared_ptr<LoadBalancer> loadBalancer) :
-    A(MatrixParser::parseSymmetricMatrix(path_A, cpuQueue)),
-    b(MatrixParser::parseRightHandSide(path_b, cpuQueue)),
+    A(A),
+    b(b),
     x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>(cpuQueue)),
     cpuQueue(cpuQueue),
     gpuQueue(gpuQueue),
