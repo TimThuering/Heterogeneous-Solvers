@@ -52,7 +52,9 @@ set(LIBRARY_FILES
         src/utility/UtilityFunctions.cpp
         src/utility/UtilityFunctions.hpp
         src/utility/MatrixGenerator.cpp
-        src/utility/MatrixGenerator.hpp)
+        src/utility/MatrixGenerator.hpp
+        src/loadBalancer/PowerLoadBalancer.cpp
+        src/loadBalancer/PowerLoadBalancer.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)
@@ -77,13 +79,13 @@ endif ()
 message("Building the hardware sampling library")
 # build and link the hws library
 set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
-set(HWS_SAMPLING_INTERVAL 200 CACHE INTERNAL "" FORCE)
+set(HWS_SAMPLING_INTERVAL 10 CACHE INTERNAL "" FORCE)
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
         hws
         GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
-        GIT_TAG 20e0bf233a9067044f064a1ae234070ba8d0da0e
+        GIT_TAG fbd284d7d18081c4b44fbff3b402afbe8a81610a
 )
 FetchContent_MakeAvailable(hws)
 add_dependencies(Heterogeneous_CG hws)

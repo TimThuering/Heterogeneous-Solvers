@@ -73,32 +73,51 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
             // std::cout << "Average CPU util: " << averageUtil << std::endl;
         }
 
-        if (powerSamples_CPU.get_power_total_energy_consumption().has_value()) {
+        if (powerSamples_CPU.get_power_usage().has_value()) {
             double powerDraw = 0.0;
-            if (nextTimePointPower_CPU < powerSamples_CPU.get_power_total_energy_consumption().value().size() - 1) {
-                // at least 2 new power samples are available
-                powerDraw = powerSamples_CPU.get_power_total_energy_consumption().value().back() -
-                    powerSamples_CPU.get_power_total_energy_consumption().value()[nextTimePointPower_CPU];
+            if (nextTimePointPower_CPU < powerSamples_CPU.get_power_usage().value().size()) {
+                // at least 1 new power samples is available
+                std::vector<double> CPU_watts(
+                    powerSamples_CPU.get_power_usage().value().begin() + static_cast<long>(nextTimePointPower_CPU),
+                    powerSamples_CPU.get_power_usage().value().end());
+
+                std::vector<double> CPU_mvTimes(matrixVectorTimes_CPU.end() - updateInterval,
+                                                matrixVectorTimes_CPU.end());
+                double averageMVTime = std::accumulate(CPU_mvTimes.begin(), CPU_mvTimes.end(), 0.0) /
+                    static_cast<double>(CPU_mvTimes.size());
+
+                powerDraw = std::accumulate(CPU_watts.begin(), CPU_watts.end(), 0.0) /
+                    static_cast<double>(CPU_watts.size());
+                powerDraw = powerDraw * averageMVTime;
             } else {
                 std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
+                powerDraw = powerDraw_CPU.back();
             }
-            nextTimePointPower_CPU = powerSamples_CPU.get_power_total_energy_consumption().value().size();
+            nextTimePointPower_CPU = powerSamples_CPU.get_power_usage().value().size();
             powerDraw_CPU.push_back(powerDraw);
-            // std::cout << "CPU Power draw " << powerDraw << std::endl;
         }
 
-        if (powerSamples_GPU.get_power_total_energy_consumption().has_value()) {
+        if (powerSamples_GPU.get_power_usage().has_value()) {
             double powerDraw = 0.0;
-            if (nextTimePointPower_GPU < powerSamples_GPU.get_power_total_energy_consumption().value().size() - 1) {
-                // at least 2 new power samples are available
-                powerDraw = powerSamples_GPU.get_power_total_energy_consumption().value().back() -
-                    powerSamples_GPU.get_power_total_energy_consumption().value()[nextTimePointPower_GPU];
+            if (nextTimePointPower_GPU < powerSamples_GPU.get_power_usage().value().size()) {
+                // at least 1 new power samples is available
+                std::vector<double> GPU_watts(
+                    powerSamples_GPU.get_power_usage().value().begin() + static_cast<long>(nextTimePointPower_GPU),
+                    powerSamples_GPU.get_power_usage().value().end());
+
+                std::vector<double> GPU_mvTimes(matrixVectorTimes_GPU.end() - updateInterval,
+                                                matrixVectorTimes_GPU.end());
+                double averageMVTime = std::accumulate(GPU_mvTimes.begin(), GPU_mvTimes.end(), 0.0) /
+                    static_cast<double>(GPU_mvTimes.size());
+                powerDraw =
+                    std::accumulate(GPU_watts.begin(), GPU_watts.end(), 0.0) / static_cast<double>(GPU_watts.size());
+                powerDraw = powerDraw * averageMVTime;
             } else {
                 std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
+                powerDraw = powerSamples_GPU.get_power_usage().value().back();
             }
-            nextTimePointPower_GPU = powerSamples_GPU.get_power_total_energy_consumption().value().size();
+            nextTimePointPower_GPU = powerSamples_GPU.get_power_usage().value().size();
             powerDraw_GPU.push_back(powerDraw);
-            // std::cout << "GPU Power draw " << powerDraw << std::endl;
         }
     }
 

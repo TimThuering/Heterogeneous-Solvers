@@ -13,6 +13,7 @@
 #include "StaticLoadBalancer.hpp"
 #include "UtilizationLoadBalancer.hpp"
 #include "RuntimeLoadBalancer.hpp"
+#include "PowerLoadBalancer.hpp"
 #include "MatrixGenerator.hpp"
 
 using namespace sycl;
@@ -137,7 +138,7 @@ int main(int argc, char *argv[]) {
     } else if (conf::mode == "util") {
         loadBalancer = std::make_shared<UtilizationLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
     } else if (conf::mode == "power") {
-        throw std::runtime_error("Power load balancing not implemented yet");
+        loadBalancer = std::make_shared<PowerLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
     } else {
         throw std::runtime_error(
                 "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");

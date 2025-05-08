@@ -7,11 +7,11 @@
 #include "hws/gpu_amd/hardware_sampler.hpp"
 #include "hws/gpu_intel/hardware_sampler.hpp"
 
-UtilizationLoadBalancer::UtilizationLoadBalancer(int updateInterval, double initialProportionGPU) : LoadBalancer(updateInterval, initialProportionGPU){
-
+UtilizationLoadBalancer::UtilizationLoadBalancer(const int updateInterval, const double initialProportionGPU) :
+    LoadBalancer(updateInterval, initialProportionGPU) {
 }
 
-double UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTracker) {
+double UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
     if (metricsTracker.blockCounts_GPU.back() == 0 || metricsTracker.blockCounts_CPU.back() == 0) {
         // if only one component is used do not reevaluate the proportions
         return currentProportionGPU;
@@ -32,6 +32,6 @@ double UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTrack
     currentProportionGPU = efficiencyCPU / (efficiencyGPU + efficiencyCPU);
 
     std::cout << efficiencyCPU / (efficiencyGPU + efficiencyCPU) << std::endl;
-//    return 1;
+    //    return 1;
     return currentProportionGPU;
 }
