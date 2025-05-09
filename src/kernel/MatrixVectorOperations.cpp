@@ -6,10 +6,11 @@
 using namespace sycl;
 
 sycl::event MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::fp_type* A, const conf::fp_type* b,
-                                               conf::fp_type* result,
-                                               const int blockStart_i,
-                                               const int blockStart_j, const int blockCount_i, const int blockCount_j,
-                                               const int blockCountXY, const bool reset) {
+                                                      conf::fp_type* result,
+                                                      const int blockStart_i,
+                                                      const int blockStart_j, const int blockCount_i,
+                                                      const int blockCount_j,
+                                                      const int blockCountXY, const bool reset) {
     // global range corresponds to number of rows in the (sub) matrix
     const range globalRange(blockCount_i * conf::matrixBlockSize);
     const range localRange(conf::workGroupSize);
@@ -84,7 +85,8 @@ sycl::event MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::
                 // go through all columns of the block and compute the matrix vector product
                 // the block in storage now has to be interpreted as transposed since we are working on the data of the symmetric block
                 for (int j = 0; j < matrixBlockSize; ++j) {
-                    resultValue += A[blockStartIndex + j * matrixBlockSize + iInBlock] * b[block_j * matrixBlockSize + j];
+                    resultValue += A[blockStartIndex + j * matrixBlockSize + iInBlock] * b[block_j * matrixBlockSize +
+                        j];
                 }
             }
 
@@ -96,10 +98,12 @@ sycl::event MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::
     return event;
 }
 
-sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b,
-    conf::fp_type* result, const int blockStart_i, const int blockStart_j, const int blockCount_i, const int blockCount_j, const int blockCountXY,
-    const bool reset) {
-
+sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, const conf::fp_type* A,
+                                                          const conf::fp_type* b,
+                                                          conf::fp_type* result, const int blockStart_i,
+                                                          const int blockStart_j, const int blockCount_i,
+                                                          const int blockCount_j, const int blockCountXY,
+                                                          const bool reset) {
     // global range corresponds to number of rows in the (sub) matrix
     const std::size_t globalRange = blockCount_i * conf::matrixBlockSize;
     const auto kernelRange = range{globalRange};
@@ -151,6 +155,7 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, co
                 int rowStartIndex = blockStartIndex + iInBlock * matrixBlockSize;
 
                 // go through all columns of the block and compute the matrix vector product
+                #pragma clang loop vectorize(enable)
                 for (int j = 0; j < matrixBlockSize; ++j) {
                     resultValue += A[rowStartIndex + j] * b[block_j * matrixBlockSize + j];
                 }
@@ -172,8 +177,10 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, co
 
                 // go through all columns of the block and compute the matrix vector product
                 // the block in storage now has to be interpreted as transposed since we are working on the data of the symmetric block
+                #pragma clang loop vectorize(disable)
                 for (int j = 0; j < matrixBlockSize; ++j) {
-                    resultValue += A[blockStartIndex + j * matrixBlockSize + iInBlock] * b[block_j * matrixBlockSize + j];
+                    resultValue += A[blockStartIndex + j * matrixBlockSize + iInBlock] * b[block_j * matrixBlockSize +
+                        j];
                 }
             }
 

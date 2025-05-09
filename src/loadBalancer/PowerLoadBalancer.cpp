@@ -18,12 +18,17 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
         const std::size_t blockCount_GPU = metricsTracker.blockCounts_GPU.back();
         const std::size_t blockCount_CPU = metricsTracker.blockCounts_CPU.back();
 
-        const double wattsPerBlock_GPU = 1.0 / (powerDraw_GPU / static_cast<double>(blockCount_GPU));
-        const double wattsPerBlock_CPU = 1.0 / (powerDraw_CPU / static_cast<double>(blockCount_CPU));
+        const double wattsPerBlock_GPU = powerDraw_GPU / static_cast<double>(blockCount_GPU);
+        const double wattsPerBlock_CPU = powerDraw_CPU / static_cast<double>(blockCount_CPU);
 
-        const double newProportionGPU = wattsPerBlock_GPU / (wattsPerBlock_CPU + wattsPerBlock_GPU);
+        if (wattsPerBlock_CPU > wattsPerBlock_GPU) {
+            currentProportionGPU = 1.0;
+        } else {
+            currentProportionGPU = 0.0;
+        }
+        // const double newProportionGPU = wattsPerBlock_GPU / (wattsPerBlock_CPU + wattsPerBlock_GPU);
 
-        currentProportionGPU = newProportionGPU;
+        // currentProportionGPU = newProportionGPU;
         return currentProportionGPU;
     } else {
         // return old proportion as fallback
