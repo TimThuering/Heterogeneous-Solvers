@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
              "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'",
              cxxopts::value<std::string>())
             ("z,matrix_bsz", "block size for the symmetric matrix storage", cxxopts::value<int>())
-            ("w,wg_size", "work-group size for matrix-vector operations", cxxopts::value<int>())
+            // ("w,wg_size", "work-group size for matrix-vector operations", cxxopts::value<int>())
             ("v,wg_size_vec", "work-group size for vector-vector operations", cxxopts::value<int>())
             ("s,wg_size_sp", "work-group size for the final scalar product step on GPUs", cxxopts::value<int>())
             ("i,i_max", "maximum number of iterations", cxxopts::value<int>())
@@ -77,10 +77,11 @@ int main(int argc, char *argv[]) {
     if (arguments.count("matrix_bsz")) {
         conf::matrixBlockSize = arguments["matrix_bsz"].as<int>();
     }
+    conf::workGroupSize = conf::matrixBlockSize;
 
-    if (arguments.count("wg_size")) {
-        conf::workGroupSize = arguments["wg_size"].as<int>();
-    }
+    // if (arguments.count("wg_size")) {
+    //     conf::workGroupSize = arguments["wg_size"].as<int>();
+    // }
 
     if (arguments.count("wg_size_vec")) {
         conf::workGroupSizeVector = arguments["wg_size_vec"].as<int>();

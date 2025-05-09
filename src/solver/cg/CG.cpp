@@ -331,7 +331,7 @@ void CG::compute_q() {
     sycl::event eventCPU;
     // q = Ad
     if (blockCountGPU != 0) {
-        eventGPU = MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
+        eventGPU = MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
                                                              blockCountGPU, A.blockCountXY, A.blockCountXY);
     }
     if (blockCountCPU != 0) {
@@ -351,6 +351,7 @@ void CG::compute_q() {
         metricsTracker.matrixVectorTimes_GPU.push_back(
             static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
                 eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
+        std::cout << "------------------------------------- mvTime = " << metricsTracker.matrixVectorTimes_GPU.back() << std::endl;
     } else {
         metricsTracker.matrixVectorTimes_GPU.push_back(0);
     }
@@ -475,7 +476,7 @@ void CG::computeRealResidual() {
 
     // r = b - Ax
     if (blockCountGPU != 0) {
-        MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, x_gpu, r_gpu, 0, 0, blockCountGPU, A.blockCountXY,
+        MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, x_gpu, r_gpu, 0, 0, blockCountGPU, A.blockCountXY,
                                                   A.blockCountXY);
     }
     if (blockCountCPU != 0) {
