@@ -6,8 +6,6 @@ set(CMAKE_CXX_STANDARD 17)
 option(ENABLE_TESTS "Enable Test" ON)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
 
-#set(CMAKE_CXX_FLAGS "-march=native")
-
 
 
 # find AdaptiveCpp SYCL implementation
@@ -79,7 +77,7 @@ endif ()
 message("Building the hardware sampling library")
 # build and link the hws library
 set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
-set(HWS_SAMPLING_INTERVAL 500 CACHE INTERNAL "" FORCE)
+set(HWS_SAMPLING_INTERVAL 10 CACHE INTERNAL "" FORCE)
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
 
 FetchContent_Declare(

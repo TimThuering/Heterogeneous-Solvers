@@ -29,8 +29,6 @@ double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTracker) 
         const double runtimePerBlock_GPU = averageRuntime_GPU / static_cast<double>(blockCount_GPU);
         const double runtimePerBlock_CPU = conf::runtimeLBFactorCPU * (averageRuntime_CPU / static_cast<double>(blockCount_CPU));
 
-        // std::cout << "GPU runtime " << averageRuntime_GPU << std::endl;
-        // std::cout << "CPU runtime " << averageRuntime_CPU << std::endl;
 
         const double newProportionGPU = runtimePerBlock_CPU / (runtimePerBlock_CPU + runtimePerBlock_GPU);
 

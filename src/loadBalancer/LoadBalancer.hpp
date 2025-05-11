@@ -8,7 +8,7 @@ class LoadBalancer {
 public:
     LoadBalancer(int updateInterval, double initialProportionGPU);
 
-    virtual conf::fp_type getNewProportionGPU(MetricsTracker &metricsTracker) = 0;
+    virtual double getNewProportionGPU(MetricsTracker &metricsTracker) = 0;
 
     int updateInterval;
 

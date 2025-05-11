@@ -28,6 +28,7 @@ namespace conf {
         std::size_t N = 0; /// size of the NxN matrix
         double runtimeLBFactorCPU = 1.2; /// factor that scales the CPU runtimes to influence the scheduling
         std::size_t blockUpdateThreshold = 1; /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
+        double idleWatt_CPU = 30.0; /// CPU power draw in Watts when the CPU is idle. Used to estimate total power draw.
     };
 
     Configuration& get();
@@ -60,6 +61,7 @@ namespace conf {
 
     inline std::size_t& blockUpdateThreshold = get().blockUpdateThreshold;
 
+    inline double& idleWatt_CPU = get().idleWatt_CPU;
 
 }
 

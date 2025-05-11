@@ -81,14 +81,8 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                     powerSamples_CPU.get_power_usage().value().begin() + static_cast<long>(nextTimePointPower_CPU),
                     powerSamples_CPU.get_power_usage().value().end());
 
-                std::vector<double> CPU_mvTimes(matrixVectorTimes_CPU.end() - updateInterval,
-                                                matrixVectorTimes_CPU.end());
-                double averageMVTime = std::accumulate(CPU_mvTimes.begin(), CPU_mvTimes.end(), 0.0) /
-                    static_cast<double>(CPU_mvTimes.size());
-
                 powerDraw = std::accumulate(CPU_watts.begin(), CPU_watts.end(), 0.0) /
                     static_cast<double>(CPU_watts.size());
-                powerDraw = powerDraw * averageMVTime;
             } else {
                 std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
                 powerDraw = powerDraw_CPU.back();
@@ -105,16 +99,11 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                     powerSamples_GPU.get_power_usage().value().begin() + static_cast<long>(nextTimePointPower_GPU),
                     powerSamples_GPU.get_power_usage().value().end());
 
-                std::vector<double> GPU_mvTimes(matrixVectorTimes_GPU.end() - updateInterval,
-                                                matrixVectorTimes_GPU.end());
-                double averageMVTime = std::accumulate(GPU_mvTimes.begin(), GPU_mvTimes.end(), 0.0) /
-                    static_cast<double>(GPU_mvTimes.size());
                 powerDraw =
                     std::accumulate(GPU_watts.begin(), GPU_watts.end(), 0.0) / static_cast<double>(GPU_watts.size());
-                powerDraw = powerDraw * averageMVTime;
             } else {
                 std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
-                powerDraw = powerSamples_GPU.get_power_usage().value().back();
+                powerDraw = powerDraw_GPU.back();
             }
             nextTimePointPower_GPU = powerSamples_GPU.get_power_usage().value().size();
             powerDraw_GPU.push_back(powerDraw);
@@ -161,6 +150,12 @@ void MetricsTracker::writeJSON(std::string& path) {
     }
 
     metricsJSON << "\t \"N\":                               " + std::to_string(conf::N) + ",\n";
+
+#ifdef USE_DOUBLE
+    metricsJSON << "\t \"FP_type\":                         " + std::string("\"FP_64\"") + ",\n";
+#else
+    metricsJSON << "\t \"FP_type\":                         " + std::string("\"FP_32\"") + ",\n";
+#endif
 
     metricsJSON << "\t \"matrixBlockSize\":                 " + std::to_string(conf::matrixBlockSize) + ",\n";
     metricsJSON << "\t \"workGroupSize\":                   " + std::to_string(conf::workGroupSize) + ",\n";
