@@ -13,6 +13,8 @@ public:
 
     static std::string getTimeString();
 
+    static void measureIdlePowerCPU();
+
 
 };
 

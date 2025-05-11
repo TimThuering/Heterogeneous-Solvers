@@ -15,6 +15,7 @@
 #include "RuntimeLoadBalancer.hpp"
 #include "PowerLoadBalancer.hpp"
 #include "MatrixGenerator.hpp"
+#include "UtilityFunctions.hpp"
 
 using namespace sycl;
 
@@ -130,6 +131,9 @@ int main(int argc, char *argv[]) {
 
     std::cout << "GPU: " << gpuQueue.get_device().get_info<info::device::name>() << std::endl;
     std::cout << "CPU: " << cpuQueue.get_device().get_info<info::device::name>() << std::endl;
+
+    // measure CPU idle power draw in Watts
+    UtilityFunctions::measureIdlePowerCPU();
 
     std::shared_ptr<LoadBalancer> loadBalancer;
     if (conf::mode == "static") {
