@@ -1,6 +1,7 @@
 #ifndef HETEROGENEOUS_CONJUGATE_GRADIENTS_METRICSTRACKER_HPP
 #define HETEROGENEOUS_CONJUGATE_GRADIENTS_METRICSTRACKER_HPP
 
+#include "Configuration.hpp"
 #include "hws/cpu/cpu_samples.hpp"
 #include "hws/cpu/hardware_sampler.hpp"
 #include "hws/gpu_nvidia/hardware_sampler.hpp"
@@ -11,8 +12,7 @@
 
 class MetricsTracker {
 public:
-    hws::system_hardware_sampler utilizationSampler{hws::sample_category::general};
-    hws::system_hardware_sampler powerSampler{hws::sample_category::power};
+    hws::system_hardware_sampler sampler{conf::sampleCategories};
 
     std::vector<double> averageUtilization_GPU;
     std::vector<double> averageUtilization_CPU;

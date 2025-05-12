@@ -3,6 +3,8 @@
 
 #include <cstdio>
 #include <string>
+#include "hws/sample_category.hpp"
+
 /**
  * Namespace that contains everything regarding the configuration of the program execution
  */
@@ -27,8 +29,10 @@ namespace conf {
         std::string mode = "runtime"; /// mode for the heterogeneous scheduling
         std::size_t N = 0; /// size of the NxN matrix
         double runtimeLBFactorCPU = 1.2; /// factor that scales the CPU runtimes to influence the scheduling
-        std::size_t blockUpdateThreshold = 1; /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
+        std::size_t blockUpdateThreshold = 1;
+        /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
         double idleWatt_CPU = 30.0; /// CPU power draw in Watts when the CPU is idle. Used to estimate total power draw.
+        hws::sample_category sampleCategories = static_cast<hws::sample_category>(0b00000101); /// enable power and general samples
     };
 
     Configuration& get();
@@ -63,6 +67,7 @@ namespace conf {
 
     inline double& idleWatt_CPU = get().idleWatt_CPU;
 
+    inline hws::sample_category& sampleCategories = get().sampleCategories;
 }
 
 #endif //CONFIGURATION_HPP
