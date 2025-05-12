@@ -25,10 +25,17 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
         auto* gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler*>(sampler.samplers()[1].get());
 
         hws::cpu_general_samples generalSamples_CPU = cpu_sampler->general_samples();
-        hws::nvml_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::cpu_power_samples powerSamples_CPU = cpu_sampler->power_samples();
+#ifdef NVIDIA
+        hws::nvml_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::nvml_power_samples powerSamples_GPU = gpu_sampler->power_samples();
-
+#elif defined(AMD)
+        hws::rocm_smi_general_samples generalSamples_GPU = gpu_sampler->general_samples();
+        hws::rocm_smi_power_samples powerSamples_GPU = gpu_sampler->power_samples();
+#elif defined(INTEL)
+        hws::level_zero_general_samples generalSamples_GPU = gpu_sampler->general_samples();
+        hws::level_zero_power_samples powerSamples_GPU = gpu_sampler->power_samples();
+#endif
         if (generalSamples_GPU.get_compute_utilization().has_value()) {
             double averageUtil = 0.0;
             if (nextTimePoint_GPU < generalSamples_GPU.get_compute_utilization().value().size()) {

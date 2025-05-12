@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(ENABLE_TESTS "Enable Test" ON)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
+set(GPU_VENDOR "NVIDIA" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
 
 
 
@@ -70,9 +71,13 @@ target_link_libraries(Heterogeneous_CG PUBLIC Heterogeneous_CG_lib)
 add_sycl_to_target(TARGET Heterogeneous_CG SOURCES ${EXECUTABLE_FILES})
 target_link_options(Heterogeneous_CG PUBLIC -fopenmp)
 
+# enable FP64 double precision
 if (USE_DOUBLE)
     target_compile_definitions(Heterogeneous_CG_lib PUBLIC USE_DOUBLE=1)
 endif ()
+
+target_compile_definitions(Heterogeneous_CG_lib PUBLIC ${GPU_VENDOR})
+
 
 message("Building the hardware sampling library")
 # build and link the hws library
