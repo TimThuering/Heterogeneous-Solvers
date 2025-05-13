@@ -10,7 +10,6 @@
 class MatrixGenerator {
 public:
     static SymmetricMatrix generateSPDMatrixStrictDiagonalDominant(sycl::queue& queue);
-    static SymmetricMatrix generateSPDMatrixStrictDiagonalDominant2(sycl::queue& queue);
     static RightHandSide generateRHS(sycl::queue& queue);
 
 };

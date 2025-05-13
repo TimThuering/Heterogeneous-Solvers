@@ -2,7 +2,7 @@
 
 #include "Configuration.hpp"
 
-SymmetricMatrix MatrixGenerator::generateSPDMatrix(sycl::queue& queue) {
+SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::queue& queue) {
     SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queue);
 
     // block count of all columns except the first one
@@ -52,7 +52,6 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(sycl::queue& queue) {
                     for (std::size_t j = 0; j < matrix.blockSize; ++j) {
                         if (block_i * conf::matrixBlockSize + i < conf::N &&
                             block_j * conf::matrixBlockSize + j < conf::N) {
-
                             const conf::fp_type value = distribution(generator);
                             matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] = value;
                         }
