@@ -22,17 +22,20 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
     if ((iteration + 1) % updateInterval == 0) {
         // get samples for power and utilization from the hws library
         auto* cpu_sampler = dynamic_cast<hws::cpu_hardware_sampler*>(sampler.samplers()[0].get());
-        auto* gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler*>(sampler.samplers()[1].get());
 
         hws::cpu_general_samples generalSamples_CPU = cpu_sampler->general_samples();
         hws::cpu_power_samples powerSamples_CPU = cpu_sampler->power_samples();
+
 #ifdef NVIDIA
+        auto* gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler*>(sampler.samplers()[1].get());
         hws::nvml_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::nvml_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #elif defined(AMD)
+        auto* gpu_sampler = dynamic_cast<hws::gpu_amd_hardware_sampler*>(sampler.samplers()[1].get());
         hws::rocm_smi_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::rocm_smi_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #elif defined(INTEL)
+        auto* gpu_sampler = dynamic_cast<hws::gpugpu_intel_hardware_sampler*>(sampler.samplers()[1].get());
         hws::level_zero_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::level_zero_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #endif
@@ -125,13 +128,25 @@ void MetricsTracker::endTracking() {
 
 void MetricsTracker::writeJSON(std::string& path) {
     std::ofstream metricsJSON(path + "/metrics.json");
+    // get samples for power and utilization from the hws library
     auto* cpu_sampler = dynamic_cast<hws::cpu_hardware_sampler*>(sampler.samplers()[0].get());
-    auto* gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler*>(sampler.samplers()[1].get());
 
     hws::cpu_general_samples generalSamples_CPU = cpu_sampler->general_samples();
-    hws::nvml_general_samples generalSamples_GPU = gpu_sampler->general_samples();
     hws::cpu_power_samples powerSamples_CPU = cpu_sampler->power_samples();
+
+#ifdef NVIDIA
+    auto* gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler*>(sampler.samplers()[1].get());
+    hws::nvml_general_samples generalSamples_GPU = gpu_sampler->general_samples();
     hws::nvml_power_samples powerSamples_GPU = gpu_sampler->power_samples();
+#elif defined(AMD)
+    auto* gpu_sampler = dynamic_cast<hws::gpu_amd_hardware_sampler*>(sampler.samplers()[1].get());
+    hws::rocm_smi_general_samples generalSamples_GPU = gpu_sampler->general_samples();
+    hws::rocm_smi_power_samples powerSamples_GPU = gpu_sampler->power_samples();
+#elif defined(INTEL)
+    auto* gpu_sampler = dynamic_cast<hws::gpugpu_intel_hardware_sampler*>(sampler.samplers()[1].get());
+    hws::level_zero_general_samples generalSamples_GPU = gpu_sampler->general_samples();
+    hws::level_zero_power_samples powerSamples_GPU = gpu_sampler->power_samples();
+#endif
 
     metricsJSON << "{\n";
 
