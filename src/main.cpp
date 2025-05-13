@@ -149,12 +149,11 @@ int main(int argc, char *argv[]) {
                 "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
     }
 
-    // conf::N = 100;
-    // conf::matrixBlockSize = 32;
-    // SymmetricMatrix A = MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(cpuQueue);
-    // RightHandSide b = MatrixGenerator::generateRHS(cpuQueue);
-    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A,cpuQueue);
-    RightHandSide b = MatrixParser::parseRightHandSide(path_b, cpuQueue);
+    conf::N = 40000;
+    SymmetricMatrix A = MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(cpuQueue);
+    RightHandSide b = MatrixGenerator::generateRHS(cpuQueue);
+    // SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A,cpuQueue);
+    // RightHandSide b = MatrixParser::parseRightHandSide(path_b, cpuQueue);
     // MatrixParser::writeBlockedMatrix("./out.txt", A);
 
 

@@ -36,7 +36,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
                             block_j * conf::matrixBlockSize + j < conf::N) {
                             const conf::fp_type value = distribution(generator);
                             if (i == j) {
-                                matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] += std::abs(value);
+                                matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] = std::abs(value) + static_cast<conf::fp_type>(conf::N);
                             } else {
                                 // location (i,j)
                                 matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] = value;
