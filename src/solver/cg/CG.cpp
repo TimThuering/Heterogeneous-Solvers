@@ -304,7 +304,6 @@ void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
         delta_new = delta_new + tmp_cpu[0];
     }
     delta_zero = delta_new;
-    std::cout << delta_new << std::endl;
 }
 
 void CG::compute_q() {
@@ -339,19 +338,14 @@ void CG::compute_q() {
                                                                  blockStartCPU, 0,
                                                                  blockCountCPU, A.blockCountXY, A.blockCountXY);
     }
-    //    auto starttest = std::chrono::steady_clock::now();
-
     waitAllQueues();
-    //    auto endtest = std::chrono::steady_clock::now();
-    //    auto totalTrackingTime = std::chrono::duration<double, std::milli>(endtest - starttest).count();
-
 
     // append execution times
     if (blockCountGPU != 0) {
         metricsTracker.matrixVectorTimes_GPU.push_back(
             static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
                 eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
-        std::cout << "------------------------------------- mvTime = " << metricsTracker.matrixVectorTimes_GPU.back() << std::endl;
+        // std::cout << "------------------------------------- mvTime = " << metricsTracker.matrixVectorTimes_GPU.back() << std::endl;
     } else {
         metricsTracker.matrixVectorTimes_GPU.push_back(0);
     }

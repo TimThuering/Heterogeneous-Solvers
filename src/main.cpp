@@ -126,8 +126,11 @@ int main(int argc, char *argv[]) {
 
 
 
-    queue gpuQueue(gpu_selector_v, sycl::property::queue::enable_profiling());
-    queue cpuQueue(cpu_selector_v, sycl::property::queue::enable_profiling());
+    // sycl::property_list properties{sycl::property::queue::enable_profiling(), sycl::property::queue::in_order()};
+    sycl::property_list properties{sycl::property::queue::enable_profiling()};
+
+    queue gpuQueue(gpu_selector_v, properties);
+    queue cpuQueue(cpu_selector_v, properties);
 
     std::cout << "GPU: " << gpuQueue.get_device().get_info<info::device::name>() << std::endl;
     std::cout << "CPU: " << cpuQueue.get_device().get_info<info::device::name>() << std::endl;
@@ -149,11 +152,11 @@ int main(int argc, char *argv[]) {
                 "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
     }
 
-    conf::N = 40000;
-    SymmetricMatrix A = MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(cpuQueue);
-    RightHandSide b = MatrixGenerator::generateRHS(cpuQueue);
-    // SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A,cpuQueue);
-    // RightHandSide b = MatrixParser::parseRightHandSide(path_b, cpuQueue);
+    // conf::N = 1000;
+    // SymmetricMatrix A = MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(cpuQueue);
+    // RightHandSide b = MatrixGenerator::generateRHS(cpuQueue);
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A,cpuQueue);
+    RightHandSide b = MatrixParser::parseRightHandSide(path_b, cpuQueue);
     // MatrixParser::writeBlockedMatrix("./out.txt", A);
 
 
