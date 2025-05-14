@@ -126,7 +126,6 @@ int main(int argc, char *argv[]) {
 
 
 
-    // sycl::property_list properties{sycl::property::queue::enable_profiling(), sycl::property::queue::in_order()};
     sycl::property_list properties{sycl::property::queue::enable_profiling()};
 
     queue gpuQueue(gpu_selector_v, properties);

@@ -10,7 +10,7 @@
 
 using namespace sycl;
 
-CG::CG(SymmetricMatrix& A,RightHandSide& b, queue& cpuQueue, queue& gpuQueue,
+CG::CG(SymmetricMatrix& A, RightHandSide& b, queue& cpuQueue, queue& gpuQueue,
        std::shared_ptr<LoadBalancer> loadBalancer) :
     A(A),
     b(b),
@@ -50,7 +50,7 @@ void CG::solveHeterogeneous() {
         + 1) / 2);
 
     // initialize data structures
-    initGPUdataStructures(blockCountGPUTotal);
+    initGPUdataStructures();
     initCPUdataStructures();
 
     // variables for cg algorithm
@@ -158,15 +158,48 @@ void CG::solveHeterogeneous() {
     freeDataStructures();
 }
 
-void CG::initGPUdataStructures(const std::size_t blockCountGPUTotal) {
+void CG::initGPUdataStructures() {
     if (blockCountGPU == 0) {
         return;
     }
 
+    const std::size_t gpuAvailableMemorySize = gpuQueue.get_device().get_info<sycl::info::device::global_mem_size>() - 6
+        * b.rightHandSideData.size() * sizeof(conf::fp_type);
+
+    const double maxBlocksGPUMemory = std::floor(static_cast<double>(gpuAvailableMemorySize) /
+        (static_cast<double>(conf::matrixBlockSize) * static_cast<double>(conf::matrixBlockSize)));
+
+    const int totalBlockCountA = (A.blockCountXY * (A.blockCountXY + 1) / 2);
+
+    std::size_t bytesGPU;
+    if (maxBlocksGPUMemory < totalBlockCountA) {
+        // GPU memory is not sufficient to store the whole matrix --> calculate maximum number of rows that can be stored
+
+        const double valueRoot = (2 * A.blockCountXY + 1) * (2 * A.blockCountXY + 1) - 8.0 * maxBlocksGPUMemory;
+        if (valueRoot >= 0.0) {
+            const double maxRowsGPUMemory = std::floor(0.5 + A.blockCountXY - 0.5 * std::sqrt(valueRoot));
+
+            const double rowsLowerPart = A.blockCountXY - maxRowsGPUMemory;
+
+            const std::size_t blocksGPUMemory = totalBlockCountA - (rowsLowerPart * (rowsLowerPart + 1) / 2);
+
+            bytesGPU = blocksGPUMemory * conf::matrixBlockSize * conf::matrixBlockSize * sizeof(conf::fp_type);
+
+            if (maxRowsGPUMemory < blockCountGPU || blockCountCPU == 0) {
+                throw std::runtime_error('GPU memory not sufficient for requested split between GPU and CPU');
+            }
+        } else {
+            throw std::runtime_error("Error during GPU memory allocation. Choose a different Block size.");
+        }
+    } else {
+        // Whole matrix A fits into GPU memory
+        bytesGPU = A.matrixData.size() * sizeof(conf::fp_type);
+    }
+
     // Matrix A GPU
-    A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
+    A_gpu = malloc_device<conf::fp_type>(bytesGPU, gpuQueue);
     gpuQueue.submit([&](handler& h) {
-        h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
+        h.memcpy(A_gpu, A.matrixData.data(), bytesGPU);
     }).wait();
 
     // Right-hand side b GPU
@@ -331,7 +364,7 @@ void CG::compute_q() {
     // q = Ad
     if (blockCountGPU != 0) {
         eventGPU = MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
-                                                             blockCountGPU, A.blockCountXY, A.blockCountXY);
+                                                                 blockCountGPU, A.blockCountXY, A.blockCountXY);
     }
     if (blockCountCPU != 0) {
         eventCPU = MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu,
@@ -421,8 +454,9 @@ void CG::computeRealResidual() {
 
     // r = b - Ax
     if (blockCountGPU != 0) {
-        MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, x_gpu, r_gpu, 0, 0, blockCountGPU, A.blockCountXY,
-                                                  A.blockCountXY);
+        MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, x_gpu, r_gpu, 0, 0, blockCountGPU,
+                                                      A.blockCountXY,
+                                                      A.blockCountXY);
     }
     if (blockCountCPU != 0) {
         MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), x.data(), r_cpu, blockStartCPU, 0,
@@ -512,7 +546,8 @@ void CG::rebalanceProportions(double& gpuProportion) {
     const std::size_t blockCountCPU_new = A.blockCountXY - blockCountGPU_new;
     const std::size_t blockStartCPU_new = blockCountGPU_new;
 
-    if (blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU + conf::blockUpdateThreshold) {
+    if (blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU +
+        conf::blockUpdateThreshold) {
         if (blockCountGPU_new > blockCountGPU) {
             const std::size_t additionalBlocks = blockCountGPU_new - blockCountGPU;
             // exchange missing parts of d vector
@@ -563,7 +598,8 @@ void CG::rebalanceProportions(double& gpuProportion) {
         blockCountCPU = blockCountCPU_new;
         blockStartCPU = blockStartCPU_new;
     } else if (blockCountGPU_new != blockCountGPU) {
-        std::cout << "Change in block counts smaller than threshold --> no re-balancing: " << blockCountGPU << " --> "<< blockCountGPU_new << std::endl;
+        std::cout << "Change in block counts smaller than threshold --> no re-balancing: " << blockCountGPU << " --> "
+            << blockCountGPU_new << std::endl;
     }
 
     std::cout << "Block count GPU: " << blockCountGPU << std::endl;

@@ -53,7 +53,7 @@ private:
 
     void rebalanceProportions(double &gpuProportion);
 
-    void initGPUdataStructures(std::size_t blockCountGPUTotal);
+    void initGPUdataStructures();
 
     void initCPUdataStructures();
 
