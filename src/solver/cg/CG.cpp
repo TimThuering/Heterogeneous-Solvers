@@ -364,55 +364,6 @@ void CG::compute_q() {
     }
 }
 
-void CG::compute_q_CommunicationHiding() {
-    if (blockCountGPU != 0 && blockCountCPU != 0) {
-        // auto startMV = std::chrono::steady_clock::now();
-
-
-        queue memQueue(gpuQueue.get_device());
-
-        // exchange parts of d vector so that both CPU and GPU hold the complete vector. Happens asynchronously.
-        memQueue.submit([&](handler& h) {
-            h.memcpy(&d_gpu[blockStartCPU * conf::matrixBlockSize], &d_cpu[blockStartCPU * conf::matrixBlockSize],
-                     blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
-        });
-        memQueue.submit([&](handler& h) {
-            h.memcpy(d_cpu, d_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
-        });
-
-
-        // perform partial matrix-vector products with data that is already on the GPU / CPU
-
-        MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
-                                                  blockCountGPU, blockCountGPU, A.blockCountXY);
-        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU,
-                                                      blockStartCPU,
-                                                      blockCountCPU, blockCountCPU, A.blockCountXY);
-
-        // wait for memory transfers to finish
-        waitAllQueues();
-        memQueue.wait();
-
-
-        // perform missing partial matrix-vector products with the transferred data
-        MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, blockCountGPU,
-                                                  blockCountGPU, blockCountCPU, A.blockCountXY, false);
-        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
-                                                      blockCountCPU, blockCountGPU, A.blockCountXY, false);
-        waitAllQueues();
-    } else if (blockCountGPU != 0 && blockCountCPU == 0) {
-        MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
-                                                  blockCountGPU, A.blockCountXY, A.blockCountXY);
-        waitAllQueues();
-    } else if (blockCountCPU != 0 && blockCountGPU == 0) {
-        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0,
-                                                      blockCountCPU, A.blockCountXY, A.blockCountXY);
-        waitAllQueues();
-    } else {
-        throw std::runtime_error("Invalid CPU/GPU proportion");
-    }
-}
-
 void CG::compute_alpha(conf::fp_type& alpha, conf::fp_type& delta_new) {
     unsigned int workGroupCountScalarProduct_GPU = 0;
     unsigned int workGroupCountScalarProduct_CPU = 0;
@@ -493,27 +444,6 @@ void CG::computeRealResidual() {
                                          blockCountCPU);
     }
     waitAllQueues();
-}
-
-void CG::computeRealResidual_CommunicationHiding() {
-    // if (blockCountGPU != 0 && blockCountCPU != 0 || rebalanced) {
-    //     // exchange parts of x vector so that both CPU and GPU hold the complete vector. Happens asynchronously.
-    //     gpuQueue.submit([&](handler& h) {
-    //         h.memcpy(&x_gpu[blockStartCPU_memoryTransfer * conf::matrixBlockSize], &x[blockStartCPU_memoryTransfer * conf::matrixBlockSize],
-    //                  blockCountCPU_memoryTransfer * conf::matrixBlockSize * sizeof(conf::fp_type));
-    //     });
-    //     gpuQueue.submit([&](handler& h) {
-    //         h.memcpy(x.data(), x_gpu, blockCountGPU_memoryTransfer * conf::matrixBlockSize * sizeof(conf::fp_type));
-    //     });
-    //
-    //     // perform partial matrix-vector products with data that is already on the GPU / CPU
-    // } else if (blockCountGPU != 0 && blockCountCPU == 0) {
-    //     waitAllQueues();
-    // } else if (blockCountCPU != 0 && blockCountGPU == 0) {
-    //     waitAllQueues();
-    // } else {
-    //     throw std::runtime_error("Invalid CPU/GPU proportion");
-    // }
 }
 
 void CG::update_r(conf::fp_type alpha) {
