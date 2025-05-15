@@ -10,10 +10,9 @@
 class MatrixGenerator {
 public:
     static SymmetricMatrix generateSPDMatrixStrictDiagonalDominant(sycl::queue& queue);
+    static SymmetricMatrix generateSPDMatrix(std::string& path, sycl::queue& queue);
     static RightHandSide generateRHS(sycl::queue& queue);
-
 };
-
 
 
 #endif //MATRIXGENERATOR_HPP

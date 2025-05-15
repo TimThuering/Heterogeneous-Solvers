@@ -1,6 +1,8 @@
-#include "MatrixGenerator.hpp"
+#include "sycl/sycl.hpp"
 
+#include "MatrixGenerator.hpp"
 #include "Configuration.hpp"
+using namespace sycl;
 
 SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::queue& queue) {
     SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queue);
@@ -36,7 +38,8 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
                             block_j * conf::matrixBlockSize + j < conf::N) {
                             const conf::fp_type value = distribution(generator);
                             if (i == j) {
-                                matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] = std::abs(value) + static_cast<conf::fp_type>(conf::N);
+                                matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] = std::abs(value) +
+                                    static_cast<conf::fp_type>(conf::N);
                             } else {
                                 // location (i,j)
                                 matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] = value;
@@ -61,6 +64,101 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
         }
     }
 
+
+    return matrix;
+}
+
+SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queue& queue) {
+    std::cout << "-- generating SPD matrix of size " << conf::N << "x" << conf::N << std::endl;
+    SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queue);
+
+    std::size_t nRegressors = 8; // I would keep that constant
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> trainingInput{
+        usm_allocator<conf::fp_type, usm::alloc::shared>(queue)
+    };
+    std::size_t offset = nRegressors - 1;
+    trainingInput.resize(conf::N + offset);
+
+    conf::fp_type* matrixData = matrix.matrixData.data();
+    conf::fp_type* trainingInputData = trainingInput.data();
+
+    std::ifstream dataInputStream(path);
+    std::string valueString;
+
+    // parse input data
+    int rowIndex = 0;
+    while (std::getline(dataInputStream, valueString)) {
+        conf::fp_type value = static_cast<conf::fp_type>(std::stod(valueString));
+        trainingInput[rowIndex + offset] = value;
+        rowIndex++;
+        if (rowIndex == conf::N) {
+            break;
+        }
+    }
+    dataInputStream.close();
+
+    if (rowIndex != conf::N) {
+        throw std::runtime_error("Not enough data available!");
+    }
+
+
+    // block count of all columns except the first one
+    const int referenceBlockCount = (matrix.blockCountXY * (matrix.blockCountXY - 1)) / 2;
+
+    std::size_t N = conf::N;
+    for (std::size_t i_block = 0; i_block < static_cast<std::size_t>(matrix.blockCountXY); ++i_block) {
+        for (std::size_t j_block = 0; j_block <= i_block; j_block++) {
+            // number of blocks in row to the right (if matrix would be full)
+            const int block_j_inv = matrix.blockCountXY - (j_block + 1);
+
+            // total number of blocks to the right that are stored
+            const int columnBlocksToRight = (block_j_inv * (block_j_inv + 1)) / 2;
+
+            // id of block in the matrix data structure for symmetric matrices
+            const int blockID = i_block + referenceBlockCount - columnBlocksToRight;
+
+            // start index of block in matrix data structure
+            const int blockStartIndex = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+
+            // Diagonal noise for stability
+            const double noiseVariance = 0.01;
+
+            // Default values for hyperparameters
+            const double verticalLengthscale = 1.0;
+            const double lengthscale = 1.0;
+
+            std::size_t matrixBlockSize = conf::matrixBlockSize;
+
+            queue.submit([&](handler& h) {
+                h.parallel_for(range<2>(matrixBlockSize,matrixBlockSize), [=](id<2> idx) {
+                    const unsigned int i_local = idx[0];
+                    const unsigned int j_local = idx[1];
+                    const unsigned long i_global = matrixBlockSize * i_block + i_local;
+                    const unsigned long j_global = matrixBlockSize * j_block + j_local;
+                    if (i_global >= N || j_global >= N) {
+                        return;
+                    }
+                    // printf("(%i,%i)\n", i_local, j_local);
+                    // printf("(%i,%i)\n", i_global, j_global);
+                    //
+                    double distance = 0.0;
+                    for (unsigned int k = 0; k < nRegressors; k++) {
+                        const double tmp = trainingInputData[i_global + k] - trainingInputData[j_global + k];
+                        distance += tmp * tmp;
+                    }
+                    double covarianceFunction = verticalLengthscale * sycl::exp(
+                        -0.5 / (lengthscale * lengthscale) * distance);
+
+                    if (i_global == j_global) {
+                        covarianceFunction += noiseVariance;
+                    }
+                    matrixData[blockStartIndex + i_local * matrixBlockSize + j_local] = covarianceFunction;
+
+                });
+            });
+        }
+    }
+    queue.wait();
 
     return matrix;
 }

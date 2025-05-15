@@ -34,6 +34,7 @@ int main(int argc, char *argv[]) {
              cxxopts::value<std::string>())
             ("b,path_b", "path to .txt file containing the right-hand side b", cxxopts::value<std::string>())
             ("o,output", "path to the output directory", cxxopts::value<std::string>())
+            ("d,input", "path to the input data for matrix generation", cxxopts::value<std::string>())
             ("m,mode",
              "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'",
              cxxopts::value<std::string>())
@@ -53,6 +54,7 @@ int main(int argc, char *argv[]) {
 
     std::string path_A;
     std::string path_b;
+    std::string path_data;
     if (arguments.count("path_A")) {
         path_A = arguments["path_A"].as<std::string>();
     } else {
@@ -64,6 +66,10 @@ int main(int argc, char *argv[]) {
     } else {
         throw std::runtime_error("No path to .txt file for right-hand side b specified");
     }
+
+    if (arguments.count("path_data")) {
+        path_data = arguments["path_data"].as<std::string>();
+    } else
 
     if (arguments.count("output")) {
         conf::outputPath = arguments["output"].as<std::string>();
@@ -120,9 +126,6 @@ int main(int argc, char *argv[]) {
         conf::blockUpdateThreshold = arguments["block_update_th"].as<std::size_t>();
     }
 
-    if ((conf::workGroupSize > conf::matrixBlockSize) || (conf::matrixBlockSize % conf::workGroupSize != 0)) {
-        throw std::runtime_error("Work-Group size must be smaller or equal than block size and divide the block size");
-    }
 
 
 
@@ -151,13 +154,12 @@ int main(int argc, char *argv[]) {
                 "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
     }
 
-    // conf::N = 1000;
-    // SymmetricMatrix A = MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(cpuQueue);
-    // RightHandSide b = MatrixGenerator::generateRHS(cpuQueue);
-    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A,cpuQueue);
-    RightHandSide b = MatrixParser::parseRightHandSide(path_b, cpuQueue);
-    // MatrixParser::writeBlockedMatrix("./out.txt", A);
 
+    RightHandSide b = MatrixGenerator::generateRHS(cpuQueue);
+    // SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A,cpuQueue);
+    // RightHandSide b = MatrixParser::parseRightHandSide(path_b, cpuQueue);
+    SymmetricMatrix A = MatrixGenerator::generateSPDMatrix(path_data, cpuQueue);
+    // MatrixParser::writeBlockedMatrix("./out.txt", A);
 
     CG algorithm(A, b, cpuQueue, gpuQueue, loadBalancer);
     algorithm.solveHeterogeneous();
