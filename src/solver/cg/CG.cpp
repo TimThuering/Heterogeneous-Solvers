@@ -171,35 +171,35 @@ void CG::initGPUdataStructures() {
 
     const int totalBlockCountA = (A.blockCountXY * (A.blockCountXY + 1) / 2);
 
-    std::size_t bytesGPU;
+    std::size_t valuesGPU;
     if (maxBlocksGPUMemory < totalBlockCountA) {
         // GPU memory is not sufficient to store the whole matrix --> calculate maximum number of rows that can be stored
 
         const double valueRoot = (2 * A.blockCountXY + 1) * (2 * A.blockCountXY + 1) - 8.0 * maxBlocksGPUMemory;
         if (valueRoot >= 0.0) {
-            const double maxRowsGPUMemory = std::floor(0.5 + A.blockCountXY - 0.5 * std::sqrt(valueRoot));
+            const std::size_t maxRowsGPUMemory = std::floor(0.5 + A.blockCountXY - 0.5 * std::sqrt(valueRoot));
 
-            const double rowsLowerPart = A.blockCountXY - maxRowsGPUMemory;
+            const std::size_t rowsLowerPart = A.blockCountXY - maxRowsGPUMemory;
 
             const std::size_t blocksGPUMemory = totalBlockCountA - (rowsLowerPart * (rowsLowerPart + 1) / 2);
 
-            bytesGPU = blocksGPUMemory * conf::matrixBlockSize * conf::matrixBlockSize * sizeof(conf::fp_type);
+            valuesGPU = blocksGPUMemory * conf::matrixBlockSize * conf::matrixBlockSize;
 
             if (maxRowsGPUMemory < blockCountGPU || blockCountCPU == 0) {
-                throw std::runtime_error('GPU memory not sufficient for requested split between GPU and CPU');
+                throw std::runtime_error("GPU memory not sufficient for requested split between GPU and CPU");
             }
         } else {
             throw std::runtime_error("Error during GPU memory allocation. Choose a different Block size.");
         }
     } else {
         // Whole matrix A fits into GPU memory
-        bytesGPU = A.matrixData.size() * sizeof(conf::fp_type);
+        valuesGPU = A.matrixData.size();
     }
 
     // Matrix A GPU
-    A_gpu = malloc_device<conf::fp_type>(bytesGPU, gpuQueue);
+    A_gpu = malloc_device<conf::fp_type>(valuesGPU, gpuQueue);
     gpuQueue.submit([&](handler& h) {
-        h.memcpy(A_gpu, A.matrixData.data(), bytesGPU);
+        h.memcpy(A_gpu, A.matrixData.data(), valuesGPU * sizeof(conf::fp_type));
     }).wait();
 
     // Right-hand side b GPU
