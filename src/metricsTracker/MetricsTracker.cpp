@@ -35,10 +35,12 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
         hws::rocm_smi_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::rocm_smi_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #elif defined(INTEL)
-        auto* gpu_sampler = dynamic_cast<hws::gpugpu_intel_hardware_sampler*>(sampler.samplers()[1].get());
+        auto* gpu_sampler = dynamic_cast<hws::gpu_intel_hardware_sampler*>(sampler.samplers()[1].get());
         hws::level_zero_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::level_zero_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #endif
+
+#ifndef INTEL
         if (generalSamples_GPU.get_compute_utilization().has_value()) {
             double averageUtil = 0.0;
             if (nextTimePoint_GPU < generalSamples_GPU.get_compute_utilization().value().size()) {
@@ -58,6 +60,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
             nextTimePoint_GPU = generalSamples_GPU.get_compute_utilization().value().size();
             averageUtilization_GPU.push_back(averageUtil);
         }
+#endif
 
         if (generalSamples_CPU.get_compute_utilization().has_value()) {
             double averageUtil = 0.0;
@@ -143,7 +146,7 @@ void MetricsTracker::writeJSON(std::string& path) {
     hws::rocm_smi_general_samples generalSamples_GPU = gpu_sampler->general_samples();
     hws::rocm_smi_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #elif defined(INTEL)
-    auto* gpu_sampler = dynamic_cast<hws::gpugpu_intel_hardware_sampler*>(sampler.samplers()[1].get());
+    auto* gpu_sampler = dynamic_cast<hws::gpu_intel_hardware_sampler*>(sampler.samplers()[1].get());
     hws::level_zero_general_samples generalSamples_GPU = gpu_sampler->general_samples();
     hws::level_zero_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #endif
@@ -210,8 +213,12 @@ void MetricsTracker::writeJSON(std::string& path) {
 
     metricsJSON << "\t \"memcopy_d\":              " + vectorToJSONString<double>(memcopy_d) + ",\n";
 
+#ifndef INTEL
     metricsJSON << "\t \"rawUtilizationData_GPU\": " + vectorToJSONString<unsigned int>(
         generalSamples_GPU.get_compute_utilization().value_or(std::vector<unsigned int>(0))) + ",\n";
+#elif
+    metricsJSON << "\t \"rawUtilizationData_GPU\": " + std::string("[]") + ",\n";
+#endif
     metricsJSON << "\t \"rawUtilizationData_CPU\": " + vectorToJSONString<double>(
         generalSamples_CPU.get_compute_utilization().value_or(std::vector<double>(0))) + ",\n";
 
