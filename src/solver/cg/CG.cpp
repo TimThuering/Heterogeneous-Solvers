@@ -163,11 +163,13 @@ void CG::initGPUdataStructures() {
         return;
     }
 
-    const std::size_t gpuAvailableMemorySize = gpuQueue.get_device().get_info<sycl::info::device::global_mem_size>() - 6
+    const std::size_t gpuAvailableMemorySize = 0.8 * gpuQueue.get_device().get_info<
+            sycl::info::device::global_mem_size>() - 6
         * b.rightHandSideData.size() * sizeof(conf::fp_type);
 
     const double maxBlocksGPUMemory = std::floor(static_cast<double>(gpuAvailableMemorySize) /
-        (static_cast<double>(conf::matrixBlockSize) * static_cast<double>(conf::matrixBlockSize)));
+        (static_cast<double>(conf::matrixBlockSize) * static_cast<double>(conf::matrixBlockSize) * sizeof(
+            conf::fp_type)));
 
     const int totalBlockCountA = (A.blockCountXY * (A.blockCountXY + 1) / 2);
 
@@ -185,6 +187,8 @@ void CG::initGPUdataStructures() {
 
             valuesGPU = blocksGPUMemory * conf::matrixBlockSize * conf::matrixBlockSize;
 
+            maxBlockCountGPU = maxRowsGPUMemory;
+
             if (maxRowsGPUMemory < blockCountGPU || blockCountCPU == 0) {
                 throw std::runtime_error("GPU memory not sufficient for requested split between GPU and CPU");
             }
@@ -192,9 +196,12 @@ void CG::initGPUdataStructures() {
             throw std::runtime_error("Error during GPU memory allocation. Choose a different Block size.");
         }
     } else {
+        maxBlockCountGPU = A.blockCountXY;
         // Whole matrix A fits into GPU memory
         valuesGPU = A.matrixData.size();
     }
+
+    std::cout << "GPU memory size: " << valuesGPU * sizeof(conf::fp_type) << std::endl;
 
     // Matrix A GPU
     A_gpu = malloc_device<conf::fp_type>(valuesGPU, gpuQueue);
@@ -542,9 +549,18 @@ void CG::waitAllQueues() {
 void CG::rebalanceProportions(double& gpuProportion) {
     // get new GPU proportion of workload
     gpuProportion = loadBalancer->getNewProportionGPU(metricsTracker);
-    const std::size_t blockCountGPU_new = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
-    const std::size_t blockCountCPU_new = A.blockCountXY - blockCountGPU_new;
-    const std::size_t blockStartCPU_new = blockCountGPU_new;
+    std::size_t blockCountGPU_new = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
+    std::size_t blockCountCPU_new = A.blockCountXY - blockCountGPU_new;
+    std::size_t blockStartCPU_new = blockCountGPU_new;
+
+    if (blockCountGPU_new > maxBlockCountGPU) {
+        std::cout << "Change in block counts would result into too much gpu memory usage. New GPU block count: " <<
+            maxBlockCountGPU << std::endl;
+
+        blockCountGPU_new = maxBlockCountGPU;
+        blockCountCPU_new = A.blockCountXY - maxBlockCountGPU;
+        blockStartCPU_new = maxBlockCountGPU;
+    }
 
     if (blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU +
         conf::blockUpdateThreshold) {
@@ -601,6 +617,7 @@ void CG::rebalanceProportions(double& gpuProportion) {
         std::cout << "Change in block counts smaller than threshold --> no re-balancing: " << blockCountGPU << " --> "
             << blockCountGPU_new << std::endl;
     }
+
 
     std::cout << "Block count GPU: " << blockCountGPU << std::endl;
     std::cout << "Block count CPU: " << blockCountCPU << std::endl;

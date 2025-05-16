@@ -50,6 +50,8 @@ private:
     std::size_t blockCountCPU;
     std::size_t blockStartCPU;
 
+    std::size_t maxBlockCountGPU; /// maximum number of blocks in X/Y direction for the GPU
+
 
     void rebalanceProportions(double &gpuProportion);
 

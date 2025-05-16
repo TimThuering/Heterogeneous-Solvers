@@ -19,7 +19,7 @@
 
 using namespace sycl;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 #ifdef USE_DOUBLE
     std::cout << "Using FP64 double precision" << std::endl;
 #else
@@ -30,46 +30,47 @@ int main(int argc, char *argv[]) {
     cxxopts::Options argumentOptions("Heterogeneous Conjugate Gradients", "CG Algorithm with CPU-GPU co-execution");
 
     argumentOptions.add_options()
-            ("A,path_A", "path to .txt file containing symmetric positive definite matrix A",
-             cxxopts::value<std::string>())
-            ("b,path_b", "path to .txt file containing the right-hand side b", cxxopts::value<std::string>())
-            ("o,output", "path to the output directory", cxxopts::value<std::string>())
-            ("d,input", "path to the input data for matrix generation", cxxopts::value<std::string>())
-            ("m,mode",
-             "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'",
-             cxxopts::value<std::string>())
-            ("z,matrix_bsz", "block size for the symmetric matrix storage", cxxopts::value<int>())
-            // ("w,wg_size", "work-group size for matrix-vector operations", cxxopts::value<int>())
-            ("v,wg_size_vec", "work-group size for vector-vector operations", cxxopts::value<int>())
-            ("s,wg_size_sp", "work-group size for the final scalar product step on GPUs", cxxopts::value<int>())
-            ("i,i_max", "maximum number of iterations", cxxopts::value<int>())
-            ("e,eps", "epsilon value for the termination of the cg algorithm", cxxopts::value<double>())
-            ("u,update_int", "interval in which CPU/GPU distribution will be rebalanced", cxxopts::value<int>())
-            ("g,init_gpu_perc", "initial proportion of work assigned to gpu", cxxopts::value<double>())
-            ("r,write_result", "write the result vector x to a .txt file", cxxopts::value<bool>())
-            ("f,cpu_lb_factor", "factor that scales the CPU times for runtime load balancing", cxxopts::value<double>())
-            ("t,block_update_th", "when block count change during re-balancing is equal or below this number, no re-balancing occurs", cxxopts::value<std::size_t>());
+        ("A,path_A", "path to .txt file containing symmetric positive definite matrix A",
+         cxxopts::value<std::string>())
+        ("b,path_b", "path to .txt file containing the right-hand side b", cxxopts::value<std::string>())
+        ("o,output", "path to the output directory", cxxopts::value<std::string>())
+        ("d,input", "path to the input data for matrix generation", cxxopts::value<std::string>())
+        ("m,mode",
+         "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'",
+         cxxopts::value<std::string>())
+        ("z,matrix_bsz", "block size for the symmetric matrix storage", cxxopts::value<int>())
+        // ("w,wg_size", "work-group size for matrix-vector operations", cxxopts::value<int>())
+        ("v,wg_size_vec", "work-group size for vector-vector operations", cxxopts::value<int>())
+        ("s,wg_size_sp", "work-group size for the final scalar product step on GPUs", cxxopts::value<int>())
+        ("i,i_max", "maximum number of iterations", cxxopts::value<int>())
+        ("e,eps", "epsilon value for the termination of the cg algorithm", cxxopts::value<double>())
+        ("u,update_int", "interval in which CPU/GPU distribution will be rebalanced", cxxopts::value<int>())
+        ("g,init_gpu_perc", "initial proportion of work assigned to gpu", cxxopts::value<double>())
+        ("r,write_result", "write the result vector x to a .txt file", cxxopts::value<bool>())
+        ("f,cpu_lb_factor", "factor that scales the CPU times for runtime load balancing", cxxopts::value<double>())
+        ("t,block_update_th",
+         "when block count change during re-balancing is equal or below this number, no re-balancing occurs",
+         cxxopts::value<std::size_t>())
+        ("s,size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>());
 
     const auto arguments = argumentOptions.parse(argc, argv);
 
+    bool generateMatrix = false;
     std::string path_A;
     std::string path_b;
     std::string path_data;
-    if (arguments.count("path_A")) {
+    if (arguments.count("path_A") && arguments.count("path_b")) {
         path_A = arguments["path_A"].as<std::string>();
-    } else {
-        throw std::runtime_error("No path to .txt file for matrix A specified");
-    }
-
-    if (arguments.count("path_b")) {
         path_b = arguments["path_b"].as<std::string>();
+    } else if (arguments.count("input")) {
+        path_data = arguments["input"].as<std::string>();
+        generateMatrix = true;
+        if (arguments.count("size")) {
+           conf::N = arguments["size"].as<std::size_t>();
+        }
     } else {
-        throw std::runtime_error("No path to .txt file for right-hand side b specified");
+        throw std::runtime_error("No path to .txt file for matrix A specified and no path to input data for matrix generation specified");
     }
-
-    if (arguments.count("path_data")) {
-        path_data = arguments["path_data"].as<std::string>();
-    } else
 
     if (arguments.count("output")) {
         conf::outputPath = arguments["output"].as<std::string>();
@@ -85,10 +86,6 @@ int main(int argc, char *argv[]) {
         conf::matrixBlockSize = arguments["matrix_bsz"].as<int>();
     }
     conf::workGroupSize = conf::matrixBlockSize;
-
-    // if (arguments.count("wg_size")) {
-    //     conf::workGroupSize = arguments["wg_size"].as<int>();
-    // }
 
     if (arguments.count("wg_size_vec")) {
         conf::workGroupSizeVector = arguments["wg_size_vec"].as<int>();
@@ -127,8 +124,6 @@ int main(int argc, char *argv[]) {
     }
 
 
-
-
     sycl::property_list properties{sycl::property::queue::enable_profiling()};
 
     queue gpuQueue(gpu_selector_v, properties);
@@ -151,8 +146,9 @@ int main(int argc, char *argv[]) {
         loadBalancer = std::make_shared<PowerLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
     } else {
         throw std::runtime_error(
-                "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
+            "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
     }
+
 
 
     RightHandSide b = MatrixGenerator::generateRHS(cpuQueue);
