@@ -163,7 +163,7 @@ void CG::initGPUdataStructures() {
         return;
     }
 
-    const std::size_t gpuAvailableMemorySize = 0.8 * gpuQueue.get_device().get_info<
+    const std::size_t gpuAvailableMemorySize = 0.9 * gpuQueue.get_device().get_info<
             sycl::info::device::global_mem_size>() - 6
         * b.rightHandSideData.size() * sizeof(conf::fp_type);
 

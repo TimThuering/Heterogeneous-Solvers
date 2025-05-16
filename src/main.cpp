@@ -34,7 +34,8 @@ int main(int argc, char* argv[]) {
          cxxopts::value<std::string>())
         ("b,path_b", "path to .txt file containing the right-hand side b", cxxopts::value<std::string>())
         ("o,output", "path to the output directory", cxxopts::value<std::string>())
-        ("d,input", "path to the input data for matrix generation", cxxopts::value<std::string>())
+        ("d,gp_input", "path to the input data for GP matrix generation", cxxopts::value<std::string>())
+        ("gp_output", "path to the output data for GP matrix generation", cxxopts::value<std::string>())
         ("m,mode",
          "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'",
          cxxopts::value<std::string>())
@@ -51,25 +52,28 @@ int main(int argc, char* argv[]) {
         ("t,block_update_th",
          "when block count change during re-balancing is equal or below this number, no re-balancing occurs",
          cxxopts::value<std::size_t>())
-        ("s,size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>());
+        ("size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>());
 
     const auto arguments = argumentOptions.parse(argc, argv);
 
     bool generateMatrix = false;
     std::string path_A;
     std::string path_b;
-    std::string path_data;
+    std::string path_gp_input;
+    std::string path_gp_output;
     if (arguments.count("path_A") && arguments.count("path_b")) {
         path_A = arguments["path_A"].as<std::string>();
         path_b = arguments["path_b"].as<std::string>();
-    } else if (arguments.count("input")) {
-        path_data = arguments["input"].as<std::string>();
+    } else if (arguments.count("gp_input") && arguments.count("gp_output")) {
+        path_gp_input = arguments["gp_input"].as<std::string>();
+        path_gp_output = arguments["gp_output"].as<std::string>();
         generateMatrix = true;
         if (arguments.count("size")) {
-           conf::N = arguments["size"].as<std::size_t>();
+            conf::N = arguments["size"].as<std::size_t>();
         }
     } else {
-        throw std::runtime_error("No path to .txt file for matrix A specified and no path to input data for matrix generation specified");
+        throw std::runtime_error(
+            "No path to .txt file for matrix A specified and no path to input data for matrix generation specified");
     }
 
     if (arguments.count("output")) {
@@ -150,12 +154,14 @@ int main(int argc, char* argv[]) {
     }
 
 
+    // generate or parse Symmetric matrix
+    RightHandSide b = generateMatrix
+                          ? MatrixGenerator::parseRHS_GP(path_gp_output, cpuQueue)
+                          : MatrixParser::parseRightHandSide(path_b, cpuQueue);
 
-    RightHandSide b = MatrixGenerator::generateRHS(cpuQueue);
-    // SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A,cpuQueue);
-    // RightHandSide b = MatrixParser::parseRightHandSide(path_b, cpuQueue);
-    SymmetricMatrix A = MatrixGenerator::generateSPDMatrix(path_data, cpuQueue);
-    // MatrixParser::writeBlockedMatrix("./out.txt", A);
+    SymmetricMatrix A = generateMatrix
+                            ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue)
+                            : MatrixParser::parseSymmetricMatrix(path_A, cpuQueue);
 
     CG algorithm(A, b, cpuQueue, gpuQueue, loadBalancer);
     algorithm.solveHeterogeneous();

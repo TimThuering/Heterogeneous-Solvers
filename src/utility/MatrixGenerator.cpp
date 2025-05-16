@@ -72,7 +72,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
     std::cout << "-- generating SPD matrix of size " << conf::N << "x" << conf::N << std::endl;
     SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queue);
 
-    std::size_t nRegressors = 8; // I would keep that constant
+    std::size_t nRegressors = 8;
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> trainingInput{
         usm_allocator<conf::fp_type, usm::alloc::shared>(queue)
     };
@@ -161,6 +161,34 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
     queue.wait();
 
     return matrix;
+}
+
+RightHandSide MatrixGenerator::parseRHS_GP(std::string& path, sycl::queue& queue) {
+
+    std::cout << "-- parsing data for rhs of size " << conf::N << std::endl;
+
+    RightHandSide rhs(conf::N, conf::matrixBlockSize, queue);
+
+    std::ifstream dataInputStream(path);
+    std::string valueString;
+
+    // parse input data
+    int rowIndex = 0;
+    while (std::getline(dataInputStream, valueString)) {
+        conf::fp_type value = static_cast<conf::fp_type>(std::stod(valueString));
+        rhs.rightHandSideData[rowIndex] = value;
+        rowIndex++;
+        if (rowIndex == conf::N) {
+            break;
+        }
+    }
+    dataInputStream.close();
+
+    if (rowIndex != conf::N) {
+        throw std::runtime_error("Not enough data available!");
+    }
+
+    return rhs;
 }
 
 RightHandSide MatrixGenerator::generateRHS(sycl::queue& queue) {
