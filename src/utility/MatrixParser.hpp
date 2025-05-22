@@ -49,6 +49,8 @@ public:
      */
     static void writeBlockedMatrix(const std::string& path, const SymmetricMatrix& matrix);
 
+    static void writeFullMatrix(const std::string& path, const SymmetricMatrix& matrix);
+
 private:
     /**
      * Helper method used by parseSymmetricMatrix that processes a row of the matrix file and correctly stores all

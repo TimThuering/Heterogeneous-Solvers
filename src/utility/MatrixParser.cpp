@@ -212,3 +212,67 @@ void MatrixParser::writeBlockedMatrix(const std::string& path, const SymmetricMa
     }
     output.close();
 }
+
+void MatrixParser::writeFullMatrix(const std::string& path, const SymmetricMatrix& matrix) {
+    std::ofstream output(path);
+
+    output << std::setprecision(10) << std::fixed;
+
+    for (int rowIndex = 0; rowIndex < matrix.blockCountXY * matrix.blockSize; ++rowIndex) // for each row
+    {
+        // row index divided by the block size to determine block index later
+        auto rowDivBlock = std::div(rowIndex, matrix.blockSize);
+        const int rowBlockIndex = rowDivBlock.quot;
+
+        int blockIndex;
+        int blockCountLeftColumns = 0;
+        for (int columnBlockIndex = 0; columnBlockIndex <= rowBlockIndex; ++columnBlockIndex) {
+            blockIndex = blockCountLeftColumns + (rowDivBlock.quot - columnBlockIndex);
+
+            // start index of block in matrix data structure
+            const int blockStartIndex = blockIndex * conf::matrixBlockSize * conf::matrixBlockSize;
+
+            // row index in block
+            const int value_i = rowDivBlock.rem;
+
+            // for each column in block
+            for (int value_j = 0; value_j < conf::matrixBlockSize; ++value_j) {
+                conf::fp_type value = matrix.matrixData[blockStartIndex + value_i * conf::matrixBlockSize + value_j];
+                if (value >= 0) {
+                    output << " " << value << ";";
+                } else {
+                    output << value << ";";
+                }
+            }
+
+            // increment number of blocks in all columns left of the current column
+            blockCountLeftColumns += matrix.blockCountXY - columnBlockIndex;
+
+        }
+
+        int diagBlockIndex = blockIndex;
+        for (int i = 0; i < matrix.blockCountXY - (rowBlockIndex + 1); ++i) {
+            blockIndex = diagBlockIndex + i + 1;
+
+            // start index of block in matrix data structure
+            const int blockStartIndex = blockIndex * conf::matrixBlockSize * conf::matrixBlockSize;
+
+            // row index in block
+            const int value_i = rowDivBlock.rem;
+
+            // for each column in block
+            for (int value_j = 0; value_j < conf::matrixBlockSize; ++value_j) {
+                conf::fp_type value = matrix.matrixData[blockStartIndex + value_j * conf::matrixBlockSize + value_i];
+                if (value >= 0) {
+                    output << " " << value << ";";
+                } else {
+                    output << value << ";";
+                }
+            }
+
+        }
+
+        output << std::endl;
+    }
+    output.close();
+}

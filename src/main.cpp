@@ -163,6 +163,8 @@ int main(int argc, char* argv[]) {
                             ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue)
                             : MatrixParser::parseSymmetricMatrix(path_A, cpuQueue);
 
+    // MatrixParser::writeFullMatrix("./A_GP_100", A);
+    // MatrixParser::writeBlockedMatrix("./A_GP_100_blocked", A);
     CG algorithm(A, b, cpuQueue, gpuQueue, loadBalancer);
     algorithm.solveHeterogeneous();
     return 0;
