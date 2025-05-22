@@ -16,6 +16,7 @@
 #include "PowerLoadBalancer.hpp"
 #include "MatrixGenerator.hpp"
 #include "UtilityFunctions.hpp"
+#include "MatrixOperations.hpp"
 
 using namespace sycl;
 
@@ -165,7 +166,28 @@ int main(int argc, char* argv[]) {
 
     // MatrixParser::writeFullMatrix("./A_GP_100", A);
     // MatrixParser::writeBlockedMatrix("./A_GP_100_blocked", A);
-    CG algorithm(A, b, cpuQueue, gpuQueue, loadBalancer);
-    algorithm.solveHeterogeneous();
+    // CG algorithm(A, b, cpuQueue, gpuQueue, loadBalancer);
+    // algorithm.solveHeterogeneous();
+
+    conf::fp_type* A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
+    for (int i = 0; i < 20; ++i) {
+        gpuQueue.submit([&](handler& h) {
+            h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
+        }).wait();
+        sycl::event event = MatrixOperations::cholesky(gpuQueue, A_gpu, 0,0);
+        gpuQueue.wait();
+
+        std::cout << static_cast<double>(event.get_profiling_info<sycl::info::event_profiling::command_end>() -
+            event.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << std::endl;
+    }
+
+
+    gpuQueue.submit([&](handler& h) {
+        h.memcpy(A.matrixData.data(), A_gpu, A.matrixData.size() * sizeof(conf::fp_type));
+    }).wait();
+
+    MatrixParser::writeFullMatrix("./A_chol_test", A);
+
+
     return 0;
 }
