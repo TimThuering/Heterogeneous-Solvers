@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) {
         h.memcpy(A.matrixData.data(), A_gpu, A.matrixData.size() * sizeof(conf::fp_type));
     }).wait();
 
-    // MatrixParser::writeFullMatrix("./A_chol_test", A);
+    MatrixParser::writeFullMatrix("./A_chol_test", A);
 
 
     return 0;

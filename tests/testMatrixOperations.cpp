@@ -311,3 +311,88 @@ TEST_F(MatrixOperationsTest, choleskyKernelDiagBlockPadding_GPU) {
         EXPECT_NEAR(A.matrixData[9 * 6 * 6 + i], reference_A44[i], 1e-12);
     }
 }
+
+
+// GPU optimized cholesky
+
+TEST_F(MatrixOperationsTest, choleskyKernelFullMatrix_GPU_optimized) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 20;
+    conf::workGroupSize = 20;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixOperations::cholesky_GPU_optimized(queue, A.matrixData.data(), 0, 0);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_full[i], 1e-12);
+    }
+}
+
+TEST_F(MatrixOperationsTest, choleskyKernelFullMatrixPadding_GPU_optimized) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 24;
+    conf::workGroupSize = 24;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixOperations::cholesky_GPU_optimized(queue, A.matrixData.data(), 0, 0);
+    queue.wait();
+
+
+    EXPECT_EQ(A.matrixData.size(), reference_padding.size());
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_padding[i], 1e-12);
+    }
+}
+
+TEST_F(MatrixOperationsTest, choleskyKernelDiagBlock_GPU_optimized) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixOperations::cholesky_GPU_optimized(queue, A.matrixData.data(), 5, 1);
+    queue.wait();
+
+    std::vector<conf::fp_type> reference_A11 = {
+        1.9553671036635423, 0., 0., 0.,
+        -0.3029756191673789, 0.7100998561677417, 0., 0.,
+        0.787410298394586, -0.06799311275526938, 0.7601889142959711, 0.,
+        0.4797797274851484, 0.09254516463315143, 0.05994172521675433, 0.633768593174752
+
+    };
+
+    for (size_t i = 0; i < reference_A11.size(); i++) {
+        EXPECT_NEAR(A.matrixData[5 * 4 * 4 + i], reference_A11[i], 1e-12);
+    }
+}
+
+
+TEST_F(MatrixOperationsTest, choleskyKernelDiagBlockPadding_GPU_optimized) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSize = 6;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixOperations::cholesky_GPU_optimized(queue, A.matrixData.data(), 9, 3);
+    queue.wait();
+
+    std::vector<conf::fp_type> reference_A44 = {
+         0.6492026636711377,  0.                  ,  0.                  ,  0.                 , 0.,0.,
+        -0.1019473771980525,  0.7800118292993728  ,  0.                  ,  0.                 , 0.,0.,
+        0.,0.,0.,0.,0.,0.,
+        0.,0.,0.,0.,0.,0.,
+        0.,0.,0.,0.,0.,0.,
+        0.,0.,0.,0.,0.,0.
+    };
+
+    for (size_t i = 0; i < reference_A44.size(); i++) {
+        EXPECT_NEAR(A.matrixData[9 * 6 * 6 + i], reference_A44[i], 1e-12);
+    }
+}
