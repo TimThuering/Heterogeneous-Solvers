@@ -37,7 +37,7 @@ namespace conf {
 
     Configuration& get();
 
-    inline int& matrixBlockSize = get().matrixBlockSize;
+    inline unsigned long matrixBlockSize = get().matrixBlockSize;
 
     inline int& workGroupSize = get().workGroupSize;
 

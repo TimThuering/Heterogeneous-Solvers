@@ -9,6 +9,10 @@
 class MatrixOperations {
 public:
     static sycl::event cholesky(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow);
+
+    static sycl::event cholesky_GPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow);
+
+    static sycl::event cholesky_GPU_optimized(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow);
 };
 
 

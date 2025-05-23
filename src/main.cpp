@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
         gpuQueue.submit([&](handler& h) {
             h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
         }).wait();
-        sycl::event event = MatrixOperations::cholesky(gpuQueue, A_gpu, 0,0);
+        sycl::event event = MatrixOperations::cholesky_GPU_optimized(gpuQueue, A_gpu, 0,0);
         gpuQueue.wait();
 
         std::cout << static_cast<double>(event.get_profiling_info<sycl::info::event_profiling::command_end>() -
@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) {
         h.memcpy(A.matrixData.data(), A_gpu, A.matrixData.size() * sizeof(conf::fp_type));
     }).wait();
 
-    MatrixParser::writeFullMatrix("./A_chol_test", A);
+    // MatrixParser::writeFullMatrix("./A_chol_test", A);
 
 
     return 0;
