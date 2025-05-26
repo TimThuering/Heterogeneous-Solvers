@@ -55,7 +55,9 @@ set(LIBRARY_FILES
         src/loadBalancer/PowerLoadBalancer.cpp
         src/loadBalancer/PowerLoadBalancer.hpp
         src/kernel/MatrixOperations.cpp
-        src/kernel/MatrixOperations.hpp)
+        src/kernel/MatrixOperations.hpp
+        src/kernel/MatrixMatrixOperations.cpp
+        src/kernel/MatrixMatrixOperations.hpp)
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)
@@ -114,7 +116,8 @@ if (${ENABLE_TESTS})
             tests/testSymmetricMatrix.cpp
             tests/testMatrixVectorBlock.cpp
             tests/testVectorOperations.cpp
-            tests/testMatrixOperations.cpp)
+            tests/testMatrixOperations.cpp
+            tests/testMatrixMatrixOperations.cpp)
 
     FetchContent_Declare(
             googletest

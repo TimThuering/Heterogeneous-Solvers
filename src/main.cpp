@@ -15,6 +15,7 @@
 #include "RuntimeLoadBalancer.hpp"
 #include "PowerLoadBalancer.hpp"
 #include "MatrixGenerator.hpp"
+#include "MatrixMatrixOperations.hpp"
 #include "UtilityFunctions.hpp"
 #include "MatrixOperations.hpp"
 
@@ -164,7 +165,7 @@ int main(int argc, char* argv[]) {
                             ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue)
                             : MatrixParser::parseSymmetricMatrix(path_A, cpuQueue);
 
-    // MatrixParser::writeFullMatrix("./A_GP_100", A);
+    // MatrixParser::writeFullMatrix("./A_GP_128", A);
     // MatrixParser::writeBlockedMatrix("./A_GP_100_blocked", A);
     // CG algorithm(A, b, cpuQueue, gpuQueue, loadBalancer);
     // algorithm.solveHeterogeneous();
@@ -174,8 +175,12 @@ int main(int argc, char* argv[]) {
         gpuQueue.submit([&](handler& h) {
             h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
         }).wait();
-        sycl::event event = MatrixOperations::cholesky_GPU_optimized(gpuQueue, A_gpu, 0,0);
+        MatrixOperations::cholesky_GPU_optimized(gpuQueue, A_gpu, 0,0);
+        // MatrixOperations::cholesky_GPU_optimized(cpuQueue, A.matrixData.data(), 0,0);
         gpuQueue.wait();
+
+        sycl::event event = MatrixMatrixOperations::triangularSolve(gpuQueue, A_gpu, 0,0,3);
+        // sycl::event event = MatrixMatrixOperations::triangularSolve(cpuQueue, A.matrixData.data(), 0,0, 1);
 
         std::cout << static_cast<double>(event.get_profiling_info<sycl::info::event_profiling::command_end>() -
             event.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << std::endl;
