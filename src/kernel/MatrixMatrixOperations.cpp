@@ -9,9 +9,9 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
     const range localRange(conf::matrixBlockSize, 1);
     const auto kernelRange = nd_range{globalRange, localRange};
 
-    const int matrixBlockSize = conf::matrixBlockSize;
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
-    const int blockStartIndex = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize) * static_cast<int>(conf::matrixBlockSize);
 
     const long N = static_cast<long>(conf::N);
 
@@ -25,8 +25,6 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
             const int block_id_B = blockID + (blockStart - blockRow) + group_id_i;
             const int blockStartIndex_B = block_id_B * matrixBlockSize * matrixBlockSize;
 
-            // block with the triangular matrix
-            const int block_id_L = blockID;
             const int blockStartIndex_L = blockStartIndex;
 
             for (int k = 0; k < matrixBlockSize; ++k) {
@@ -56,7 +54,7 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
     return event;
 }
 
-sycl::event MatrixMatrixOperations::triangularSolve_optimized(sycl::queue& queue, conf::fp_type* A, const int blockID,
+sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& queue, conf::fp_type* A, const int blockID,
                                                               const int blockRow, const int blockStart,
                                                               const int blockCount) {
     // one work-group per rhs
@@ -64,14 +62,14 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimized(sycl::queue& queue
     const range localRange(conf::matrixBlockSize, 1);
     const auto kernelRange = nd_range{globalRange, localRange};
 
-    const int matrixBlockSize = conf::matrixBlockSize;
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
-    const int blockStartIndex = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize) * static_cast<int>(conf::matrixBlockSize);
 
     const long N = static_cast<long>(conf::N);
 
     sycl::event event = queue.submit([&](sycl::handler& h) {
-        auto local_column = local_accessor<conf::fp_type, 1>(1, h);
+        auto local_column = local_accessor<conf::fp_type, 1>(matrixBlockSize, h);
 
         h.parallel_for(kernelRange, [=](auto& nd_item) {
             const int local_i = nd_item.get_local_id(0);
@@ -82,8 +80,6 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimized(sycl::queue& queue
             const int block_id_B = blockID + (blockStart - blockRow) + group_id_i;
             const int blockStartIndex_B = block_id_B * matrixBlockSize * matrixBlockSize;
 
-            // block with the triangular matrix
-            const int block_id_L = blockID;
             const int blockStartIndex_L = blockStartIndex;
 
             // inverse of diagonal value in lower triangular matrix
@@ -91,28 +87,32 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimized(sycl::queue& queue
 
             // current value of the position in the column that will be updated by the work-item
             conf::fp_type value = A[blockStartIndex_B + local_i * matrixBlockSize + group_id_j];
-            // local_column[local_i] = value;
+
+            // b_0 has to available for all work-items in the next iteration
             if (local_i == 0) {
                 local_column[0] = value * diagonal_ii;
             }
             nd_item.barrier();
 
+            // loop over columns in the lower triangular matrix
             for (int k = 0; k < matrixBlockSize; ++k) {
                 if (local_i > k) {
-                    // b_i = b_i - a_ik*b_k
                     if (((blockStart + group_id_i) * matrixBlockSize + local_i) < N) {
-                        value = value - A[blockStartIndex_L + local_i * matrixBlockSize + k] * local_column[0];
+                        // b_i = b_i - a_ik*b_k
+                        value = value - A[blockStartIndex_L + local_i * matrixBlockSize + k] * local_column[k];
                         if (local_i == k + 1) {
-                            value = value * diagonal_ii;
-                            local_column[0] = value;
+                            // make b_{k+1} available to all work-items for the next iteration
+                            local_column[local_i] = value * diagonal_ii;
                         }
                     }
                 }
 
+                // synchronize so that all work-items see b_{k+1} in the next iteration
                 nd_item.barrier();
             }
 
-            A[blockStartIndex_B + local_i * matrixBlockSize + group_id_j] = value;
+            // store final value in global memory, also works for last entry since value * diagonal_ii is recomputed
+            A[blockStartIndex_B + local_i * matrixBlockSize + group_id_j] = value * diagonal_ii;
         });
     });
 
