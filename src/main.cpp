@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
     // algorithm.solveHeterogeneous();
 
     conf::fp_type* A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
-    for (int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 1; ++i) {
         gpuQueue.submit([&](handler& h) {
             h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
         }).wait();
@@ -179,7 +179,7 @@ int main(int argc, char* argv[]) {
         // MatrixOperations::cholesky_GPU_optimized(cpuQueue, A.matrixData.data(), 0,0);
         gpuQueue.wait();
 
-        sycl::event event = MatrixMatrixOperations::triangularSolve(gpuQueue, A_gpu, 0,0,3);
+        sycl::event event = MatrixMatrixOperations::triangularSolve_optimized(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -1);
         // sycl::event event = MatrixMatrixOperations::triangularSolve(cpuQueue, A.matrixData.data(), 0,0, 1);
 
         std::cout << static_cast<double>(event.get_profiling_info<sycl::info::event_profiling::command_end>() -

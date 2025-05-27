@@ -7,7 +7,9 @@
 
 class MatrixMatrixOperations {
 public:
-    static sycl::event triangularSolve(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow, int blockCount);
+    static sycl::event triangularSolve(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow, int blockStart, int blockCount);
+
+    static sycl::event triangularSolve_optimized(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow, int blockStart, int blockCount);
 
 
 };
