@@ -29,8 +29,7 @@ sycl::event MatrixOperations::cholesky(sycl::queue& queue, conf::fp_type* A, con
                     // update column below diagonal value
                     if (local_i > k) {
                         A[blockStartIndex + local_i * matrixBlockSize + k] = A[blockStartIndex + local_i *
-                            matrixBlockSize +
-                            k] / sqrtDiag;
+                            matrixBlockSize + k] / sqrtDiag;
                     }
                 }
 

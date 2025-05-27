@@ -118,3 +118,7 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
 
     return event;
 }
+
+sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue& queue, conf::fp_type* A, int blockID,
+    int blockRow, int blockStart, int blockCount) {
+}

@@ -50,6 +50,9 @@ public:
      */
     static sycl::event triangularSolve_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
                                                  int blockStart, int blockCount);
+
+    static sycl::event symmetricMatrixMatrixDiagonal(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
+                                             int blockStart, int blockCount);
 };
 
 
