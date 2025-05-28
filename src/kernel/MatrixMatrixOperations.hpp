@@ -52,7 +52,7 @@ public:
                                                  int blockStart, int blockCount);
 
     static sycl::event symmetricMatrixMatrixDiagonal(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
-                                             int blockStart, int blockCount);
+                                             int blockStart, int blockCount, int  blockCountXY);
 };
 
 

@@ -180,6 +180,7 @@ sycl::event MatrixOperations::cholesky_GPU_optimized(sycl::queue& queue, conf::f
                     nd_item.barrier();
                 }
             } else {
+                // set upper triangle to 0
                 if ((blockRow * matrixBlockSize + local_i) < N) {
                     for (int j = group_id; j < matrixBlockSize; ++j) {
                         if (local_i < j) {
