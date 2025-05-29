@@ -266,14 +266,15 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
             }
             // perform update for lower triangle of the diagonal
             for (int t = 0; t < matrixBlockSize / wgSize_xy; ++t) {
-
                 // if tile is below diagonal or a diagonal tile, cache it in local memory
                 if (i >= j || group_mod_count_i == group_mod_count_j) {
                     // normal block
-                    local_tile_A[local_i][local_j] = A[blockStartIndex_col + i * matrixBlockSize + t * wgSize_xy + local_j];
+                    local_tile_A[local_i][local_j] = A[blockStartIndex_col + i * matrixBlockSize + t * wgSize_xy +
+                        local_j];
 
                     // transposed block
-                    local_tile_B[local_i][local_j] = A[blockStartIndex_col + j * matrixBlockSize + t * wgSize_xy + local_i];
+                    local_tile_B[local_i][local_j] = A[blockStartIndex_col + j * matrixBlockSize + t * wgSize_xy +
+                        local_i];
                 }
                 nd_item.barrier();
 
@@ -288,6 +289,53 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
             if (i >= j) {
                 A[blockStartIndex_diag + i * matrixBlockSize + j] = value;
             }
+        });
+    });
+
+    return event;
+}
+
+sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::fp_type* A, const int blockID,
+                                                     const int blockRow,
+                                                     const int blockStart, const int blockCount,
+                                                     const int blockCountXY) {
+    const int wgSize_xy = conf::workGroupSizeGEMM_xy;
+    if (conf::matrixBlockSize % wgSize_xy != 0) {
+        throw std::runtime_error("xy work-group dimension for matrix multiplication must divide matrix block size");
+    }
+
+    const int wgCount_xy = static_cast<int>(conf::matrixBlockSize) / wgSize_xy;
+
+    const int rowsAbove = blockStart - (blockRow + 2);
+
+    // block Count including rows above that should not be processed
+    const int virtualBlockCount = blockCount + rowsAbove;
+
+    const int wgCount = ((virtualBlockCount * (virtualBlockCount + 1)) / 2 - ((rowsAbove * (rowsAbove + 1)) / 2)) *
+        wgCount_xy * wgCount_xy;
+
+    const range globalRange(wgCount * wgSize_xy, wgSize_xy);
+    const range localRange(wgSize_xy, wgSize_xy);
+    const auto kernelRange = nd_range{globalRange, localRange};
+
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+
+    // block count of all columns except the first one
+    const int referenceBlockCount = (blockCountXY * (blockCountXY - 1)) / 2;
+
+    const long N = static_cast<long>(conf::N);
+
+    sycl::event event = queue.submit([&](sycl::handler& h) {
+        h.parallel_for(kernelRange, [=](auto& nd_item) {
+            const int local_i = nd_item.get_local_id(0);
+            const int local_j = nd_item.get_local_id(1);
+            const int group_id_i = nd_item.get_group().get_group_id(0);
+            const int group_id_j = nd_item.get_group().get_group_id(1);
+
+            // block ID of matrix blocks if one would enumerate them row by row
+            const int rowBlockID = group_id_i / (wgSize_xy * wgSize_xy);
+
+
         });
     });
 

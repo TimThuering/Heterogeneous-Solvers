@@ -95,6 +95,11 @@ public:
     static sycl::event symmetricMatrixMatrixDiagonal_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID,
                                                                   int blockRow,
                                                                   int blockStart, int blockCount, int blockCountXY);
+
+
+    static sycl::event matrixMatrixStep(sycl::queue& queue, conf::fp_type* A, int blockID,
+                                                              int blockRow,
+                                                              int blockStart, int blockCount, int blockCountXY);
 };
 
 
