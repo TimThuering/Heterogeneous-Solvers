@@ -171,11 +171,11 @@ int main(int argc, char* argv[]) {
     // algorithm.solveHeterogeneous();
 
     conf::fp_type* A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < 20; ++i) {
         gpuQueue.submit([&](handler& h) {
             h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
         }).wait();
-        MatrixOperations::cholesky_GPU_optimized(gpuQueue, A_gpu, 0,0);
+        // MatrixOperations::cholesky_GPU_optimized(gpuQueue, A_gpu, 0,0);
         // MatrixOperations::cholesky_GPU_optimized(cpuQueue, A.matrixData.data(), 0,0);
         gpuQueue.wait();
 
@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
         // sycl::event event = MatrixMatrixOperations::triangularSolve(cpuQueue, A.matrixData.data(), 0,0, 1);
         gpuQueue.wait();
 
-        sycl::event event = MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -1, A.blockCountXY);
+        sycl::event event = MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -1, A.blockCountXY);
         gpuQueue.wait();
 
 
@@ -196,7 +196,7 @@ int main(int argc, char* argv[]) {
         h.memcpy(A.matrixData.data(), A_gpu, A.matrixData.size() * sizeof(conf::fp_type));
     }).wait();
 
-    MatrixParser::writeFullMatrix("./A_chol_test", A);
+    // MatrixParser::writeFullMatrix("./A_chol_test", A);
 
 
     return 0;

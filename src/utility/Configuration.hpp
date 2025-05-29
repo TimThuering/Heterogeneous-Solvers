@@ -33,6 +33,7 @@ namespace conf {
         /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
         double idleWatt_CPU = 30.0; /// CPU power draw in Watts when the CPU is idle. Used to estimate total power draw.
         hws::sample_category sampleCategories = static_cast<hws::sample_category>(0b00000101); /// enable power and general samples
+        int workGroupSizeGEMM_xy = 16; /// work-group size in x/y direction for GEMM kernels
     };
 
     Configuration& get();
@@ -68,6 +69,9 @@ namespace conf {
     inline double& idleWatt_CPU = get().idleWatt_CPU;
 
     inline hws::sample_category& sampleCategories = get().sampleCategories;
+
+    inline int& workGroupSizeGEMM_xy = get().workGroupSizeGEMM_xy;
+
 }
 
 #endif //CONFIGURATION_HPP
