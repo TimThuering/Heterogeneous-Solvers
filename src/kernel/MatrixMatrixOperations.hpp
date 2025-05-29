@@ -49,13 +49,52 @@ public:
      * @return a sycl event of the kernel execution
      */
     static sycl::event triangularSolve_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
-                                                 int blockStart, int blockCount);
+                                                    int blockStart, int blockCount);
 
+    /**
+     * This function performs a matrix-matrix multiplication that results into a symmetric matrix that is used to update
+     * the lower triangle of diagonal blocks:  D = D - B*B^T
+     *
+     * Only the lower triangle is updated, the values in the upper triangle are left untouched.
+     *
+     * The method launches a kernel on the device asynchronously and returns after that.
+     * One has to wait to ensure correctness.
+     *
+     * @param queue sycl queue for the device where the code will execute
+     * @param A complete matrix A, on which the decomposition is performed
+     * @param blockID id of the diagonal block that holds the triangular matrix that has been processed in the previous step
+     * @param blockRow row of the current diagonal block. Diagonal blocks below this block have to be updated
+     * @param blockStart row, in which the first diagonal block will be updated
+     * @param blockCount amount of rows below block start in which the diagonal will be updated
+     * @param blockCountXY the amount of blocks in X/Y direction of the complete matrix
+     * @return a sycl event of the kernel execution
+     */
     static sycl::event symmetricMatrixMatrixDiagonal(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
-                                             int blockStart, int blockCount, int  blockCountXY);
+                                                     int blockStart, int blockCount, int blockCountXY);
 
-    static sycl::event symmetricMatrixMatrixDiagonal_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
-                                         int blockStart, int blockCount, int  blockCountXY);
+    /**
+     * This function performs a matrix-matrix multiplication that results into a symmetric matrix that is used to update
+     * the lower triangle of diagonal blocks:  D = D - B*B^T
+     *
+     * Only the lower triangle is updated, the values in the upper triangle are left untouched.
+     *
+     * The kernel launched by this function is optimized for execution on GPUs.
+     *
+     * The method launches a kernel on the device asynchronously and returns after that.
+     * One has to wait to ensure correctness.
+     *
+     * @param queue sycl queue for the device where the code will execute
+     * @param A complete matrix A, on which the decomposition is performed
+     * @param blockID id of the diagonal block that holds the triangular matrix that has been processed in the previous step
+     * @param blockRow row of the current diagonal block. Diagonal blocks below this block have to be updated
+     * @param blockStart row, in which the first diagonal block will be updated
+     * @param blockCount amount of rows below block start in which the diagonal will be updated
+     * @param blockCountXY the amount of blocks in X/Y direction of the complete matrix
+     * @return a sycl event of the kernel execution
+     */
+    static sycl::event symmetricMatrixMatrixDiagonal_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID,
+                                                                  int blockRow,
+                                                                  int blockStart, int blockCount, int blockCountXY);
 };
 
 
