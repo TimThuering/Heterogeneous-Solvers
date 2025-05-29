@@ -180,9 +180,6 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue& q
             const int i = internalBlockOffset_i + local_i;
             const int j = internalBlockOffset_j + local_j;
 
-            // printf("%i,%i: %i,%i; %i,%i,  ---  %i,%i\n", group_id_i, group_id_j, local_i, local_j, i, j, blockID_wg_col, blockID_wg_diag);
-            // printf("%i,%i: %i,%i; %i,%i,  ---  %i,%i\n", group_id_i, group_id_j, local_i, local_j, i, j, internalBlockOffset_i, internalBlockOffset_j);
-
             if (i >= j) {
                 // perform update for lower triangle of the diagonal
                 for (int k = 0; k < matrixBlockSize; ++k) {
@@ -269,9 +266,13 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
             }
             // perform update for lower triangle of the diagonal
             for (int t = 0; t < matrixBlockSize / wgSize_xy; ++t) {
+
+                // if tile is below diagonal or a diagonal tile, cache it in local memory
                 if (i >= j || group_mod_count_i == group_mod_count_j) {
-                    // if tile is below diagonal or a diagonal tile, cache it in local memory
+                    // normal block
                     local_tile_A[local_i][local_j] = A[blockStartIndex_col + i * matrixBlockSize + t * wgSize_xy + local_j];
+
+                    // transposed block
                     local_tile_B[local_i][local_j] = A[blockStartIndex_col + j * matrixBlockSize + t * wgSize_xy + local_i];
                 }
                 nd_item.barrier();
