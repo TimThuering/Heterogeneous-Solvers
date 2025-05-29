@@ -252,23 +252,30 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
             const int blockStartIndex_diag = blockID_wg_diag * matrixBlockSize * matrixBlockSize;
             const int blockStartIndex_col = blockID_wg_col * matrixBlockSize * matrixBlockSize;
 
+            const int group_mod_count_i = (group_id_i % wgCount_xy);
+            const int group_mod_count_j = (group_id_j % wgCount_xy);
+
             // indices in of the current work-item in the matrix block
-            const int internalBlockOffset_i = (group_id_i % wgCount_xy) * wgSize_xy;
-            const int internalBlockOffset_j = (group_id_j % wgCount_xy) * wgSize_xy;
+            const int internalBlockOffset_i = group_mod_count_i * wgSize_xy;
+            const int internalBlockOffset_j = group_mod_count_j * wgSize_xy;
 
             const int i = internalBlockOffset_i + local_i;
             const int j = internalBlockOffset_j + local_j;
 
-            conf::fp_type value = A[blockStartIndex_diag + i * matrixBlockSize + j];
-
+            // load initial value for result
+            conf::fp_type value = 0.0;
+            if (i >= j) {
+                value = A[blockStartIndex_diag + i * matrixBlockSize + j];
+            }
             // perform update for lower triangle of the diagonal
             for (int t = 0; t < matrixBlockSize / wgSize_xy; ++t) {
-                local_tile_A[local_i][local_j] = A[blockStartIndex_col + i * matrixBlockSize + t * wgSize_xy + local_j];
-                local_tile_B[local_i][local_j] = A[blockStartIndex_col + j * matrixBlockSize + t *  wgSize_xy + local_i];
-                // if (group_id_i == 0 && group_id_j == 0) {
-                //     printf("%i,%i: %f %f\n",local_i, local_j, local_tile_B[local_j][0], A[blockStartIndex_col + j * matrixBlockSize + 0]);
-                // }
+                if (i >= j || group_mod_count_i == group_mod_count_j) {
+                    // if tile is below diagonal or a diagonal tile, cache it in local memory
+                    local_tile_A[local_i][local_j] = A[blockStartIndex_col + i * matrixBlockSize + t * wgSize_xy + local_j];
+                    local_tile_B[local_i][local_j] = A[blockStartIndex_col + j * matrixBlockSize + t * wgSize_xy + local_i];
+                }
                 nd_item.barrier();
+
                 if (i >= j) {
                     for (int k = 0; k < wgSize_xy; ++k) {
                         // B_diag = B_diag - B_col * B_col^T
@@ -277,7 +284,9 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
                 }
                 nd_item.barrier();
             }
-            A[blockStartIndex_diag + i * matrixBlockSize + j] = value;
+            if (i >= j) {
+                A[blockStartIndex_diag + i * matrixBlockSize + j] = value;
+            }
         });
     });
 
