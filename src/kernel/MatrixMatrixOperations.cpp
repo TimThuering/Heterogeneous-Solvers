@@ -2,7 +2,7 @@
 
 using namespace sycl;
 
-sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp_type* A, const int blockID,
+sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue &queue, conf::fp_type *A, const int blockID,
                                                     const int blockRow, const int blockStart, const int blockCount) {
     // one work-group per rhs
     const range globalRange(blockCount * conf::matrixBlockSize, conf::matrixBlockSize);
@@ -12,12 +12,12 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
     const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
     const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize) * static_cast<int>(
-        conf::matrixBlockSize);
+            conf::matrixBlockSize);
 
     const long N = static_cast<long>(conf::N);
 
-    sycl::event event = queue.submit([&](sycl::handler& h) {
-        h.parallel_for(kernelRange, [=](auto& nd_item) {
+    sycl::event event = queue.submit([&](sycl::handler &h) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             const int local_i = nd_item.get_local_id(0);
             const int group_id_i = nd_item.get_group().get_group_id(0);
             const int group_id_j = nd_item.get_group().get_group_id(1);
@@ -31,7 +31,9 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
             for (int k = 0; k < matrixBlockSize; ++k) {
                 // b_k = b_k/a_kk
                 const conf::fp_type b_k = A[blockStartIndex_B + k * matrixBlockSize + group_id_j] / A[blockStartIndex_L
-                    + k * matrixBlockSize + k];
+                                                                                                      + k *
+                                                                                                        matrixBlockSize +
+                                                                                                      k];
 
                 nd_item.barrier();
 
@@ -43,7 +45,11 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
                     // b_i = b_i - a_ik*b_k
                     if (((blockStart + group_id_i) * matrixBlockSize + local_i) < N) {
                         A[blockStartIndex_B + local_i * matrixBlockSize + group_id_j] = A[blockStartIndex_B + local_i *
-                            matrixBlockSize + group_id_j] - A[blockStartIndex_L + local_i * matrixBlockSize + k] * b_k;
+                                                                                                              matrixBlockSize +
+                                                                                          group_id_j] -
+                                                                                        A[blockStartIndex_L +
+                                                                                          local_i * matrixBlockSize +
+                                                                                          k] * b_k;
                     }
                 }
 
@@ -55,7 +61,7 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
     return event;
 }
 
-sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& queue, conf::fp_type* A,
+sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue &queue, conf::fp_type *A,
                                                                  const int blockID,
                                                                  const int blockRow, const int blockStart,
                                                                  const int blockCount) {
@@ -67,14 +73,14 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
     const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
     const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize) * static_cast<int>(
-        conf::matrixBlockSize);
+            conf::matrixBlockSize);
 
     const long N = static_cast<long>(conf::N);
 
-    sycl::event event = queue.submit([&](sycl::handler& h) {
+    sycl::event event = queue.submit([&](sycl::handler &h) {
         auto local_column = local_accessor<conf::fp_type, 1>(matrixBlockSize, h);
 
-        h.parallel_for(kernelRange, [=](auto& nd_item) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             const int local_i = nd_item.get_local_id(0);
             const int group_id_i = nd_item.get_group().get_group_id(0);
             const int group_id_j = nd_item.get_group().get_group_id(1);
@@ -122,7 +128,7 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
     return event;
 }
 
-sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue& queue, conf::fp_type* A,
+sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue &queue, conf::fp_type *A,
                                                                   const int blockID,
                                                                   const int blockRow, const int blockStart,
                                                                   const int blockCount, const int blockCountXY) {
@@ -144,8 +150,8 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue& q
 
     const long N = static_cast<long>(conf::N);
 
-    sycl::event event = queue.submit([&](sycl::handler& h) {
-        h.parallel_for(kernelRange, [=](auto& nd_item) {
+    sycl::event event = queue.submit([&](sycl::handler &h) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             const int local_i = nd_item.get_local_id(0);
             const int local_j = nd_item.get_local_id(1);
             const int group_id_i = nd_item.get_group().get_group_id(0);
@@ -185,8 +191,11 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue& q
                 for (int k = 0; k < matrixBlockSize; ++k) {
                     // B_diag = B_diag - B_col * B_col^T
                     A[blockStartIndex_diag + i * matrixBlockSize + j] = A[blockStartIndex_diag + i * matrixBlockSize +
-                        j] - A[blockStartIndex_col + i * matrixBlockSize +
-                        k] * A[blockStartIndex_col + j * matrixBlockSize + k];
+                                                                          j] -
+                                                                        A[blockStartIndex_col + i * matrixBlockSize +
+                                                                          k] *
+                                                                        A[blockStartIndex_col + j * matrixBlockSize +
+                                                                          k];
                 }
             }
         });
@@ -195,7 +204,7 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue& q
     return event;
 }
 
-sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(sycl::queue& queue, conf::fp_type* A,
+sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(sycl::queue &queue, conf::fp_type *A,
                                                                                int blockID, int blockRow,
                                                                                int blockStart, int blockCount,
                                                                                int blockCountXY) {
@@ -217,11 +226,11 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
 
     const long N = static_cast<long>(conf::N);
 
-    sycl::event event = queue.submit([&](sycl::handler& h) {
+    sycl::event event = queue.submit([&](sycl::handler &h) {
         auto local_tile_A = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, wgSize_xy), h);
         auto local_tile_B = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, wgSize_xy), h);
 
-        h.parallel_for(kernelRange, [=](auto& nd_item) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             const int local_i = nd_item.get_local_id(0);
             const int local_j = nd_item.get_local_id(1);
             const int group_id_i = nd_item.get_group().get_group_id(0);
@@ -270,11 +279,11 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
                 if (i >= j || group_mod_count_i == group_mod_count_j) {
                     // normal block
                     local_tile_A[local_i][local_j] = A[blockStartIndex_col + i * matrixBlockSize + t * wgSize_xy +
-                        local_j];
+                                                       local_j];
 
                     // transposed block
                     local_tile_B[local_i][local_j] = A[blockStartIndex_col + j * matrixBlockSize + t * wgSize_xy +
-                        local_i];
+                                                       local_i];
                 }
                 nd_item.barrier();
 
@@ -295,7 +304,7 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
     return event;
 }
 
-sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::fp_type* A, const int blockID,
+sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue &queue, conf::fp_type *A, const int blockID,
                                                      const int blockRow,
                                                      const int blockStart, const int blockCount,
                                                      const int blockCountXY) {
@@ -311,8 +320,9 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::f
     // block Count including rows above that should not be processed
     const int virtualBlockCount = blockCount + rowsAbove;
 
-    const int wgCount = ((virtualBlockCount * (virtualBlockCount + 1)) / 2 - ((rowsAbove * (rowsAbove + 1)) / 2)) *
-        wgCount_xy * wgCount_xy;
+    const int upperBlockCount = ((rowsAbove * (rowsAbove + 1)) / 2);
+    const int totalBlockCount = (virtualBlockCount * (virtualBlockCount + 1)) / 2;
+    const int wgCount = (totalBlockCount - upperBlockCount) * wgCount_xy * wgCount_xy;
 
     const range globalRange(wgCount * wgSize_xy, wgSize_xy);
     const range localRange(wgSize_xy, wgSize_xy);
@@ -325,17 +335,31 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::f
 
     const long N = static_cast<long>(conf::N);
 
-    sycl::event event = queue.submit([&](sycl::handler& h) {
-        h.parallel_for(kernelRange, [=](auto& nd_item) {
+    sycl::event event = queue.submit([&](sycl::handler &h) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             const int local_i = nd_item.get_local_id(0);
             const int local_j = nd_item.get_local_id(1);
             const int group_id_i = nd_item.get_group().get_group_id(0);
             const int group_id_j = nd_item.get_group().get_group_id(1);
 
+
             // block ID of matrix blocks if one would enumerate them row by row
-            const int rowBlockID = group_id_i / (wgSize_xy * wgSize_xy);
+            const int rowBlockID = upperBlockCount + (group_id_i / (wgCount_xy * wgCount_xy));
 
+            // row ID in the lower triangle where the computation takes place
+            const int rowID = (-1.0 + sycl::sqrt(1.0 + 8.0 * rowBlockID)) / 2;
 
+            const int blocksAboveCurrentRow = rowID * (rowID + 1) / 2;
+
+            // column ID of the matrix block int the lower triangle the current work-group is associated with
+            const int columnID = rowBlockID - blocksAboveCurrentRow;
+
+            // calculation of the block ID of matrix block associated with this work-group
+            const int wgBlockID = blockID + blockCountXY - blockRow  + columnID + 1 + (totalBlockCount -((blockCountXY - blockRow - 2 - columnID) * (blockCountXY - blockRow - 2 - columnID + 1) / 2)) + rowID - columnID;
+
+            if (local_i == 0 && local_j == 0)
+                printf("%i,%i:  %i --> %i,%i --> %i \n", group_id_i, group_id_j, rowBlockID, rowID, columnID,  wgBlockID) ;
+//                printf("%i,%i:  %i --> %i,%i --> %i \n", group_id_i, group_id_j, rowBlockID, rowID, columnID,  (totalBlockCount -((blockCountXY - blockRow - 2 - columnID) * (blockCountXY - blockRow - 2 - columnID + 1) / 2)) + rowID - columnID) ;
         });
     });
 

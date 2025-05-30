@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
     // algorithm.solveHeterogeneous();
 
     conf::fp_type* A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
-    for (int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 1; ++i) {
         gpuQueue.submit([&](handler& h) {
             h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
         }).wait();
@@ -183,8 +183,11 @@ int main(int argc, char* argv[]) {
         // sycl::event event = MatrixMatrixOperations::triangularSolve(cpuQueue, A.matrixData.data(), 0,0, 1);
         gpuQueue.wait();
 
-        sycl::event event = MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -1, A.blockCountXY);
+//        sycl::event event = MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -1, A.blockCountXY);
+        sycl::event event = MatrixMatrixOperations::matrixMatrixStep(cpuQueue, A.matrixData.data(), 0,0,2,A.blockCountXY -2, A.blockCountXY);
+//        sycl::event event = MatrixMatrixOperations::matrixMatrixStep(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -2, A.blockCountXY);
         gpuQueue.wait();
+        cpuQueue.wait();
 
 
         std::cout << static_cast<double>(event.get_profiling_info<sycl::info::event_profiling::command_end>() -
