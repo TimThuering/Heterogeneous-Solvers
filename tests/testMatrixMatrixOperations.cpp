@@ -1060,7 +1060,7 @@ TEST_F(SYRKTest, syrkLowerDiagonal_optimized) {
     queue.wait();
 
     MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(queue, A.matrixData.data(), 0, 0, 3,
-                                                                       A.blockCountXY - 1,
+                                                                       2,
                                                                        A.blockCountXY);
     queue.wait();
 
