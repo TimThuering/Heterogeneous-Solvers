@@ -18,6 +18,7 @@
 #include "MatrixMatrixOperations.hpp"
 #include "UtilityFunctions.hpp"
 #include "MatrixOperations.hpp"
+#include "cholesky/Cholesky.hpp"
 
 using namespace sycl;
 
@@ -54,7 +55,8 @@ int main(int argc, char* argv[]) {
         ("t,block_update_th",
          "when block count change during re-balancing is equal or below this number, no re-balancing occurs",
          cxxopts::value<std::size_t>())
-        ("size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>());
+        ("size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>())
+        ("algorithm", "the algorithm that should be used: can be 'cg' or 'cholesky'", cxxopts::value<std::string>());
 
     const auto arguments = argumentOptions.parse(argc, argv);
 
@@ -63,6 +65,7 @@ int main(int argc, char* argv[]) {
     std::string path_b;
     std::string path_gp_input;
     std::string path_gp_output;
+    std::string algorithm = "cg";
     if (arguments.count("path_A") && arguments.count("path_b")) {
         path_A = arguments["path_A"].as<std::string>();
         path_b = arguments["path_b"].as<std::string>();
@@ -76,6 +79,10 @@ int main(int argc, char* argv[]) {
     } else {
         throw std::runtime_error(
             "No path to .txt file for matrix A specified and no path to input data for matrix generation specified");
+    }
+
+    if (arguments.count("algorithm")) {
+        algorithm = arguments["algorithm"].as<std::string>();
     }
 
     if (arguments.count("output")) {
@@ -165,43 +172,15 @@ int main(int argc, char* argv[]) {
                             ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue)
                             : MatrixParser::parseSymmetricMatrix(path_A, cpuQueue);
 
-    // MatrixParser::writeFullMatrix("./A_GP_128", A);
-    // MatrixParser::writeBlockedMatrix("./A_GP_100_blocked", A);
-    // CG algorithm(A, b, cpuQueue, gpuQueue, loadBalancer);
-    // algorithm.solveHeterogeneous();
-
-    conf::fp_type* A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
-    for (int i = 0; i < 20; ++i) {
-        gpuQueue.submit([&](handler& h) {
-            h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
-        }).wait();
-        // MatrixOperations::cholesky_GPU_optimized(gpuQueue, A_gpu, 0,0);
-        // MatrixOperations::cholesky_GPU_optimized(cpuQueue, A.matrixData.data(), 0,0);
-        // gpuQueue.wait();
-
-        // sycl::event event = MatrixMatrixOperations::triangularSolve_optimizedGPU(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -1);
-        // sycl::event event = MatrixMatrixOperations::triangularSolve(cpuQueue, A.matrixData.data(), 0,0, 1);
-        // gpuQueue.wait();
-
-//        sycl::event event = MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -1, A.blockCountXY);
-        // sycl::event event = MatrixMatrixOperations::matrixMatrixStep(cpuQueue, A.matrixData.data(), 0,0,2,A.blockCountXY -2, A.blockCountXY);
-        sycl::event event = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(gpuQueue, A_gpu, 0,0,2,A.blockCountXY -2, A.blockCountXY);
-//        sycl::event event = MatrixMatrixOperations::matrixMatrixStep(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -2, A.blockCountXY);
-        gpuQueue.wait();
-        // cpuQueue.wait();
-
-
-        std::cout << static_cast<double>(event.get_profiling_info<sycl::info::event_profiling::command_end>() -
-            event.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << std::endl;
+    if (algorithm == "cg") {
+        CG cg(A, b, cpuQueue, gpuQueue, loadBalancer);
+        cg.solveHeterogeneous();
+    } else if (algorithm == "cholesky") {
+        Cholesky cholesky(A, cpuQueue, gpuQueue);
+        cholesky.solve();
+    } else {
+        throw std::runtime_error("Invalid algorithm: " + algorithm);
     }
-
-
-    gpuQueue.submit([&](handler& h) {
-        h.memcpy(A.matrixData.data(), A_gpu, A.matrixData.size() * sizeof(conf::fp_type));
-    }).wait();
-
-    // MatrixParser::writeFullMatrix("./A_chol_test", A);
-
 
     return 0;
 }
