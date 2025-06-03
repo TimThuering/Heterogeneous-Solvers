@@ -380,12 +380,111 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::f
             // printf("%i; %i --> (%i,%i)\n", wgBlockID_A, blockStartIndex_A, i,j);
 
             for (int k = 0; k < matrixBlockSize; ++k) {
-                // B_diag = B_diag - B_col * B_col^T
+                // A = A - B * C^T
                 A[blockStartIndex_A + i * matrixBlockSize + j] =
                     A[blockStartIndex_A + i * matrixBlockSize + j] -
                     A[blockStartIndex_B + i * matrixBlockSize + k] *
                     A[blockStartIndex_C + j * matrixBlockSize + k];
             }
+        });
+    });
+
+    return event;
+}
+
+sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID,
+                                                                  int blockRow, int blockStart, int blockCount,
+                                                                  int blockCountXY) {
+    const int wgSize_xy = conf::workGroupSizeGEMM_xy;
+    if (conf::matrixBlockSize % wgSize_xy != 0) {
+        throw std::runtime_error("xy work-group dimension for matrix multiplication must divide matrix block size");
+    }
+
+    const int wgCount_xy = static_cast<int>(conf::matrixBlockSize) / wgSize_xy;
+
+    const int rowsAbove = blockStart - (blockRow + 2);
+    const int rowsBelow = blockCountXY - blockStart - blockCount;
+
+    // block Count including rows above and below that should not be processed
+    const int virtualBlockCount = blockCount + rowsAbove + rowsBelow;
+
+    const int upperBlockCount = ((rowsAbove * (rowsAbove + 1)) / 2);
+    const int totalBlockCount = (virtualBlockCount * (virtualBlockCount + 1)) / 2;
+    const int lowerBlockCount = totalBlockCount - ((blockCount + rowsAbove) * ((blockCount + rowsAbove) + 1) / 2);
+
+    const int wgCount = totalBlockCount - upperBlockCount - lowerBlockCount;
+
+    const range globalRange(wgCount_xy * wgSize_xy, wgCount * wgCount_xy * wgSize_xy);
+    const range localRange(wgSize_xy, wgSize_xy);
+    const auto kernelRange = nd_range{globalRange, localRange};
+
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+
+    // block count of all columns except the first one
+    const int referenceBlockCount = (blockCountXY * (blockCountXY - 1)) / 2;
+
+    const long N = static_cast<long>(conf::N);
+
+    sycl::event event = queue.submit([&](sycl::handler& h) {
+        auto local_tile_B = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, wgSize_xy), h);
+        auto local_tile_C = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, wgSize_xy), h);
+
+        h.parallel_for(kernelRange, [=](auto& nd_item) {
+            const int local_i = nd_item.get_local_id(0);
+            const int local_j = nd_item.get_local_id(1);
+            const int group_id_i = nd_item.get_group().get_group_id(1);
+            const int group_id_j = nd_item.get_group().get_group_id(0);
+
+
+            // block ID of matrix blocks if one would enumerate them row by row
+            const int rowBlockID = upperBlockCount + (group_id_i / wgCount_xy);
+
+            // row ID in the lower triangle where the computation takes place
+            const int rowID = (-1.0 + sycl::sqrt(1.0 + 8.0 * rowBlockID)) / 2;
+
+            const int blocksAboveCurrentRow = rowID * (rowID + 1) / 2;
+
+            // column ID of the matrix block int the lower triangle the current work-group is associated with
+            const int columnID = rowBlockID - blocksAboveCurrentRow;
+
+            // calculation of the block ID of matrix block associated with this work-group
+            const int wgBlockID_A = blockID + blockCountXY - blockRow + columnID + 1 + (totalBlockCount - ((blockCountXY
+                - blockRow - 2 - columnID) * (blockCountXY - blockRow - 2 - columnID + 1) / 2)) + rowID - columnID;
+
+            const int wgBlockID_B = blockID + rowID + 2;
+            const int wgBlockID_C = blockID + columnID + 1;
+
+            const int blockStartIndex_A = wgBlockID_A * matrixBlockSize * matrixBlockSize;
+            const int blockStartIndex_B = wgBlockID_B * matrixBlockSize * matrixBlockSize;
+            const int blockStartIndex_C = wgBlockID_C * matrixBlockSize * matrixBlockSize;
+
+            // indices in of the current work-item in the matrix block
+            const int internalBlockOffset_i = (group_id_i % wgCount_xy) * wgSize_xy;
+            const int internalBlockOffset_j = (group_id_j % wgCount_xy) * wgSize_xy;
+
+            const int i = internalBlockOffset_i + local_i;
+            const int j = internalBlockOffset_j + local_j;
+
+            // load initial value for result
+            conf::fp_type value = A[blockStartIndex_A + i * matrixBlockSize + j];
+            // perform update for lower triangle of the diagonal
+            for (int t = 0; t < wgCount_xy; ++t) {
+                // normal block
+                local_tile_B[local_i][local_j] = A[blockStartIndex_B + i * matrixBlockSize + t * wgSize_xy + local_j];
+
+                // transposed block
+                local_tile_C[local_i][local_j] = A[blockStartIndex_C + j * matrixBlockSize + t * wgSize_xy + local_i];
+
+                nd_item.barrier();
+
+                #pragma unroll
+                for (int k = 0; k < wgSize_xy; ++k) {
+                    // B_diag = B_diag - B_col * B_col^T
+                    value = value - local_tile_B[local_i][k] * local_tile_C[k][local_j];
+                }
+                nd_item.barrier();
+            }
+            A[blockStartIndex_A + i * matrixBlockSize + j] = value;
         });
     });
 

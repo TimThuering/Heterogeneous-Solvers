@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
 
 //        sycl::event event = MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -1, A.blockCountXY);
         // sycl::event event = MatrixMatrixOperations::matrixMatrixStep(cpuQueue, A.matrixData.data(), 0,0,2,A.blockCountXY -2, A.blockCountXY);
-        sycl::event event = MatrixMatrixOperations::matrixMatrixStep(gpuQueue, A_gpu, 0,0,2,A.blockCountXY -2, A.blockCountXY);
+        sycl::event event = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(gpuQueue, A_gpu, 0,0,2,A.blockCountXY -2, A.blockCountXY);
 //        sycl::event event = MatrixMatrixOperations::matrixMatrixStep(gpuQueue, A_gpu, 0,0,1,A.blockCountXY -2, A.blockCountXY);
         gpuQueue.wait();
         // cpuQueue.wait();

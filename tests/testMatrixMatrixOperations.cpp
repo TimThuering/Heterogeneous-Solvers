@@ -1626,3 +1626,111 @@ TEST_F(GEMMTest, gemmLowerLowerBlockTriangle2) {
         EXPECT_NEAR(A.matrixData[i], reference_gemm_lower_lower_triangle2[i], 1e-12);
     }
 }
+
+
+// GPU optimized gemm kernels
+
+TEST_F(GEMMTest, gemmFullLowerBlockTriangle_optimizedGPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    conf::workGroupSizeGEMM_xy = 2;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(queue, A.matrixData.data(), 0, 0, 2, A.blockCountXY - 2, A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_gemm_full_lower_triangle[i], 1e-12);
+    }
+}
+
+TEST_F(GEMMTest, gemmUpperLowerBlockTriangle_optimizedGPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    conf::workGroupSizeGEMM_xy = 2;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(queue, A.matrixData.data(), 0, 0, 2, 2, A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_gemm_upper_lower_triangle[i], 1e-12);
+    }
+}
+
+TEST_F(GEMMTest, gemmLowerLowerBlockTriangle_optimizedGPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    conf::workGroupSizeGEMM_xy = 2;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(queue, A.matrixData.data(), 0, 0, 3, 2, A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_gemm_lower_lower_triangle[i], 1e-12);
+    }
+}
+
+// gemm tests with smaller triangle to the right
+
+TEST_F(GEMMTest, gemmFullLowerBlockTriangle2_optimizedGPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    conf::workGroupSizeGEMM_xy = 2;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(queue, A.matrixData.data(), 5, 1, 3, 2, A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_gemm_full_lower_triangle2[i], 1e-12);
+    }
+}
+
+TEST_F(GEMMTest, gemmUpperLowerBlockTriangle2_optimizedGPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    conf::workGroupSizeGEMM_xy = 2;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(queue, A.matrixData.data(), 5, 1, 3, 1, A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_gemm_upper_lower_triangle2[i], 1e-12);
+    }
+}
+
+
+TEST_F(GEMMTest, gemmLowerLowerBlockTriangle2_optimizedGPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    conf::workGroupSizeGEMM_xy = 2;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(queue, A.matrixData.data(), 5, 1, 4, 1, A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_gemm_lower_lower_triangle2[i], 1e-12);
+    }
+}
