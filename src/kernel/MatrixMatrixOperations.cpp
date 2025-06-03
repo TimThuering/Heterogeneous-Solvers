@@ -427,7 +427,7 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(sycl::queue& q
 
     sycl::event event = queue.submit([&](sycl::handler& h) {
         auto local_tile_B = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, wgSize_xy), h);
-        auto local_tile_C = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, wgSize_xy), h);
+        auto local_tile_C = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, wgSize_xy + 1), h);
 
         h.parallel_for(kernelRange, [=](auto& nd_item) {
             const int local_i = nd_item.get_local_id(0);
@@ -465,24 +465,33 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(sycl::queue& q
             const int i = internalBlockOffset_i + local_i;
             const int j = internalBlockOffset_j + local_j;
 
+
+            // i coordinate for matrix c that needs to be interpreted as transposed later but is loaded non-transposed
+            const int i_c = internalBlockOffset_j + local_i;
+
             // load initial value for result
             conf::fp_type value = A[blockStartIndex_A + i * matrixBlockSize + j];
+
+            const int startIndexB = blockStartIndex_B + i * matrixBlockSize + local_j;
+            const int startIndexC = blockStartIndex_C + i_c * matrixBlockSize + local_j;
+
             // perform update for lower triangle of the diagonal
             for (int t = 0; t < wgCount_xy; ++t) {
                 // normal block
-                local_tile_B[local_i][local_j] = A[blockStartIndex_B + i * matrixBlockSize + t * wgSize_xy + local_j];
+                local_tile_B[local_i][local_j] = A[startIndexB + t * wgSize_xy];
 
                 // transposed block
-                local_tile_C[local_i][local_j] = A[blockStartIndex_C + j * matrixBlockSize + t * wgSize_xy + local_i];
+                local_tile_C[local_i][local_j] = A[startIndexC + t * wgSize_xy];
 
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
+
 
                 #pragma unroll
                 for (int k = 0; k < wgSize_xy; ++k) {
                     // B_diag = B_diag - B_col * B_col^T
-                    value = value - local_tile_B[local_i][k] * local_tile_C[k][local_j];
+                    value = value - local_tile_B[local_i][k] * local_tile_C[local_j][k];
                 }
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
             }
             A[blockStartIndex_A + i * matrixBlockSize + j] = value;
         });
