@@ -316,18 +316,18 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::f
     const int wgCount_xy = static_cast<int>(conf::matrixBlockSize) / wgSize_xy;
 
     const int rowsAbove = blockStart - (blockRow + 2);
+    const int rowsBelow = blockCountXY - blockStart - blockCount;
 
-    // block Count including rows above that should not be processed
-    const int virtualBlockCount = blockCount + rowsAbove;
+    // block Count including rows above and below that should not be processed
+    const int virtualBlockCount = blockCount + rowsAbove + rowsBelow;
 
     const int upperBlockCount = ((rowsAbove * (rowsAbove + 1)) / 2);
     const int totalBlockCount = (virtualBlockCount * (virtualBlockCount + 1)) / 2;
-    const int wgCount = (totalBlockCount - upperBlockCount) * wgCount_xy;
+    const int lowerBlockCount = totalBlockCount - ((blockCount + rowsAbove) * ((blockCount + rowsAbove) + 1) / 2);
 
-    // const range globalRange(wgCount * wgSize_xy, wgCount_xy * wgSize_xy);
-    // const range localRange(wgSize_xy, wgSize_xy);
+    const int wgCount = totalBlockCount - upperBlockCount - lowerBlockCount;
 
-    const range globalRange(wgSize_xy, wgCount * wgSize_xy);
+    const range globalRange(wgCount_xy * wgSize_xy, wgCount * wgCount_xy * wgSize_xy);
     const range localRange(wgSize_xy, wgSize_xy);
     const auto kernelRange = nd_range{globalRange, localRange};
 
@@ -342,8 +342,8 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::f
         h.parallel_for(kernelRange, [=](auto& nd_item) {
             const int local_i = nd_item.get_local_id(0);
             const int local_j = nd_item.get_local_id(1);
-            const int group_id_i = nd_item.get_group().get_group_id(0);
-            const int group_id_j = nd_item.get_group().get_group_id(1);
+            const int group_id_i = nd_item.get_group().get_group_id(1);
+            const int group_id_j = nd_item.get_group().get_group_id(0);
 
 
             // block ID of matrix blocks if one would enumerate them row by row
@@ -361,19 +361,12 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::f
             const int wgBlockID_A = blockID + blockCountXY - blockRow + columnID + 1 + (totalBlockCount - ((blockCountXY
                 - blockRow - 2 - columnID) * (blockCountXY - blockRow - 2 - columnID + 1) / 2)) + rowID - columnID;
 
-
             const int wgBlockID_B = blockID + rowID + 2;
-
             const int wgBlockID_C = blockID + columnID + 1;
 
             const int blockStartIndex_A = wgBlockID_A * matrixBlockSize * matrixBlockSize;
             const int blockStartIndex_B = wgBlockID_B * matrixBlockSize * matrixBlockSize;
             const int blockStartIndex_C = wgBlockID_C * matrixBlockSize * matrixBlockSize;
-
-
-            // if (local_i == 0 && local_j == 0)
-            //     printf("%i,%i:  %i --> %i,%i --> %i \n", group_id_i, group_id_j, rowBlockID, rowID, columnID, wgBlockID_A);
-            // //                printf("%i,%i:  %i --> %i,%i --> %i \n", group_id_i, group_id_j, rowBlockID, rowID, columnID,  (totalBlockCount -((blockCountXY - blockRow - 2 - columnID) * (blockCountXY - blockRow - 2 - columnID + 1) / 2)) + rowID - columnID) ;
 
             // indices in of the current work-item in the matrix block
             const int internalBlockOffset_i = (group_id_i % wgCount_xy) * wgSize_xy;
