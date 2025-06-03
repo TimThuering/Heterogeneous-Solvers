@@ -97,13 +97,49 @@ public:
                                                                   int blockStart, int blockCount, int blockCountXY);
 
 
-    static sycl::event matrixMatrixStep(sycl::queue& queue, conf::fp_type* A, int blockID,
-                                                              int blockRow,
-                                                              int blockStart, int blockCount, int blockCountXY);
+    /**
+     * This function performs the matrix-matrix multiplication step of the cholesky decomposition on the lower triangle of the
+     * current sub-matrix.
+     *
+     * It can either perform the update on all blocks that have to be updated or only either on the upper or lower part.
+     *
+     * The method launches a kernel on the device asynchronously and returns after that.
+     * One has to wait to ensure correctness.
+     *
+     * @param queue sycl queue for the device where the code will execute
+     * @param A complete matrix A, on which the decomposition is performed
+     * @param blockID id of the diagonal block that holds the triangular matrix that has been processed in the previous step
+     * @param blockRow row of the current diagonal block. Blocks in the lower triangle without the diagonal below this block will be updated.
+     * @param blockStart row, in which the first block will be updated
+     * @param blockCount amount of rows below block start in which the blocks will be updated
+     * @param blockCountXY the amount of blocks in X/Y direction of the complete matrix
+     * @return a sycl event of the kernel execution
+     */
+    static sycl::event matrixMatrixStep(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow, int blockStart,
+                                        int blockCount, int blockCountXY);
 
-    static sycl::event matrixMatrixStep_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID,
-                                                          int blockRow,
-                                                          int blockStart, int blockCount, int blockCountXY);
+    /**
+     * This function performs the matrix-matrix multiplication step of the cholesky decomposition on the lower triangle of the
+     * current sub-matrix.
+     *
+     * It can either perform the update on all blocks that have to be updated or only either on the upper or lower part.
+     *
+     * The kernel launched by this function is optimized for execution on GPUs.
+     *
+     * The method launches a kernel on the device asynchronously and returns after that.
+     * One has to wait to ensure correctness.
+     *
+     * @param queue sycl queue for the device where the code will execute
+     * @param A complete matrix A, on which the decomposition is performed
+     * @param blockID id of the diagonal block that holds the triangular matrix that has been processed in the previous step
+     * @param blockRow row of the current diagonal block. Blocks in the lower triangle without the diagonal below this block will be updated.
+     * @param blockStart row, in which the first block will be updated
+     * @param blockCount amount of rows below block start in which the blocks will be updated
+     * @param blockCountXY the amount of blocks in X/Y direction of the complete matrix
+     * @return a sycl event of the kernel execution
+     */
+    static sycl::event matrixMatrixStep_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
+                                                     int blockStart, int blockCount, int blockCountXY);
 };
 
 
