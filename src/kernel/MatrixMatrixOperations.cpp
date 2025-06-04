@@ -30,27 +30,19 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
 
             for (int k = 0; k < matrixBlockSize; ++k) {
                 // b_k = b_k/a_kk
-                const conf::fp_type b_k = A[blockStartIndex_B + k * matrixBlockSize + group_id_j] / A[blockStartIndex_L
-                    + k *
-                    matrixBlockSize +
-                    k];
+                const conf::fp_type b_k = A[blockStartIndex_B + group_id_j * matrixBlockSize + k] / A[blockStartIndex_L
+                    + k * matrixBlockSize + k];
 
                 nd_item.barrier();
 
                 if (local_i == 0) {
-                    A[blockStartIndex_B + k * matrixBlockSize + group_id_j] = b_k;
+                    A[blockStartIndex_B + group_id_j * matrixBlockSize + k] = b_k;
                 }
 
                 if (local_i > k) {
                     // b_i = b_i - a_ik*b_k
-                    if (((blockStart + group_id_i) * matrixBlockSize + local_i) < N) {
-                        A[blockStartIndex_B + local_i * matrixBlockSize + group_id_j] = A[blockStartIndex_B + local_i *
-                                matrixBlockSize +
-                                group_id_j] -
-                            A[blockStartIndex_L +
-                                local_i * matrixBlockSize +
-                                k] * b_k;
-                    }
+                    A[blockStartIndex_B + group_id_j * matrixBlockSize + local_i] = A[blockStartIndex_B + group_id_j
+                        * matrixBlockSize + local_i] - A[blockStartIndex_L + local_i * matrixBlockSize + k] * b_k;
                 }
 
                 nd_item.barrier();
@@ -95,7 +87,7 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
             const conf::fp_type diagonal_ii = 1.0 / A[blockStartIndex_L + local_i * matrixBlockSize + local_i];
 
             // current value of the position in the column that will be updated by the work-item
-            conf::fp_type value = A[blockStartIndex_B + local_i * matrixBlockSize + group_id_j];
+            conf::fp_type value = A[blockStartIndex_B + group_id_j * matrixBlockSize + local_i];
 
             // b_0 has to available for all work-items in the next iteration
             if (local_i == 0) {
@@ -106,13 +98,11 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
             // loop over columns in the lower triangular matrix
             for (int k = 0; k < matrixBlockSize; ++k) {
                 if (local_i > k) {
-                    if (((blockStart + group_id_i) * matrixBlockSize + local_i) < N) {
-                        // b_i = b_i - a_ik*b_k
-                        value = value - A[blockStartIndex_L + local_i * matrixBlockSize + k] * local_column[k];
-                        if (local_i == k + 1) {
-                            // make b_{k+1} available to all work-items for the next iteration
-                            local_column[local_i] = value * diagonal_ii;
-                        }
+                    // b_i = b_i - a_ik*b_k
+                    value = value - A[blockStartIndex_L + local_i * matrixBlockSize + k] * local_column[k];
+                    if (local_i == k + 1) {
+                        // make b_{k+1} available to all work-items for the next iteration
+                        local_column[local_i] = value * diagonal_ii;
                     }
                 }
 
@@ -121,7 +111,7 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
             }
 
             // store final value in global memory, also works for last entry since value * diagonal_ii is recomputed
-            A[blockStartIndex_B + local_i * matrixBlockSize + group_id_j] = value * diagonal_ii;
+            A[blockStartIndex_B + group_id_j * matrixBlockSize + local_i] = value * diagonal_ii;
         });
     });
 
@@ -158,7 +148,7 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue& q
             const int group_id_j = nd_item.get_group().get_group_id(1);
 
             // block offset of current work group in column direction
-            const int columnOffset = blockStart + (group_id_i / wgCount_xy);
+            const int columnOffset = (blockStart - blockRow) + (group_id_i / wgCount_xy);
 
             // x/y block coordinate of the diagonal block processed by this work-group
             const int blockXYIndexDiagonal = blockRow + columnOffset;
@@ -237,7 +227,7 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
             const int group_id_j = nd_item.get_group().get_group_id(1);
 
             // block offset of current work group in column direction
-            const int columnOffset = blockStart + (group_id_i / wgCount_xy);
+            const int columnOffset = (blockStart - blockRow) + (group_id_i / wgCount_xy);
 
             // x/y block coordinate of the diagonal block processed by this work-group
             const int blockXYIndexDiagonal = blockRow + columnOffset;
@@ -267,6 +257,9 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
 
             const int i = internalBlockOffset_i + local_i;
             const int j = internalBlockOffset_j + local_j;
+            //
+            // if (local_i == 0 && local_j == 0)
+            //     printf("%i, %i --> %i, %i \n",group_id_i,group_id_j , blockID_wg_diag, blockID_wg_col);
 
             // load initial value for result
             conf::fp_type value = 0.0;
@@ -486,7 +479,7 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(sycl::queue& q
                 group_barrier(nd_item.get_group(), memory_scope::work_group);
 
 
-                #pragma unroll
+#pragma unroll
                 for (int k = 0; k < wgSize_xy; ++k) {
                     // B_diag = B_diag - B_col * B_col^T
                     value = value - local_tile_B[local_i][k] * local_tile_C[local_j][k];
