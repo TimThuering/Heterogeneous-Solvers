@@ -18,6 +18,10 @@ public:
 
     void solve();
 
+private:
+    conf::fp_type* A_gpu;
+
+
 };
 
 
