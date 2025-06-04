@@ -8,11 +8,12 @@
 class MatrixMatrixOperations {
 public:
     /**
-     * This function solves a triangular System LB=B for a (sub) column of the matrix A.
+     * This function solves a triangular System LB^T=B^T for a (sub) column of the matrix A.
      * L is a lower triangular matrix and corresponds to a diagonal block of A, after the cholesky decomposition has been
      * performed on this block.
      * B can be any sequence of blocks below the diagonal block, starting at row specified through block start and ending
      * blockCount blocks below.
+     * The blocks are interpreted as their transpose.
      *
      * The method launches a kernel on the device asynchronously and returns after that.
      * One has to wait to ensure correctness.
@@ -29,11 +30,12 @@ public:
                                        int blockCount);
 
     /**
-     * This function solves a triangular System LB=B for a (sub) column of the matrix A.
+     * This function solves a triangular System LB^T=B^T for a (sub) column of the matrix A.
      * L is a lower triangular matrix and corresponds to a diagonal block of A, after the cholesky decomposition has been
      * performed on this block.
      * B can be any sequence of blocks below the diagonal block, starting at row specified through block start and ending
      * blockCount blocks below.
+     * The blocks are interpreted as their transpose.
      *
      * The kernel launched by this function is optimized for execution on GPUs.
      *
