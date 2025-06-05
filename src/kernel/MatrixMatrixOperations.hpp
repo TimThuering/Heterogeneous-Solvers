@@ -142,6 +142,10 @@ public:
      */
     static sycl::event matrixMatrixStep_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
                                                      int blockStart, int blockCount, int blockCountXY);
+
+
+    static sycl::event matrixMatrixStep_optimizedCPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
+                                                 int blockStart, int blockCount, int blockCountXY);
 };
 
 
