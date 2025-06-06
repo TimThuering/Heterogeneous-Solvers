@@ -53,6 +53,9 @@ public:
     static sycl::event triangularSolve_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
                                                     int blockStart, int blockCount);
 
+    static sycl::event triangularSolve_optimizedCPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
+                                                int blockStart, int blockCount);
+
     /**
      * This function performs a matrix-matrix multiplication that results into a symmetric matrix that is used to update
      * the lower triangle of diagonal blocks:  D = D - B*B^T

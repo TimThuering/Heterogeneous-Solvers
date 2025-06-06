@@ -66,7 +66,7 @@ void Cholesky::solve() {
                                                                      A.blockCountXY - (k + 1));
                 gpuQueue.wait();
             } else {
-                MatrixMatrixOperations::triangularSolve(cpuQueue, A.matrixData.data(), blockID, k, k + 1,
+                MatrixMatrixOperations::triangularSolve_optimizedCPU(cpuQueue, A.matrixData.data(), blockID, k, k + 1,
                                                         A.blockCountXY - (k + 1));
                 cpuQueue.wait();
             }

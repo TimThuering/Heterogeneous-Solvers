@@ -1533,6 +1533,99 @@ TEST_F(TriangularSolveTest, GPUtriangularSolveMidColumnLowerTest) {
     }
 }
 
+// CPU optimized kernels
+
+TEST_F(TriangularSolveTest, CPUtriangularSolveTest) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixOperations::cholesky(queue, A.matrixData.data(), 0, 0);
+    queue.wait();
+    MatrixMatrixOperations::triangularSolve_optimizedCPU(queue, A.matrixData.data(), 0, 0, 1, 4);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_full_column[i], 1e-12);
+    }
+}
+
+
+TEST_F(TriangularSolveTest, CPUtriangularSolveLowerMatrixTest) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixOperations::cholesky(queue, A.matrixData.data(), 0, 0);
+    queue.wait();
+    MatrixMatrixOperations::triangularSolve_optimizedCPU(queue, A.matrixData.data(), 0, 0, 3, 2);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_lower_column[i], 1e-12);
+    }
+}
+
+TEST_F(TriangularSolveTest, CPUtriangularSolveTest_Padding) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSize = 6;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixOperations::cholesky(queue, A.matrixData.data(), 0, 0);
+    queue.wait();
+    MatrixMatrixOperations::triangularSolve_optimizedCPU(queue, A.matrixData.data(), 0, 0, 1, 3);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_full_column_padding[i], 1e-12);
+    }
+}
+
+
+TEST_F(TriangularSolveTest, CPUtriangularSolveMidColumnTest) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixOperations::cholesky(queue, A.matrixData.data(), 5, 1);
+    queue.wait();
+    MatrixMatrixOperations::triangularSolve_optimizedCPU(queue, A.matrixData.data(), 5, 1, 2, 3);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_mid_column[i], 1e-12);
+    }
+}
+
+TEST_F(TriangularSolveTest, CPUtriangularSolveMidColumnLowerTest) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixOperations::cholesky(queue, A.matrixData.data(), 5, 1);
+    queue.wait();
+    MatrixMatrixOperations::triangularSolve_optimizedCPU(queue, A.matrixData.data(), 5, 1, 3, 2);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_mid_column_lower[i], 1e-12);
+    }
+}
 
 // SYRK tests
 TEST_F(SYRKTest, syrkFullDiagonalExceptFirstBlock) {

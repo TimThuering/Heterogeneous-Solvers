@@ -115,6 +115,51 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
     return event;
 }
 
+sycl::event MatrixMatrixOperations::triangularSolve_optimizedCPU(sycl::queue& queue, conf::fp_type* A,
+                                                                 const int blockID,
+                                                                 const int blockRow, const int blockStart,
+                                                                 const int blockCount) {
+    // one work-group per rhs
+    const range globalRange(blockCount, conf::matrixBlockSize);
+
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+
+    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize) * static_cast<int>(
+        conf::matrixBlockSize);
+
+    sycl::event event = queue.submit([&](sycl::handler& h) {
+        h.parallel_for(globalRange, [=](auto& id) {
+            const int group_id_i = id[0];
+            const int group_id_j = id[1];
+
+            // block in the matrix where the results are written
+            const int block_id_B = blockID + (blockStart - blockRow) + group_id_i;
+            const int blockStartIndex_B = block_id_B * matrixBlockSize * matrixBlockSize;
+
+            const int blockStartIndex_L = blockStartIndex;
+
+#pragma unroll
+            for (int k = 0; k < matrixBlockSize; ++k) {
+                // b_k = b_k/a_kk
+                const conf::fp_type b_k = A[blockStartIndex_B + group_id_j * matrixBlockSize + k] /
+                    A[blockStartIndex_L + k * matrixBlockSize + k];
+
+                A[blockStartIndex_B + group_id_j * matrixBlockSize + k] = b_k;
+
+#pragma clang loop vectorize(enable) unroll(enable)
+                for (int j = k + 1; j < matrixBlockSize; ++j) {
+                    // b_i = b_i - a_ik*b_k
+                    A[blockStartIndex_B + group_id_j * matrixBlockSize + j] =
+                        A[blockStartIndex_B + group_id_j * matrixBlockSize + j] -
+                        A[blockStartIndex_L + j * matrixBlockSize + k] * b_k;
+                }
+            }
+        });
+    });
+
+    return event;
+}
+
 sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue& queue, conf::fp_type* A,
                                                                   const int blockID,
                                                                   const int blockRow, const int blockStart,
