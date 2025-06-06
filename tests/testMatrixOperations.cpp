@@ -322,7 +322,7 @@ TEST_F(MatrixOperationsTest, choleskyKernelFullMatrix_GPU_optimized) {
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     queue.wait();
 
-    MatrixOperations::cholesky_GPU_optimized(queue, A.matrixData.data(), 0, 0);
+    MatrixOperations::cholesky_optimizedGPU(queue, A.matrixData.data(), 0, 0);
     queue.wait();
 
 
@@ -338,7 +338,7 @@ TEST_F(MatrixOperationsTest, choleskyKernelFullMatrixPadding_GPU_optimized) {
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     queue.wait();
 
-    MatrixOperations::cholesky_GPU_optimized(queue, A.matrixData.data(), 0, 0);
+    MatrixOperations::cholesky_optimizedGPU(queue, A.matrixData.data(), 0, 0);
     queue.wait();
 
 
@@ -356,7 +356,7 @@ TEST_F(MatrixOperationsTest, choleskyKernelDiagBlock_GPU_optimized) {
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     queue.wait();
 
-    MatrixOperations::cholesky_GPU_optimized(queue, A.matrixData.data(), 5, 1);
+    MatrixOperations::cholesky_optimizedGPU(queue, A.matrixData.data(), 5, 1);
     queue.wait();
 
     std::vector<conf::fp_type> reference_A11 = {
@@ -380,7 +380,7 @@ TEST_F(MatrixOperationsTest, choleskyKernelDiagBlockPadding_GPU_optimized) {
     SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
     queue.wait();
 
-    MatrixOperations::cholesky_GPU_optimized(queue, A.matrixData.data(), 9, 3);
+    MatrixOperations::cholesky_optimizedGPU(queue, A.matrixData.data(), 9, 3);
     queue.wait();
 
     std::vector<conf::fp_type> reference_A44 = {

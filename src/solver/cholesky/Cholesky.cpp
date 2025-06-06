@@ -49,7 +49,7 @@ void Cholesky::solve() {
         // perform Cholesky decomposition on diagonal block A_kk
         startCholesky = std::chrono::steady_clock::now();
         if (useGPU) {
-            MatrixOperations::cholesky_GPU_optimized(gpuQueue, A_gpu, blockID, k);
+            MatrixOperations::cholesky_optimizedGPU(gpuQueue, A_gpu, blockID, k);
             gpuQueue.wait();
         } else {
             MatrixOperations::cholesky(cpuQueue, A.matrixData.data(), blockID, k);
@@ -80,7 +80,7 @@ void Cholesky::solve() {
                     gpuQueue, A_gpu, blockID, k, k + 1, A.blockCountXY - (k + 1), A.blockCountXY);
                 gpuQueue.wait();
             } else {
-                MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(cpuQueue, A.matrixData.data(), blockID, k, k + 1,
+                MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedCPU(cpuQueue, A.matrixData.data(), blockID, k, k + 1,
                                                                       A.blockCountXY - (k + 1), A.blockCountXY);
                 cpuQueue.wait();
             }

@@ -124,7 +124,7 @@ sycl::event MatrixOperations::cholesky_GPU(sycl::queue& queue, conf::fp_type* A,
 }
 
 
-sycl::event MatrixOperations::cholesky_GPU_optimized(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow) {
+sycl::event MatrixOperations::cholesky_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow) {
     // launch kernel with the size of exactly one work-group
     const range globalRange(conf::matrixBlockSize * conf::matrixBlockSize);
     const range localRange(conf::matrixBlockSize);

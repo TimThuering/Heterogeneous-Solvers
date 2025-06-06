@@ -52,7 +52,7 @@ public:
      * @param blockRow row of the current diagonal block that is processed
      * @return a sycl event of the kernel execution
      */
-    static sycl::event cholesky_GPU_optimized(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow);
+    static sycl::event cholesky_optimizedGPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow);
 };
 
 

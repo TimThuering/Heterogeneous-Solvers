@@ -297,6 +297,80 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
     return event;
 }
 
+
+sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedCPU(sycl::queue& queue, conf::fp_type* A,
+                                                                               const int blockID,
+                                                                               const int blockRow, const int blockStart,
+                                                                               const int blockCount,
+                                                                               const int blockCountXY) {
+    const int wgSize_xy = conf::workGroupSizeGEMM_xy;
+    if (conf::matrixBlockSize % wgSize_xy != 0) {
+        throw std::runtime_error("xy work-group dimension for matrix multiplication must divide matrix block size");
+    }
+
+    const int wgCount_xy = static_cast<int>(conf::matrixBlockSize) / wgSize_xy;
+
+    const range globalRange(blockCount * conf::matrixBlockSize, conf::matrixBlockSize);
+
+
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+
+    // block count of all columns except the first one
+    const int referenceBlockCount = (blockCountXY * (blockCountXY - 1)) / 2;
+
+    const long N = static_cast<long>(conf::N);
+
+    sycl::event event = queue.submit([&](sycl::handler& h) {
+        h.parallel_for(globalRange, [=](auto& id) {
+            const int local_i = id[1];
+            const int local_j = id[0];
+
+            const int group_id = local_j / matrixBlockSize;
+
+            // block offset of current work group in column direction
+            const int columnOffset = (blockStart - blockRow) + group_id;
+
+            // x/y block coordinate of the diagonal block processed by this work-group
+            const int blockXYIndexDiagonal = blockRow + columnOffset;
+
+            // number of blocks in row to the right (if matrix would be full)
+            const int block_j_inv = blockCountXY - (blockXYIndexDiagonal + 1);
+
+            // total number of blocks to the right that are stored
+            const int columnBlocksToRight = (block_j_inv * (block_j_inv + 1)) / 2;
+
+            // id of block in the matrix data structure for symmetric matrices
+            const int blockID_wg_diag = blockXYIndexDiagonal + referenceBlockCount - columnBlocksToRight;
+
+            // id of the column block used in the matrix-matrix multiplication
+            const int blockID_wg_col = blockID + columnOffset;
+
+            // start indices of blocks involved in the syrk update
+            const int blockStartIndex_diag = blockID_wg_diag * matrixBlockSize * matrixBlockSize;
+            const int blockStartIndex_col = blockID_wg_col * matrixBlockSize * matrixBlockSize;
+
+            const int i = local_i;
+            const int j = local_j % matrixBlockSize;
+
+            if (i >= j) {
+                conf::fp_type value = A[blockStartIndex_diag + i * matrixBlockSize + j];
+                // perform update for lower triangle of the diagonal
+#pragma clang loop vectorize(enable) unroll(enable)
+                for (int k = 0; k < matrixBlockSize; ++k) {
+                    // B_diag = B_diag - B_col * B_col^T
+                    value = value - A[blockStartIndex_col + i * matrixBlockSize + k] *
+                        A[blockStartIndex_col + j * matrixBlockSize + k];
+                }
+                A[blockStartIndex_diag + i * matrixBlockSize + j] = value;
+
+            }
+        });
+    });
+
+    return event;
+}
+
+
 sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::fp_type* A, const int blockID,
                                                      const int blockRow,
                                                      const int blockStart, const int blockCount,
@@ -499,11 +573,6 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(sycl::queue& q
                                                                   const int blockRow,
                                                                   const int blockStart, const int blockCount,
                                                                   const int blockCountXY) {
-    const int wgSize_xy = conf::workGroupSizeGEMM_xy;
-    if (conf::matrixBlockSize % wgSize_xy != 0) {
-        throw std::runtime_error("xy work-group dimension for matrix multiplication must divide matrix block size");
-    }
-
     const int rowsAbove = blockStart - (blockRow + 2);
     const int rowsBelow = blockCountXY - blockStart - blockCount;
 
@@ -519,11 +588,6 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(sycl::queue& q
     const range globalRange(wgCount * conf::matrixBlockSize, conf::matrixBlockSize);
 
     const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
-
-    // block count of all columns except the first one
-    const int referenceBlockCount = (blockCountXY * (blockCountXY - 1)) / 2;
-
-    const long N = static_cast<long>(conf::N);
 
     sycl::event event = queue.submit([&](sycl::handler& h) {
         h.parallel_for(globalRange, [=](auto& id) {

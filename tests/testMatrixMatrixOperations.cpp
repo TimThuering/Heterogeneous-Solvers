@@ -1609,7 +1609,7 @@ TEST_F(SYRKTest, syrkPadding) {
 
 
 // SYRK test GPU optimized kernels
-TEST_F(SYRKTest, syrkFullDiagonalExceptFirstBlock_optimized) {
+TEST_F(SYRKTest, syrkFullDiagonalExceptFirstBlock_optimizedGPU) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     conf::workGroupSize = 4;
@@ -1629,7 +1629,7 @@ TEST_F(SYRKTest, syrkFullDiagonalExceptFirstBlock_optimized) {
 }
 
 
-TEST_F(SYRKTest, syrkLowerDiagonal_optimized) {
+TEST_F(SYRKTest, syrkLowerDiagonal_optimizedGPU) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     conf::workGroupSize = 4;
@@ -1648,7 +1648,7 @@ TEST_F(SYRKTest, syrkLowerDiagonal_optimized) {
     }
 }
 
-TEST_F(SYRKTest, syrkLowerDiagonal2_optimized) {
+TEST_F(SYRKTest, syrkLowerDiagonal2_optimizedGPU) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 4;
     conf::workGroupSize = 4;
@@ -1666,7 +1666,7 @@ TEST_F(SYRKTest, syrkLowerDiagonal2_optimized) {
     }
 }
 
-TEST_F(SYRKTest, syrkPadding_optimized) {
+TEST_F(SYRKTest, syrkPadding_optimizedGPU) {
     queue queue(cpu_selector_v);
     conf::matrixBlockSize = 9;
     conf::workGroupSize = 9;
@@ -1683,6 +1683,83 @@ TEST_F(SYRKTest, syrkPadding_optimized) {
         EXPECT_NEAR(A.matrixData[i], reference_syrk_padding[i], 1e-12);
     }
 }
+
+
+// CPU optimized kernel
+TEST_F(SYRKTest, syrkFullDiagonalExceptFirstBlock_optimizedCPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    conf::workGroupSizeGEMM_xy = 2;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedCPU(queue, A.matrixData.data(), 0, 0, 1,
+                                                                       A.blockCountXY - 1,
+                                                                       A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_syrk_full[i], 1e-12);
+    }
+}
+
+TEST_F(SYRKTest, syrkLowerDiagonal_optimizedCPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    conf::workGroupSizeGEMM_xy = 2;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedCPU(queue, A.matrixData.data(), 0, 0, 3,
+                                                                       2,
+                                                                       A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_syrk_lower[i], 1e-12);
+    }
+}
+
+TEST_F(SYRKTest, syrkLowerDiagonal2_optimizedCPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    conf::workGroupSizeGEMM_xy = 2;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedCPU(queue, A.matrixData.data(), 9, 2, 3, 2,
+                                                                       A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_syrk_lower2[i], 1e-12);
+    }
+}
+
+TEST_F(SYRKTest, syrkPadding_optimizedCPU) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 9;
+    conf::workGroupSize = 9;
+    conf::workGroupSizeGEMM_xy = 3;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+    queue.wait();
+
+    MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedCPU(queue, A.matrixData.data(), 0, 0, 1,
+                                                                       A.blockCountXY - 1, A.blockCountXY);
+    queue.wait();
+
+
+    for (size_t i = 0; i < A.matrixData.size(); i++) {
+        EXPECT_NEAR(A.matrixData[i], reference_syrk_padding[i], 1e-12);
+    }
+}
+
 
 // GEMM kernel tests
 
