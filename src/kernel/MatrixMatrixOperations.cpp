@@ -90,7 +90,7 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
             if (local_i == 0) {
                 local_column[0] = value * diagonal_ii;
             }
-            group_barrier(nd_item.get_group(), memory_scope::work_group);
+            nd_item.barrier();
 
             // loop over columns in the lower triangular matrix
             for (int k = 0; k < matrixBlockSize; ++k) {
@@ -104,7 +104,7 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
                 }
 
                 // synchronize so that all work-items see b_{k+1} in the next iteration
-                group_barrier(nd_item.get_group(), memory_scope::work_group);
+                nd_item.barrier();
             }
 
             // store final value in global memory, also works for last entry since value * diagonal_ii is recomputed
