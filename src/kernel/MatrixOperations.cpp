@@ -10,9 +10,9 @@ sycl::event MatrixOperations::cholesky(sycl::queue& queue, conf::fp_type* A, con
     const range localRange(conf::matrixBlockSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
-    const int matrixBlockSize = conf::matrixBlockSize;
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
-    const int blockStartIndex = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize * conf::matrixBlockSize);
 
     const long N = static_cast<long>(conf::N);
 
@@ -68,9 +68,9 @@ sycl::event MatrixOperations::cholesky_GPU(sycl::queue& queue, conf::fp_type* A,
     const range localRange(conf::matrixBlockSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
-    const int matrixBlockSize = conf::matrixBlockSize;
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
-    const int blockStartIndex = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize * conf::matrixBlockSize);
 
     const long N = static_cast<long>(conf::N);
 
@@ -101,7 +101,6 @@ sycl::event MatrixOperations::cholesky_GPU(sycl::queue& queue, conf::fp_type* A,
                     A[blockStartIndex + local_i * matrixBlockSize + k] = sqrtDiag;
                 }
 
-
                 if ((blockRow * matrixBlockSize + local_i) < N) {
                     // process lower triangle right to the updated column
                     for (int j = k + 1; j < matrixBlockSize; ++j) {
@@ -130,9 +129,9 @@ sycl::event MatrixOperations::cholesky_optimizedGPU(sycl::queue& queue, conf::fp
     const range localRange(conf::matrixBlockSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
-    const int matrixBlockSize = conf::matrixBlockSize;
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
-    const int blockStartIndex = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize * conf::matrixBlockSize);
 
     const long N = static_cast<long>(conf::N);
 
@@ -156,9 +155,7 @@ sycl::event MatrixOperations::cholesky_optimizedGPU(sycl::queue& queue, conf::fp
                         }
                     }
 
-
                     nd_item.barrier();
-
 
                     if ((blockRow * matrixBlockSize + local_i) < N) {
                         // process lower triangle right to the updated column
