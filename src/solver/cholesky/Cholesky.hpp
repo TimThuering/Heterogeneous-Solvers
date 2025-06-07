@@ -16,10 +16,21 @@ public:
     queue& cpuQueue;
     queue& gpuQueue;
 
+    void solve_heterogeneous();
+
     void solve();
 
 private:
+    // GPU data structure
     conf::fp_type* A_gpu;
+
+    // variables
+    int blockCountGPU;
+    int blockCountCPU;
+    int blockStartGPU;
+
+    void waitAllQueues();
+
 
 
 };

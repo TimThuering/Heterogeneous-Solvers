@@ -177,7 +177,8 @@ int main(int argc, char* argv[]) {
         cg.solveHeterogeneous();
     } else if (algorithm == "cholesky") {
         Cholesky cholesky(A, cpuQueue, gpuQueue);
-        cholesky.solve();
+        cholesky.solve_heterogeneous();
+        // cholesky.solve();
     } else {
         throw std::runtime_error("Invalid algorithm: " + algorithm);
     }
