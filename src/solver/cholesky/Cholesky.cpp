@@ -25,6 +25,7 @@ void Cholesky::solve_heterogeneous() {
 
     const std::size_t blockSizeBytes = conf::matrixBlockSize * conf::matrixBlockSize * sizeof(conf::fp_type);
 
+    // Calculate initial block-count values for CPU and GPU. These values correspond to the number of row-blocks
     const int initialBlockCountGPU = std::ceil((A.blockCountXY - 1) * gpuProportion);
     const int initialBlockCountCPU = A.blockCountXY - 1 - initialBlockCountGPU;
     const int initialBlockStartGPU = initialBlockCountCPU + 1;
@@ -58,7 +59,6 @@ void Cholesky::solve_heterogeneous() {
         if (blockStartGPU != initialBlockStartGPU) {
             offsetMatrixMatrixStepGPU = 1;
         }
-        std::cout << "Block count CPU:  " << blockCountCPU << std::endl;
 
 
         // ID of diagonal block A_kk
@@ -66,9 +66,11 @@ void Cholesky::solve_heterogeneous() {
         const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
         const std::size_t blockStartIndexDiagBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
+
         // perform Cholesky decomposition on diagonal block A_kk
         startCholesky = std::chrono::steady_clock::now();
         if (k < initialBlockStartGPU) {
+            // CPU holds A_kk --> use CPU
             MatrixOperations::cholesky(cpuQueue, A.matrixData.data(), blockID, k);
             cpuQueue.wait();
             // copy updated current diagonal block to GPU memory
@@ -76,6 +78,7 @@ void Cholesky::solve_heterogeneous() {
                 h.memcpy(&A_gpu[blockStartIndexDiagBlock], &A.matrixData[blockStartIndexDiagBlock], blockSizeBytes);
             }).wait();
         } else {
+            // GPU holds A_kk --> use GPU
             MatrixOperations::cholesky_optimizedGPU(gpuQueue, A_gpu, blockID, k);
             gpuQueue.wait();
             // copy updated current diagonal block to CPU memory
@@ -126,6 +129,7 @@ void Cholesky::solve_heterogeneous() {
         endMatrixMatrix = std::chrono::steady_clock::now();
 
 
+        // time measurement and output
         auto endColumn = std::chrono::steady_clock::now();
         auto columnTime = std::chrono::duration<double, std::milli>(endColumn - startColumn).count();
 
@@ -139,9 +143,9 @@ void Cholesky::solve_heterogeneous() {
         std::cout << "   -- triangular solve:       " << triangularSolveTime << "ms" << std::endl;
         std::cout << "   -- matrix-matrix diagonal: " << matrixMatrixDiagonalTime << "ms" << std::endl;
         std::cout << "   -- matrix-matrix:          " << matrixMatrixTime << "ms" << std::endl;
-        // std::cout << "   -- block count CPU:          " << blockCountCPU << std::endl;
-        // std::cout << "   -- block count GPU:          " << blockCountGPU << std::endl;
-        // std::cout << "   -- block start GPU:          " << blockStartGPU << std::endl;
+        // std::cout << "   -- block count CPU:        " << blockCountCPU << std::endl;
+        // std::cout << "   -- block count GPU:        " << blockCountGPU << std::endl;
+        // std::cout << "   -- block start GPU:        " << blockStartGPU << std::endl;
         std::cout << std::endl;
         std::cout << std::endl;
     }
