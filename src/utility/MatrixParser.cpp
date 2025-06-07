@@ -216,7 +216,7 @@ void MatrixParser::writeBlockedMatrix(const std::string& path, const SymmetricMa
 void MatrixParser::writeFullMatrix(const std::string& path, const SymmetricMatrix& matrix) {
     std::ofstream output(path);
 
-    output << std::setprecision(10) << std::fixed;
+    output << std::setprecision(20) << std::fixed;
 
     for (int rowIndex = 0; rowIndex < matrix.blockCountXY * matrix.blockSize; ++rowIndex) // for each row
     {

@@ -28,6 +28,7 @@ private:
     int blockCountGPU;
     int blockCountCPU;
     int blockStartGPU;
+    int offsetMatrixMatrixStepGPU = 0;
 
     void waitAllQueues();
 
