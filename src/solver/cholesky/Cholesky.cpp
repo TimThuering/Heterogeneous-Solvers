@@ -11,7 +11,7 @@ Cholesky::Cholesky(SymmetricMatrix& A, queue& cpuQueue, queue& gpuQueue):
 }
 
 void Cholesky::solve_heterogeneous() {
-    const double gpuProportion = 0.6;
+    const double gpuProportion = 0.5;
     const auto start = std::chrono::steady_clock::now();
 
     // init GPU data structure for matrix A on which the Cholesky decomposition should be performed
@@ -34,6 +34,8 @@ void Cholesky::solve_heterogeneous() {
     blockCountCPU = initialBlockCountCPU;
     blockStartGPU = initialBlockStartGPU;
 
+    sycl::event eventCPU;
+    sycl::event eventGPU;
 
     // begin with tiled Cholesky decomposition using right-looking algorithm
     for (int k = 0; k < A.blockCountXY; ++k) {
@@ -52,6 +54,12 @@ void Cholesky::solve_heterogeneous() {
         auto endMatrixMatrix = startMatrixMatrix;
 
         // reduce CPU blockCount
+        int newBlockCountGPU = std::ceil((A.blockCountXY - 1 - k) * gpuProportion);
+        int newBlockCountCPU = A.blockCountXY - 1 - k - newBlockCountGPU;
+
+        // std::cout << "New CPU Block Count: " << newBlockCountCPU << std::endl;
+        // std::cout << "New GPU Block Count: " << newBlockCountGPU << std::endl;
+        // std::cout << std::endl;
         blockCountCPU = std::max(A.blockCountXY - 1 - k - initialBlockCountGPU, 0);
         blockCountGPU = std::min(blockCountGPU, A.blockCountXY - (k + 1));
         blockStartGPU = std::max(blockStartGPU, k + 1);
@@ -120,10 +128,10 @@ void Cholesky::solve_heterogeneous() {
         // update the blocks int the lower triangle below the current diagonal block
         startMatrixMatrix = std::chrono::steady_clock::now();
         if (blockCountCPU > 0 && k < initialBlockCountCPU - 1) {
-            MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
+             eventCPU = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
         }
         if (blockCountGPU > 0 && k < A.blockCountXY - 2) {
-            MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
+            eventGPU = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU2(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
         }
         waitAllQueues();
         endMatrixMatrix = std::chrono::steady_clock::now();
@@ -138,11 +146,15 @@ void Cholesky::solve_heterogeneous() {
         auto matrixMatrixDiagonalTime = std::chrono::duration<double, std::milli>(endMatrixMatrixDiagonal - startMatrixMatrixDiagonal).count();
         auto matrixMatrixTime = std::chrono::duration<double, std::milli>(endMatrixMatrix - startMatrixMatrix).count();
 
+
+
         std::cout << "Column: " << k << ": " << columnTime << "ms" << std::endl;
         std::cout << "   -- cholesky:               " << choleskyTime << "ms" << std::endl;
         std::cout << "   -- triangular solve:       " << triangularSolveTime << "ms" << std::endl;
         std::cout << "   -- matrix-matrix diagonal: " << matrixMatrixDiagonalTime << "ms" << std::endl;
         std::cout << "   -- matrix-matrix:          " << matrixMatrixTime << "ms" << std::endl;
+        std::cout << "      - CPU:          " <<         static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << "ms" << std::endl;
+        std::cout << "      - GPU:          " <<         static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << "ms" << std::endl;
         // std::cout << "   -- block count CPU:        " << blockCountCPU << std::endl;
         // std::cout << "   -- block count GPU:        " << blockCountGPU << std::endl;
         // std::cout << "   -- block start GPU:        " << blockStartGPU << std::endl;
@@ -179,7 +191,7 @@ void Cholesky::solve_heterogeneous() {
 }
 
 void Cholesky::solve() {
-    bool useGPU = true;
+    bool useGPU = false;
     const auto start = std::chrono::steady_clock::now();
 
     // init GPU data structure for matrix A on which the Cholesky decomposition should be performed
@@ -264,7 +276,7 @@ void Cholesky::solve() {
                         gpuQueue, A_gpu, blockID, k, k + 2, A.blockCountXY - (k + 2), A.blockCountXY);
                     gpuQueue.wait();
                 } else {
-                    MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(
+                    MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(
                         cpuQueue, A.matrixData.data(), blockID, k, k + 2,
                         A.blockCountXY - (k + 2), A.blockCountXY);
                     cpuQueue.wait();

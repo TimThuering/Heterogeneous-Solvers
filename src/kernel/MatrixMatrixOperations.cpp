@@ -574,8 +574,8 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(sycl::queue& q
 }
 
 sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU2(sycl::queue& queue, conf::fp_type* A, int blockID,
-                                                                  int blockRow, int blockStart, int blockCount,
-                                                                  int blockCountXY) {
+                                                                   int blockRow, int blockStart, int blockCount,
+                                                                   int blockCountXY) {
     const int wgSize_xy = conf::workGroupSizeGEMM_xy;
     if (conf::matrixBlockSize % wgSize_xy != 0) {
         throw std::runtime_error("xy work-group dimension for matrix multiplication must divide matrix block size");
@@ -748,6 +748,74 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(sycl::queue& q
             }
 
             A[blockStartIndex_A + i * matrixBlockSize + j] = value;
+        });
+    });
+
+    return event;
+}
+
+sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(sycl::queue& queue, conf::fp_type* A,
+                                                                   const int blockID,
+                                                                   const int blockRow,
+                                                                   const int blockStart, const int blockCount,
+                                                                   const int blockCountXY) {
+    const int rowsAbove = blockStart - (blockRow + 2);
+    const int rowsBelow = blockCountXY - blockStart - blockCount;
+
+    // block Count including rows above and below that should not be processed
+    const int virtualBlockCount = blockCount + rowsAbove + rowsBelow;
+
+    const int upperBlockCount = ((rowsAbove * (rowsAbove + 1)) / 2);
+    const int totalBlockCount = (virtualBlockCount * (virtualBlockCount + 1)) / 2;
+    const int lowerBlockCount = totalBlockCount - ((blockCount + rowsAbove) * ((blockCount + rowsAbove) + 1) / 2);
+
+    const int wgCount = totalBlockCount - upperBlockCount - lowerBlockCount;
+
+    const range globalRange(wgCount * conf::matrixBlockSize);
+
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+
+    sycl::event event = queue.submit([&](sycl::handler& h) {
+        h.parallel_for(globalRange, [=](auto& id) {
+            const int local_i = id[0];
+
+            const int group_id = local_i / matrixBlockSize;
+
+            // block ID of matrix blocks if one would enumerate them row by row
+            const int rowBlockID = upperBlockCount + group_id;
+
+            // row ID in the lower triangle where the computation takes place
+            const int rowID = (-1.0 + sycl::sqrt(1.0 + 8.0 * rowBlockID)) / 2;
+
+            const int blocksAboveCurrentRow = rowID * (rowID + 1) / 2;
+
+            // column ID of the matrix block int the lower triangle the current work-group is associated with
+            const int columnID = rowBlockID - blocksAboveCurrentRow;
+
+            // calculation of the block ID of matrix block associated with this work-group
+            const int wgBlockID_A = blockID + blockCountXY - blockRow + columnID + 1 + (totalBlockCount - ((blockCountXY
+                - blockRow - 2 - columnID) * (blockCountXY - blockRow - 2 - columnID + 1) / 2)) + rowID - columnID;
+
+            const int wgBlockID_B = blockID + rowID + 2;
+            const int wgBlockID_C = blockID + columnID + 1;
+
+            const int blockStartIndex_A = wgBlockID_A * matrixBlockSize * matrixBlockSize;
+            const int blockStartIndex_B = wgBlockID_B * matrixBlockSize * matrixBlockSize;
+            const int blockStartIndex_C = wgBlockID_C * matrixBlockSize * matrixBlockSize;
+
+            const int i = local_i % matrixBlockSize;
+
+
+            for (int j = 0; j < matrixBlockSize; ++j) {
+                conf::fp_type value = 0;
+#pragma clang loop vectorize(enable) unroll(enable)
+                for (int k = 0; k < matrixBlockSize; ++k) {
+                    // A = A - B * C^T
+                    value += A[blockStartIndex_B + j * matrixBlockSize + k] * A[blockStartIndex_C + i * matrixBlockSize + k];
+                }
+                A[blockStartIndex_A + j * matrixBlockSize + i] -= value;
+            }
+
         });
     });
 
