@@ -260,7 +260,7 @@ void Cholesky::solve() {
                 // update the blocks int the lower triangle below the current diagonal block
                 startMatrixMatrix = std::chrono::steady_clock::now();
                 if (useGPU) {
-                    MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(
+                    MatrixMatrixOperations::matrixMatrixStep_optimizedGPU2(
                         gpuQueue, A_gpu, blockID, k, k + 2, A.blockCountXY - (k + 2), A.blockCountXY);
                     gpuQueue.wait();
                 } else {
