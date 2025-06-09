@@ -173,6 +173,9 @@ public:
     static sycl::event matrixMatrixStep_optimizedGPU2(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
                                                  int blockStart, int blockCount, int blockCountXY);
 
+    static sycl::event matrixMatrixStep_optimizedGPU3(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
+                                             int blockStart, int blockCount, int blockCountXY);
+
 
     /**
      * This function performs the matrix-matrix multiplication step of the cholesky decomposition on the lower triangle of the

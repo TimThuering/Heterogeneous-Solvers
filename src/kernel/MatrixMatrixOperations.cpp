@@ -684,6 +684,130 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU2(sycl::queue& 
     return event;
 }
 
+sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& queue, conf::fp_type* A, int blockID,
+                                                                   int blockRow, int blockStart, int blockCount,
+                                                                   int blockCountXY) {
+    const int wgSize_xy = conf::workGroupSizeGEMM_xy;
+
+    const int valuesPerWorkItem = 4;
+
+    const int sharedMemBlockSize_x = valuesPerWorkItem * wgSize_xy;
+
+    const int sharedMemBlockCount = static_cast<int>(conf::matrixBlockSize) / sharedMemBlockSize_x;
+
+    if (conf::matrixBlockSize % wgSize_xy != 0 && sharedMemBlockSize_x % wgSize_xy != 0) {
+        throw std::runtime_error("xy work-group dimension for matrix multiplication must divide matrix block size and shared memory block size");
+    }
+
+    const int wgCount_xy = static_cast<int>(conf::matrixBlockSize) / wgSize_xy;
+
+    const int rowsAbove = blockStart - (blockRow + 2);
+    const int rowsBelow = blockCountXY - blockStart - blockCount;
+
+    // block Count including rows above and below that should not be processed
+    const int virtualBlockCount = blockCount + rowsAbove + rowsBelow;
+
+    const int upperBlockCount = ((rowsAbove * (rowsAbove + 1)) / 2);
+    const int totalBlockCount = (virtualBlockCount * (virtualBlockCount + 1)) / 2;
+    const int lowerBlockCount = totalBlockCount - ((blockCount + rowsAbove) * ((blockCount + rowsAbove) + 1) / 2);
+
+    const int wgCount = totalBlockCount - upperBlockCount - lowerBlockCount;
+
+    const range globalRange(wgCount_xy * wgSize_xy, wgCount * wgCount_xy * wgSize_xy);
+    const range localRange(wgSize_xy, wgSize_xy);
+    const auto kernelRange = nd_range{globalRange, localRange};
+
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+
+    sycl::event event = queue.submit([&](sycl::handler& h) {
+        auto local_tile_B = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, sharedMemBlockSize_x), h);
+        auto local_tile_C = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, sharedMemBlockSize_x + 1), h);
+        auto cache = local_accessor<int, 1>(sycl::range(3), h);
+
+        h.parallel_for(kernelRange, [=](auto& nd_item) {
+            const int local_i = nd_item.get_local_id(0);
+            const int local_j = nd_item.get_local_id(1);
+            const int group_id_i = nd_item.get_group().get_group_id(1);
+            const int group_id_j = nd_item.get_group().get_group_id(0);
+
+
+            // row ID in the lower triangle where the computation takes place
+            if (local_i == 0 && local_j == 0) {
+                // block ID of matrix blocks if one would enumerate them row by row
+                const int rowBlockID = upperBlockCount + (group_id_i / wgCount_xy);
+
+                const int rowID = (-1.0 + sycl::sqrt(1.0 + 8.0 * rowBlockID)) / 2;
+
+                const int blocksAboveCurrentRow = rowID * (rowID + 1) / 2;
+
+                // column ID of the matrix block int the lower triangle the current work-group is associated with
+                const int columnID = rowBlockID - blocksAboveCurrentRow;
+
+                // calculation of the block ID of matrix block associated with this work-group
+                const int wgBlockID_A = blockID + blockCountXY - blockRow + columnID + 1 + (totalBlockCount - ((blockCountXY
+                    - blockRow - 2 - columnID) * (blockCountXY - blockRow - 2 - columnID + 1) / 2)) + rowID - columnID;
+
+                const int wgBlockID_B = blockID + rowID + 2;
+                const int wgBlockID_C = blockID + columnID + 1;
+
+                cache[0] = wgBlockID_A * matrixBlockSize * matrixBlockSize;
+                cache[1] = wgBlockID_B * matrixBlockSize * matrixBlockSize;
+                cache[2] = wgBlockID_C * matrixBlockSize * matrixBlockSize;
+            }
+            group_barrier(nd_item.get_group(), memory_scope::work_group);
+
+            const int blockStartIndex_A = cache[0];
+            const int blockStartIndex_B = cache[1];
+            const int blockStartIndex_C = cache[2];
+
+            // indices in of the current work-item in the matrix block
+            const int internalBlockOffset_i = (group_id_i % wgCount_xy) * wgSize_xy;
+            const int internalBlockOffset_j = (group_id_j % wgCount_xy) * wgSize_xy;
+
+            const int i = internalBlockOffset_i + local_i;
+            const int j = internalBlockOffset_j + local_j;
+
+
+            // i coordinate for matrix c that needs to be interpreted as transposed later but is loaded non-transposed
+            const int i_c = internalBlockOffset_j + local_i;
+
+            // load initial value for result
+            conf::fp_type value = 0;
+
+            const int startIndexB = blockStartIndex_B + i * matrixBlockSize + local_j;
+            const int startIndexC = blockStartIndex_C + i_c * matrixBlockSize + local_j;
+
+            // perform update for lower triangle of the diagonal
+            for (int t = 0; t < sharedMemBlockCount; ++t) {
+                // normal block
+                for (int s = 0; s < valuesPerWorkItem; ++s) {
+                    local_tile_B[local_i][local_j + s * wgSize_xy] = A[startIndexB + t * sharedMemBlockSize_x + s * wgSize_xy];
+                }
+
+                // transposed block
+                for (int s = 0; s < valuesPerWorkItem; ++s) {
+                    local_tile_C[local_i][local_j + s * wgSize_xy] = A[startIndexC + t * sharedMemBlockSize_x + s * wgSize_xy];
+                }
+
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
+
+
+#pragma unroll
+                for (int k = 0; k < wgSize_xy; ++k) {
+                    // B_diag = B_diag - B_col * B_col^T
+                    for (int s = 0; s < valuesPerWorkItem; ++s) {
+                        value += local_tile_B[local_i ][k + s * wgSize_xy] * local_tile_C[local_j ][k + s * wgSize_xy];
+                    }
+                }
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
+            }
+                A[blockStartIndex_A + i * matrixBlockSize + j] -= value;
+        });
+    });
+
+    return event;
+}
+
 
 sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(sycl::queue& queue, conf::fp_type* A,
                                                                   const int blockID,
@@ -815,7 +939,6 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(sycl::queue& 
                 }
                 A[blockStartIndex_A + j * matrixBlockSize + i] -= value;
             }
-
         });
     });
 
