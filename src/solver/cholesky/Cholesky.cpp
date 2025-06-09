@@ -64,17 +64,13 @@ void Cholesky::solve_heterogeneous() {
         bool shiftSplit = blockCountGPU != newBlockCountGPU && newBlockCountGPU >= minBlockCountGPU;
 
 
-        blockCountGPU = newBlockCountGPU;
-        blockCountCPU = newBlockCountCPU;
-        blockStartGPU = newBlockStartGPU;
-
         if (shiftSplit) {
             std::cout << "Copying Blocks" << std::endl;
             // copy part of each column that was computed on the GPU and now has to be computed by the CPU after re-balancing
             for (int c = 0; c < blockCountCPU + k + 1; ++c) {
                 const int columnsToRight = A.blockCountXY - c;
                 // first block in the column updated by the GPU
-                const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2) + std::max(A.blockCountXY - c - initialBlockCountGPU, 0);
+                const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2) + std::max(A.blockCountXY - c - blockCountGPU, 0);
                 const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
                 std::cout << "Block ID: " << blockID << std::endl;
@@ -86,6 +82,9 @@ void Cholesky::solve_heterogeneous() {
             gpuQueue.wait();
         }
 
+        blockCountGPU = newBlockCountGPU;
+        blockCountCPU = newBlockCountCPU;
+        blockStartGPU = newBlockStartGPU;
 
         // blockCountCPU = std::max(A.blockCountXY - 1 - k - initialBlockCountGPU, 0);
         // blockCountGPU = std::min(blockCountGPU, A.blockCountXY - (k + 1));
@@ -106,7 +105,7 @@ void Cholesky::solve_heterogeneous() {
 
         // perform Cholesky decomposition on diagonal block A_kk
         startCholesky = std::chrono::steady_clock::now();
-        if (k < A.blockCountXY - std::max(blockCountGPU,minBlockCountGPU)) {
+        if (k < A.blockCountXY - std::max(blockCountGPU, minBlockCountGPU)) {
             // CPU holds A_kk --> use CPU
             MatrixOperations::cholesky(cpuQueue, A.matrixData.data(), blockID, k);
             cpuQueue.wait();
