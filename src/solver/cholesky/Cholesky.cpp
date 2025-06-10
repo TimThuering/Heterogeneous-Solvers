@@ -11,18 +11,25 @@ Cholesky::Cholesky(SymmetricMatrix& A, queue& cpuQueue, queue& gpuQueue):
 }
 
 void Cholesky::solve_heterogeneous() {
-    const double gpuProportion = 0.45;
+    const double gpuProportion = conf::initialProportionGPU;
 
-    const int minBlockCountGPU = 3;
+    int minBlockCountGPU;
+    if (gpuProportion != 0) {
+        minBlockCountGPU = 3;
+    } else {
+        minBlockCountGPU = 0;
+    }
 
     const auto start = std::chrono::steady_clock::now();
 
-    // init GPU data structure for matrix A on which the Cholesky decomposition should be performed
-    A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
-    // Copy the matrix A to the GPU
-    gpuQueue.submit([&](handler& h) {
-        h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
-    }).wait();
+    if (gpuProportion != 0) {
+        // init GPU data structure for matrix A on which the Cholesky decomposition should be performed
+        A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
+        // Copy the matrix A to the GPU
+        gpuQueue.submit([&](handler& h) {
+            h.memcpy(A_gpu, A.matrixData.data(), A.matrixData.size() * sizeof(conf::fp_type));
+        }).wait();
+    }
 
     const int blockCountATotal = (A.blockCountXY * (A.blockCountXY + 1) / 2);
 
@@ -63,7 +70,7 @@ void Cholesky::solve_heterogeneous() {
         int newBlockCountGPU = std::min(std::max(static_cast<int>(std::ceil((A.blockCountXY - 1 - k) * gpuProportion)), minBlockCountGPU), A.blockCountXY - (k + 1));
         int newBlockCountCPU = std::max(A.blockCountXY - 1 - k - newBlockCountGPU, 0);
         int newBlockStartGPU = std::max(A.blockCountXY - newBlockCountGPU, k + 1);
-        bool shiftSplit = blockCountGPU != newBlockCountGPU && newBlockCountGPU >= minBlockCountGPU;
+        bool shiftSplit = blockCountGPU != newBlockCountGPU && newBlockCountGPU >= minBlockCountGPU && gpuProportion != 1 && gpuProportion != 0;
 
 
         startCopy = std::chrono::steady_clock::now();
@@ -103,22 +110,27 @@ void Cholesky::solve_heterogeneous() {
 
         // perform Cholesky decomposition on diagonal block A_kk
         startCholesky = std::chrono::steady_clock::now();
-        if (k < A.blockCountXY - std::max(blockCountGPU, minBlockCountGPU)) {
+        if ((k < A.blockCountXY - std::max(blockCountGPU, minBlockCountGPU) && gpuProportion != 1) || gpuProportion == 0) {
             // CPU holds A_kk --> use CPU
             MatrixOperations::cholesky(cpuQueue, A.matrixData.data(), blockID, k);
             cpuQueue.wait();
-            // copy updated current diagonal block to GPU memory
-            gpuQueue.submit([&](handler& h) {
-                h.memcpy(&A_gpu[blockStartIndexDiagBlock], &A.matrixData[blockStartIndexDiagBlock], blockSizeBytes);
-            }).wait();
+
+            if (gpuProportion != 0) {
+                // copy updated current diagonal block to GPU memory
+                gpuQueue.submit([&](handler& h) {
+                    h.memcpy(&A_gpu[blockStartIndexDiagBlock], &A.matrixData[blockStartIndexDiagBlock], blockSizeBytes);
+                }).wait();
+            }
         } else {
             // GPU holds A_kk --> use GPU
             MatrixOperations::cholesky_optimizedGPU(gpuQueue, A_gpu, blockID, k);
             gpuQueue.wait();
-            // copy updated current diagonal block to CPU memory
-            gpuQueue.submit([&](handler& h) {
-                h.memcpy(&A.matrixData[blockStartIndexDiagBlock], &A_gpu[blockStartIndexDiagBlock], blockSizeBytes);
-            }).wait();
+            if (gpuProportion != 1) {
+                // copy updated current diagonal block to CPU memory
+                gpuQueue.submit([&](handler& h) {
+                    h.memcpy(&A.matrixData[blockStartIndexDiagBlock], &A_gpu[blockStartIndexDiagBlock], blockSizeBytes);
+                }).wait();
+            }
         }
         endCholesky = std::chrono::steady_clock::now();
 
@@ -132,12 +144,14 @@ void Cholesky::solve_heterogeneous() {
         }
         waitAllQueues();
         const std::size_t blockStartIndexFirstCPUSystem = (blockID + 1) * conf::matrixBlockSize * conf::matrixBlockSize;
-        // copy updated blocks by CPU to the GPU
-        gpuQueue.submit([&](handler& h) {
-            h.memcpy(&A_gpu[blockStartIndexFirstCPUSystem], &A.matrixData[blockStartIndexFirstCPUSystem], blockCountCPU * blockSizeBytes);
-        }).wait();
-        endTriangularSolve = std::chrono::steady_clock::now();
 
+        if (gpuProportion != 1 && gpuProportion != 0) {
+            // copy updated blocks by CPU to the GPU
+            gpuQueue.submit([&](handler& h) {
+                h.memcpy(&A_gpu[blockStartIndexFirstCPUSystem], &A.matrixData[blockStartIndexFirstCPUSystem], blockCountCPU * blockSizeBytes);
+            }).wait();
+        }
+        endTriangularSolve = std::chrono::steady_clock::now();
 
         // update the blocks on the diagonal below the current diagonal block
         startMatrixMatrixDiagonal = std::chrono::steady_clock::now();
@@ -153,7 +167,7 @@ void Cholesky::solve_heterogeneous() {
 
         // update the blocks in the lower triangle below the current diagonal block
         startMatrixMatrix = std::chrono::steady_clock::now();
-        if (blockCountCPU > 1) {
+        if (blockCountCPU > 1 && gpuProportion != 1) {
             eventCPU = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
         }
         if (blockCountGPU > 0 && k < A.blockCountXY - 2) {
@@ -181,8 +195,12 @@ void Cholesky::solve_heterogeneous() {
         std::cout << "   -- triangular solve:       " << triangularSolveTime << "ms" << std::endl;
         std::cout << "   -- matrix-matrix diagonal: " << matrixMatrixDiagonalTime << "ms" << std::endl;
         std::cout << "   -- matrix-matrix:          " << matrixMatrixTime << "ms" << std::endl;
-        std::cout << "      - CPU:          " << static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << "ms" << std::endl;
-        std::cout << "      - GPU:          " << static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << "ms" << std::endl;
+        if (blockCountCPU > 0) {
+            std::cout << "      - CPU:          " << static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << "ms" << std::endl;
+        }
+        if (blockCountGPU > 0) {
+            std::cout << "      - GPU:          " << static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6 << "ms" << std::endl;
+        }
         // std::cout << "   -- block count CPU:        " << blockCountCPU << std::endl;
         // std::cout << "   -- block count GPU:        " << blockCountGPU << std::endl;
         // std::cout << "   -- block start GPU:        " << blockStartGPU << std::endl;
@@ -195,25 +213,31 @@ void Cholesky::solve_heterogeneous() {
         std::cout << std::endl;
     }
 
-    // copy part of each column that was computed on the GPU to the CPU
-    for (int k = 0; k < A.blockCountXY; ++k) {
-        const int columnsToRight = A.blockCountXY - k;
-        // first block in the column updated by the GPU
-        const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2) + std::max(A.blockCountXY - k - minBlockCountGPU, 0);
-        const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+    if (gpuProportion != 1 && gpuProportion != 0) {
+        // copy part of each column that was computed on the GPU to the CPU
+        for (int k = 0; k < A.blockCountXY; ++k) {
+            const int columnsToRight = A.blockCountXY - k;
+            // first block in the column updated by the GPU
+            const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2) + std::max(A.blockCountXY - k - minBlockCountGPU, 0);
+            const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
-        int blockCountGPUinColumn;
-        if (k <= minBlockCountGPU) {
-            blockCountGPUinColumn = minBlockCountGPU;
-        } else {
-            blockCountGPUinColumn = A.blockCountXY - k;
+            int blockCountGPUinColumn;
+            if (k <= minBlockCountGPU) {
+                blockCountGPUinColumn = minBlockCountGPU;
+            } else {
+                blockCountGPUinColumn = A.blockCountXY - k;
+            }
+
+            gpuQueue.submit([&](handler& h) {
+                h.memcpy(&A.matrixData[blockStartIndexFirstGPUBlock], &A_gpu[blockStartIndexFirstGPUBlock], blockCountGPUinColumn * blockSizeBytes);
+            });
         }
-
+        gpuQueue.wait();
+    } else if (gpuProportion == 1) {
         gpuQueue.submit([&](handler& h) {
-            h.memcpy(&A.matrixData[blockStartIndexFirstGPUBlock], &A_gpu[blockStartIndexFirstGPUBlock], blockCountGPUinColumn * blockSizeBytes);
-        });
+            h.memcpy(A.matrixData.data(), A_gpu, A.matrixData.size() * sizeof(conf::fp_type));
+        }).wait();
     }
-    gpuQueue.wait();
 
 
     const auto end = std::chrono::steady_clock::now();
