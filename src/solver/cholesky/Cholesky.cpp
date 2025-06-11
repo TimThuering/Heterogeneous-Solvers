@@ -49,7 +49,6 @@ void Cholesky::shiftSplitRowComm(const int blockCountATotal, const std::size_t b
         const int columnsToRight = A.blockCountXY - c;
         // first block in the column updated by the GPU
         const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2) + std::max(A.blockCountXY - c - blockCountGPU, 0);
-        std::cout << "Block " << blockID << std::endl;
 
         const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
@@ -111,13 +110,14 @@ void Cholesky::choleskySolveTriangularSystemColumn(const double gpuProportion, c
     if (blockCountCPU > 0) {
         MatrixMatrixOperations::triangularSolve_optimizedCPU(cpuQueue, A.matrixData.data(), blockID, k, k + 1, blockCountCPU);
     }
-    if (blockCountGPU > 0 && k < A.blockCountXY - 1) {
+    if (blockCountGPU > 0) {
         MatrixMatrixOperations::triangularSolve_optimizedGPU(gpuQueue, A_gpu, blockID, k, blockStartGPU, blockCountGPU);
     }
     waitAllQueues();
-    const std::size_t blockStartIndexFirstCPUSystem = (blockID + 1) * conf::matrixBlockSize * conf::matrixBlockSize;
 
+    // if heterogeneous computing is enabled, copy the blocks updated by the CPU to the GPU
     if (gpuProportion != 1 && gpuProportion != 0) {
+        const std::size_t blockStartIndexFirstCPUSystem = (blockID + 1) * conf::matrixBlockSize * conf::matrixBlockSize;
         // copy updated blocks by CPU to the GPU
         gpuQueue.submit([&](handler& h) {
             h.memcpy(&A_gpu[blockStartIndexFirstCPUSystem], &A.matrixData[blockStartIndexFirstCPUSystem], blockCountCPU * blockSizeBytes);
@@ -131,19 +131,19 @@ void Cholesky::choleskyUpdateDiagonal(const int k, const int blockID) {
     if (blockCountCPU > 0) {
         MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedCPU(cpuQueue, A.matrixData.data(), blockID, k, k + 1, blockCountCPU, A.blockCountXY);
     }
-    if (blockCountGPU > 0 && k < A.blockCountXY - 1) {
+    if (blockCountGPU > 0) {
         MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(gpuQueue, A_gpu, blockID, k, blockStartGPU, blockCountGPU, A.blockCountXY);
     }
     waitAllQueues();
     executionTimes.endMatrixMatrixDiagonal = std::chrono::steady_clock::now();
 }
 
-void Cholesky::choleskyUpdateLowerBlockTriangle(const double gpuProportion, const int k, const int blockID) {
+void Cholesky::choleskyUpdateLowerBlockTriangle(const int k, const int blockID) {
     executionTimes.startMatrixMatrix = std::chrono::steady_clock::now();
     if (blockCountCPU > 1) {
         executionTimes.eventCPU = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
     }
-    if (blockCountGPU > 0 && k < A.blockCountXY - 2) {
+    if (blockCountGPU > 1) {
         executionTimes.eventGPU = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU2(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
     }
     waitAllQueues();
@@ -276,7 +276,7 @@ void Cholesky::solve_heterogeneous() {
         choleskyUpdateDiagonal(k, blockID);
 
         // update the blocks in the lower triangle below the current diagonal block
-        choleskyUpdateLowerBlockTriangle(gpuProportion, k, blockID);
+        choleskyUpdateLowerBlockTriangle(k, blockID);
 
         // time measurement and output
         printTimes(k);

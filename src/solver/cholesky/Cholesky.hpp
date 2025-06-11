@@ -74,7 +74,7 @@ private:
     void choleskyUpdateCurrentDiagonalBlock(double gpuProportion, std::size_t blockSizeBytes, int k, int blockID, std::size_t blockStartIndexDiagBlock);
     void choleskySolveTriangularSystemColumn(double gpuProportion, std::size_t blockSizeBytes, int k, int blockID);
     void choleskyUpdateDiagonal(int k, int blockID);
-    void choleskyUpdateLowerBlockTriangle(double gpuProportion, int k, int blockID);
+    void choleskyUpdateLowerBlockTriangle(int k, int blockID);
     void printTimes(int k) const;
     void copyResultFromGPU(double gpuProportion, int blockCountATotal, std::size_t blockSizeBytes);
     void printFinalTimes() const;

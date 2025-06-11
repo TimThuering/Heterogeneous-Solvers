@@ -172,7 +172,7 @@ int main(int argc, char* argv[]) {
                             ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue)
                             : MatrixParser::parseSymmetricMatrix(path_A, cpuQueue);
 
-    MatrixParser::writeFullMatrix("./A_GP_10000", A);
+    // MatrixParser::writeFullMatrix("./A_GP_10000", A);
 
     if (algorithm == "cg") {
         CG cg(A, b, cpuQueue, gpuQueue, loadBalancer);
