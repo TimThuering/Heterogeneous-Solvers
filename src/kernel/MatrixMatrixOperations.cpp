@@ -723,8 +723,8 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
     const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
     sycl::event event = queue.submit([&](sycl::handler& h) {
-        auto local_tile_B = local_accessor<conf::fp_type, 2>(sycl::range(sharedMemBlockSize_y, sharedMemBlockSize_x), h);
-        auto local_tile_C = local_accessor<conf::fp_type, 2>(sycl::range(sharedMemBlockSize_x, sharedMemBlockSize_y), h);
+        auto local_tile_B = local_accessor<conf::fp_type, 2>(sycl::range(sharedMemBlockSize_y, sharedMemBlockSize_x + 1), h);
+        auto local_tile_C = local_accessor<conf::fp_type, 2>(sycl::range(sharedMemBlockSize_x, sharedMemBlockSize_y + 1), h);
         auto cache = local_accessor<int, 1>(sycl::range(3), h);
 
         h.parallel_for(kernelRange, [=](auto& nd_item) {
@@ -737,7 +737,7 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
             // row ID in the lower triangle where the computation takes place
             if (local_i == 0 && local_j == 0) {
                 // block ID of matrix blocks if one would enumerate them row by row
-                const int rowBlockID = upperBlockCount + (group_id_i / wgBlockSize_xy);
+                const int rowBlockID = upperBlockCount + (group_id_i / wgCount_xy);
 
                 const int rowID = (-1.0 + sycl::sqrt(1.0 + 8.0 * rowBlockID)) / 2;
 
@@ -776,20 +776,37 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
             // const int i_c = internalBlockOffset_j + local_i * valuesPerWorkItem_xy;
 
             // load initial value for result
-            conf::fp_type workItemTile[4][4];
+            // conf::fp_type workItemTile[4][4];
 
-            for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
-                for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
-                    workItemTile[ii][jj] = 0.0;
-                }
-            }
+            conf::fp_type value_00 = 0.0;
+            conf::fp_type value_01 = 0.0;
+            conf::fp_type value_02 = 0.0;
+            conf::fp_type value_03 = 0.0;
+            conf::fp_type value_10 = 0.0;
+            conf::fp_type value_11 = 0.0;
+            conf::fp_type value_12 = 0.0;
+            conf::fp_type value_13 = 0.0;
+            conf::fp_type value_20 = 0.0;
+            conf::fp_type value_21 = 0.0;
+            conf::fp_type value_22 = 0.0;
+            conf::fp_type value_23 = 0.0;
+            conf::fp_type value_30 = 0.0;
+            conf::fp_type value_31 = 0.0;
+            conf::fp_type value_32 = 0.0;
+            conf::fp_type value_33 = 0.0;
+
+            // for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
+            //     for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
+            //         workItemTile[ii][jj] = 0.0;
+            //     }
+            // }
 
             const int startIndexB = blockStartIndex_B + internalBlockOffset_i * matrixBlockSize;
             const int startIndexC = blockStartIndex_C + internalBlockOffset_j * matrixBlockSize;
 
-            // if (local_i == 0 && local_j == 0) {
-            //     printf("%i, %i --> %i, %i \n", group_id_i, group_id_j, internalBlockOffset_i, internalBlockOffset_j);
-            // }
+            if (local_i == 0 && local_j == 0) {
+                // printf("%i, %i --> %i, %i : %i, %i, (%i) \n", group_id_i, group_id_j, internalBlockOffset_i, internalBlockOffset_j, i , j);
+            }
 
 
             // perform update for lower triangle of the diagonal
@@ -835,32 +852,65 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
 
 
                 for (int k = 0; k < sharedMemBlockSize_x; ++k) {
-                    if (local_i == 0 && local_j == 0 && group_id_i == 0 && group_id_j == 0) {
-                        printf("%f * %f \n", local_tile_B[local_i * valuesPerWorkItem_xy + 0][k], local_tile_C[k][local_j * valuesPerWorkItem_xy + 0]);
-                    }
+                    // if (local_i == 0 && local_j == 0 && group_id_i == 0 && group_id_j == 0) {
+                    //     printf("%f * %f \n", local_tile_B[local_i * valuesPerWorkItem_xy + 0][k], local_tile_C[k][local_j * valuesPerWorkItem_xy + 0]);
+                    // }
                     // B_diag = B_diag - B_col * B_col^T
-                    for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
-                        for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
-                            workItemTile[ii][jj] += local_tile_B[local_i * valuesPerWorkItem_xy + ii][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + jj];
-                        }
-                    }
+                    value_00 += local_tile_B[local_i * valuesPerWorkItem_xy + 0][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 0];
+                    value_01 += local_tile_B[local_i * valuesPerWorkItem_xy + 0][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 1];
+                    value_02 += local_tile_B[local_i * valuesPerWorkItem_xy + 0][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 2];
+                    value_03 += local_tile_B[local_i * valuesPerWorkItem_xy + 0][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 3];
+                    value_10 += local_tile_B[local_i * valuesPerWorkItem_xy + 1][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 0];
+                    value_11 += local_tile_B[local_i * valuesPerWorkItem_xy + 1][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 1];
+                    value_12 += local_tile_B[local_i * valuesPerWorkItem_xy + 1][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 2];
+                    value_13 += local_tile_B[local_i * valuesPerWorkItem_xy + 1][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 3];
+                    value_20 += local_tile_B[local_i * valuesPerWorkItem_xy + 2][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 0];
+                    value_21 += local_tile_B[local_i * valuesPerWorkItem_xy + 2][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 1];
+                    value_22 += local_tile_B[local_i * valuesPerWorkItem_xy + 2][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 2];
+                    value_23 += local_tile_B[local_i * valuesPerWorkItem_xy + 2][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 3];
+                    value_30 += local_tile_B[local_i * valuesPerWorkItem_xy + 3][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 0];
+                    value_31 += local_tile_B[local_i * valuesPerWorkItem_xy + 3][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 1];
+                    value_32 += local_tile_B[local_i * valuesPerWorkItem_xy + 3][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 2];
+                    value_33 += local_tile_B[local_i * valuesPerWorkItem_xy + 3][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + 3];
 
+                    // for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
+                    //     for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
+                    //         // workItemTile[ii][jj] += local_tile_B[local_i * valuesPerWorkItem_xy + ii][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + jj];
+                    //
+                    //     }
+                    // }
                 }
-                if (local_i == 0 && local_j == 0 && group_id_i == 0 && group_id_j == 0) {
-    printf("\n");
-    printf("\n");
-}
+                //                 if (local_i == 0 && local_j == 0 && group_id_i == 0 && group_id_j == 0) {
+                //     printf("\n");
+                //     printf("\n");
+                // }
                 group_barrier(nd_item.get_group(), memory_scope::work_group);
             }
 
+            A[blockStartIndex_A + (i + 0) * matrixBlockSize + (j +  0)] -= value_00;
+            A[blockStartIndex_A + (i + 0) * matrixBlockSize + (j +  1)] -= value_01;
+            A[blockStartIndex_A + (i + 0) * matrixBlockSize + (j +  2)] -= value_02;
+            A[blockStartIndex_A + (i + 0) * matrixBlockSize + (j +  3)] -= value_03;
+            A[blockStartIndex_A + (i + 1) * matrixBlockSize + (j +  0)] -= value_10;
+            A[blockStartIndex_A + (i + 1) * matrixBlockSize + (j +  1)] -= value_11;
+            A[blockStartIndex_A + (i + 1) * matrixBlockSize + (j +  2)] -= value_12;
+            A[blockStartIndex_A + (i + 1) * matrixBlockSize + (j +  3)] -= value_13;
+            A[blockStartIndex_A + (i + 2) * matrixBlockSize + (j +  0)] -= value_20;
+            A[blockStartIndex_A + (i + 2) * matrixBlockSize + (j +  1)] -= value_21;
+            A[blockStartIndex_A + (i + 2) * matrixBlockSize + (j +  2)] -= value_22;
+            A[blockStartIndex_A + (i + 2) * matrixBlockSize + (j +  3)] -= value_23;
+            A[blockStartIndex_A + (i + 3) * matrixBlockSize + (j +  0)] -= value_30;
+            A[blockStartIndex_A + (i + 3) * matrixBlockSize + (j +  1)] -= value_31;
+            A[blockStartIndex_A + (i + 3) * matrixBlockSize + (j +  2)] -= value_32;
+            A[blockStartIndex_A + (i + 3) * matrixBlockSize + (j +  3)] -= value_33;
             // store the result
-            for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
-                for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
-                        A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
-                        // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
-                    // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] = wgSize_xy * local_i + local_j;
-                }
-            }
+            // for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
+            //     for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
+            //         // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
+            //         // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
+            //         // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] = wgSize_xy * local_i + local_j;
+            //     }
+            // }
         });
     });
 
