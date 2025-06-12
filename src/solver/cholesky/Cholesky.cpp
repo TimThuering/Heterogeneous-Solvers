@@ -144,7 +144,7 @@ void Cholesky::choleskyUpdateLowerBlockTriangle(const int k, const int blockID) 
         executionTimes.eventCPU = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
     }
     if (blockCountGPU > 1) {
-        executionTimes.eventGPU = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU2(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
+        executionTimes.eventGPU = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
     }
     waitAllQueues();
     executionTimes.endMatrixMatrix = std::chrono::steady_clock::now();

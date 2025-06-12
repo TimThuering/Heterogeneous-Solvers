@@ -687,19 +687,22 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU2(sycl::queue& 
 sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& queue, conf::fp_type* A, int blockID,
                                                                    int blockRow, int blockStart, int blockCount,
                                                                    int blockCountXY) {
-    const int wgSize_xy = conf::workGroupSizeGEMM_xy;
+    const int wgSize_xy = 16;
 
-    const int valuesPerWorkItem = 4;
+    const int valuesPerWorkItem_xy = 4;
 
-    const int sharedMemBlockSize_x = valuesPerWorkItem * wgSize_xy;
+    const int wgBlockSize_xy = wgSize_xy * valuesPerWorkItem_xy;
+
+    const int sharedMemBlockSize_x = 16;
+    const int sharedMemBlockSize_y = wgSize_xy * valuesPerWorkItem_xy;
 
     const int sharedMemBlockCount = static_cast<int>(conf::matrixBlockSize) / sharedMemBlockSize_x;
 
-    if (conf::matrixBlockSize % wgSize_xy != 0 && sharedMemBlockSize_x % wgSize_xy != 0) {
+    if (conf::matrixBlockSize % wgSize_xy != 0 || conf::matrixBlockSize % sharedMemBlockSize_x != 0 || conf::matrixBlockSize % sharedMemBlockSize_y != 0) {
         throw std::runtime_error("xy work-group dimension for matrix multiplication must divide matrix block size and shared memory block size");
     }
 
-    const int wgCount_xy = static_cast<int>(conf::matrixBlockSize) / wgSize_xy;
+    const int wgCount_xy = static_cast<int>(conf::matrixBlockSize) / wgBlockSize_xy;
 
     const int rowsAbove = blockStart - (blockRow + 2);
     const int rowsBelow = blockCountXY - blockStart - blockCount;
@@ -720,13 +723,13 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
     const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
     sycl::event event = queue.submit([&](sycl::handler& h) {
-        auto local_tile_B = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, sharedMemBlockSize_x), h);
-        auto local_tile_C = local_accessor<conf::fp_type, 2>(sycl::range(wgSize_xy, sharedMemBlockSize_x + 1), h);
+        auto local_tile_B = local_accessor<conf::fp_type, 2>(sycl::range(sharedMemBlockSize_y, sharedMemBlockSize_x), h);
+        auto local_tile_C = local_accessor<conf::fp_type, 2>(sycl::range(sharedMemBlockSize_x, sharedMemBlockSize_y), h);
         auto cache = local_accessor<int, 1>(sycl::range(3), h);
 
         h.parallel_for(kernelRange, [=](auto& nd_item) {
-            const int local_i = nd_item.get_local_id(0);
-            const int local_j = nd_item.get_local_id(1);
+            const int local_i = nd_item.get_local_id(1);
+            const int local_j = nd_item.get_local_id(0);
             const int group_id_i = nd_item.get_group().get_group_id(1);
             const int group_id_j = nd_item.get_group().get_group_id(0);
 
@@ -734,7 +737,7 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
             // row ID in the lower triangle where the computation takes place
             if (local_i == 0 && local_j == 0) {
                 // block ID of matrix blocks if one would enumerate them row by row
-                const int rowBlockID = upperBlockCount + (group_id_i / wgCount_xy);
+                const int rowBlockID = upperBlockCount + (group_id_i / wgBlockSize_xy);
 
                 const int rowID = (-1.0 + sycl::sqrt(1.0 + 8.0 * rowBlockID)) / 2;
 
@@ -761,47 +764,103 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
             const int blockStartIndex_C = cache[2];
 
             // indices in of the current work-item in the matrix block
-            const int internalBlockOffset_i = (group_id_i % wgCount_xy) * wgSize_xy;
-            const int internalBlockOffset_j = (group_id_j % wgCount_xy) * wgSize_xy;
+            const int internalBlockOffset_i = (group_id_i % wgCount_xy) * wgBlockSize_xy;
+            const int internalBlockOffset_j = (group_id_j % wgCount_xy) * wgBlockSize_xy;
 
-            const int i = internalBlockOffset_i + local_i;
-            const int j = internalBlockOffset_j + local_j;
+            // upper left index of the valuesPerWorkItem_xy x valuesPerWorkItem_xy tile of this work-item in the result matrix
+            const int i = internalBlockOffset_i + local_i * valuesPerWorkItem_xy;
+            const int j = internalBlockOffset_j + local_j * valuesPerWorkItem_xy;
 
 
             // i coordinate for matrix c that needs to be interpreted as transposed later but is loaded non-transposed
-            const int i_c = internalBlockOffset_j + local_i;
+            // const int i_c = internalBlockOffset_j + local_i * valuesPerWorkItem_xy;
 
             // load initial value for result
-            conf::fp_type value = 0;
+            conf::fp_type workItemTile[4][4];
 
-            const int startIndexB = blockStartIndex_B + i * matrixBlockSize + local_j;
-            const int startIndexC = blockStartIndex_C + i_c * matrixBlockSize + local_j;
+            for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
+                for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
+                    workItemTile[ii][jj] = 0.0;
+                }
+            }
+
+            const int startIndexB = blockStartIndex_B + internalBlockOffset_i * matrixBlockSize;
+            const int startIndexC = blockStartIndex_C + internalBlockOffset_j * matrixBlockSize;
+
+            // if (local_i == 0 && local_j == 0) {
+            //     printf("%i, %i --> %i, %i \n", group_id_i, group_id_j, internalBlockOffset_i, internalBlockOffset_j);
+            // }
+
 
             // perform update for lower triangle of the diagonal
             for (int t = 0; t < sharedMemBlockCount; ++t) {
+                // if (local_i == 0 && local_j == 0 && group_id_i == 0 && group_id_j == 0) {
+                //     printf("\n");
+                // }
                 // normal block
-                for (int s = 0; s < valuesPerWorkItem; ++s) {
-                    local_tile_B[local_i][local_j + s * wgSize_xy] = A[startIndexB + t * sharedMemBlockSize_x + s * wgSize_xy];
+                for (int s = 0; s < valuesPerWorkItem_xy; ++s) {
+                    // if (local_i == 0 && local_j == 0 && group_id_i == 0 && group_id_j == 0) {
+                    //     printf("%f, %i \n", A[startIndexC + sharedMemoryBlockOffset + s * wgSize_xy * matrixBlockSize], sharedMemoryBlockOffset);
+                    // }
+                    local_tile_B[local_i + s * wgSize_xy][local_j] = A[startIndexB + t * sharedMemBlockSize_x + local_i * matrixBlockSize + local_j + s * wgSize_xy * matrixBlockSize];
                 }
 
                 // transposed block
-                for (int s = 0; s < valuesPerWorkItem; ++s) {
-                    local_tile_C[local_i][local_j + s * wgSize_xy] = A[startIndexC + t * sharedMemBlockSize_x + s * wgSize_xy];
+                for (int s = 0; s < valuesPerWorkItem_xy; ++s) {
+                    // local_tile_C[local_j][local_i + s * wgBlockSize_xy] = A[local_i];
+                    local_tile_C[local_i][local_j + s * wgSize_xy] = A[startIndexC + t * sharedMemBlockSize_x + local_j * matrixBlockSize + local_i + s * wgSize_xy * matrixBlockSize];
                 }
 
                 group_barrier(nd_item.get_group(), memory_scope::work_group);
 
+                // if (local_i == 0 && local_j == 0 && group_id_i == 0 && group_id_j == 0) {
+                //     // for (int ii = 0; ii < sharedMemBlockSize_x; ++ii) {
+                //     //     for (int jj = 0; jj < sharedMemBlockSize_y; ++jj) {
+                //     //         printf("%f ", local_tile_C[ii][jj]);
+                //     //     }
+                //     //     printf("\n");
+                //     // }
+                //
+                //     for (int ii = 0; ii < sharedMemBlockSize_y; ++ii) {
+                //         for (int jj = 0; jj < sharedMemBlockSize_x; ++jj) {
+                //             printf("%f ", local_tile_B[ii][jj]);
+                //         }
+                //         printf("\n");
+                //     }
+                //
+                //     printf("\n");
+                //     printf("\n");
+                //     printf("\n");
+                // }
 
-#pragma unroll
-                for (int k = 0; k < wgSize_xy; ++k) {
-                    // B_diag = B_diag - B_col * B_col^T
-                    for (int s = 0; s < valuesPerWorkItem; ++s) {
-                        value += local_tile_B[local_i ][k + s * wgSize_xy] * local_tile_C[local_j ][k + s * wgSize_xy];
+
+                for (int k = 0; k < sharedMemBlockSize_x; ++k) {
+                    if (local_i == 0 && local_j == 0 && group_id_i == 0 && group_id_j == 0) {
+                        printf("%f * %f \n", local_tile_B[local_i * valuesPerWorkItem_xy + 0][k], local_tile_C[k][local_j * valuesPerWorkItem_xy + 0]);
                     }
+                    // B_diag = B_diag - B_col * B_col^T
+                    for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
+                        for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
+                            workItemTile[ii][jj] += local_tile_B[local_i * valuesPerWorkItem_xy + ii][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + jj];
+                        }
+                    }
+
                 }
+                if (local_i == 0 && local_j == 0 && group_id_i == 0 && group_id_j == 0) {
+    printf("\n");
+    printf("\n");
+}
                 group_barrier(nd_item.get_group(), memory_scope::work_group);
             }
-                A[blockStartIndex_A + i * matrixBlockSize + j] -= value;
+
+            // store the result
+            for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
+                for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
+                        A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
+                        // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
+                    // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] = wgSize_xy * local_i + local_j;
+                }
+            }
         });
     });
 

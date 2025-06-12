@@ -172,15 +172,18 @@ int main(int argc, char* argv[]) {
                             ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue)
                             : MatrixParser::parseSymmetricMatrix(path_A, cpuQueue);
 
-    // MatrixParser::writeFullMatrix("./A_GP_10000", A);
+    // MatrixParser::writeFullMatrix("./A_GP_512", A);
 
     if (algorithm == "cg") {
         CG cg(A, b, cpuQueue, gpuQueue, loadBalancer);
         cg.solveHeterogeneous();
     } else if (algorithm == "cholesky") {
-        Cholesky cholesky(A, cpuQueue, gpuQueue);
-        cholesky.solve_heterogeneous();
+        // Cholesky cholesky(A, cpuQueue, gpuQueue);
+        // cholesky.solve_heterogeneous();
         // cholesky.solve();
+        MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(cpuQueue,A.matrixData.data(),0,0,2,A.blockCountXY -2, A.blockCountXY);
+        cpuQueue.wait();
+        MatrixParser::writeFullMatrix("./A_MM_test_512", A);
     } else {
         throw std::runtime_error("Invalid algorithm: " + algorithm);
     }
