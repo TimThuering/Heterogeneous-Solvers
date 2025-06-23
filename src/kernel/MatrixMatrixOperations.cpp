@@ -772,13 +772,13 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
             const int j = internalBlockOffset_j + local_j * valuesPerWorkItem_xy;
 
             // load initial value for result
-             conf::fp_type workItemTile[4][4];
+            conf::fp_type workItemTile[4][4];
 
-             for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
-                 for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
-                     workItemTile[ii][jj] = 0.0;
-                 }
-             }
+            for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
+                for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
+                    workItemTile[ii][jj] = 0.0;
+                }
+            }
 
             const int startIndexB = blockStartIndex_B + internalBlockOffset_i * matrixBlockSize;
             const int startIndexC = blockStartIndex_C + internalBlockOffset_j * matrixBlockSize;
@@ -799,24 +799,24 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
 
 
                 for (int k = 0; k < sharedMemBlockSize_x; ++k) {
-                     for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
-                         for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
-                              workItemTile[ii][jj] += local_tile_B[local_i * valuesPerWorkItem_xy + ii][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + jj];
-                         }
-                     }
+                    for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
+                        for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
+                            workItemTile[ii][jj] += local_tile_B[local_i * valuesPerWorkItem_xy + ii][k] * local_tile_C[k][local_j * valuesPerWorkItem_xy + jj];
+                        }
+                    }
                 }
 
                 group_barrier(nd_item.get_group(), memory_scope::work_group);
             }
 
             // store the result
-             for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
-                 for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
-                      A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
-                      A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
-                      A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] = wgSize_xy * local_i + local_j;
-                 }
-             }
+            for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
+                for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
+                    A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
+                    // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
+                    // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] = wgSize_xy * local_i + local_j;
+                }
+            }
         });
     });
 
