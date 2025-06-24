@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (arguments.count("algorithm")) {
-        algorithm = arguments["algorithm"].as<std::string>();
+        conf::algorithm = arguments["algorithm"].as<std::string>();
     }
 
     if (arguments.count("output")) {
@@ -174,10 +174,10 @@ int main(int argc, char* argv[]) {
 
     // MatrixParser::writeFullMatrix("./A_GP_1000", A);
 
-    if (algorithm == "cg") {
+    if (conf::algorithm == "cg") {
         CG cg(A, b, cpuQueue, gpuQueue, loadBalancer);
         cg.solveHeterogeneous();
-    } else if (algorithm == "cholesky") {
+    } else if (conf::algorithm == "cholesky") {
         Cholesky cholesky(A, cpuQueue, gpuQueue);
         cholesky.solve_heterogeneous();
         // cholesky.solve();

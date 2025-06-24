@@ -3,6 +3,7 @@
 
 #include <sycl/sycl.hpp>
 
+#include "MetricsTracker.hpp"
 #include "SymmetricMatrix.hpp"
 
 using namespace sycl;
@@ -15,6 +16,9 @@ public:
 
     queue& cpuQueue;
     queue& gpuQueue;
+
+    MetricsTracker metricsTracker;
+
 
     void solve_heterogeneous();
 
@@ -37,8 +41,11 @@ private:
         std::chrono::time_point<std::chrono::steady_clock> startCholesky;
         std::chrono::time_point<std::chrono::steady_clock> endCholesky;
 
-        std::chrono::time_point<std::chrono::steady_clock> startCopy;
-        std::chrono::time_point<std::chrono::steady_clock> endCopy;
+        std::chrono::time_point<std::chrono::steady_clock> startCopy_row;
+        std::chrono::time_point<std::chrono::steady_clock> endCopy_row;
+
+        std::chrono::time_point<std::chrono::steady_clock> startCopy_column;
+        std::chrono::time_point<std::chrono::steady_clock> endCopy_column;
 
         std::chrono::time_point<std::chrono::steady_clock> startTriangularSolve;
         std::chrono::time_point<std::chrono::steady_clock> endTriangularSolve;
@@ -52,8 +59,16 @@ private:
         std::chrono::time_point<std::chrono::steady_clock> startResultCopyGPU;
         std::chrono::time_point<std::chrono::steady_clock> endResultCopyGPU;
 
-        sycl::event eventCPU;
-        sycl::event eventGPU;
+        sycl::event eventCPU_matrixMatrix;
+        sycl::event eventGPU_matrixMatrix;
+
+        sycl::event eventCPU_matrixMatrixDiag;
+        sycl::event eventGPU_matrixMatrixDiag;
+
+        sycl::event eventCPU_triangularSolve;
+        sycl::event eventGPU_triangularSolve;
+
+
 
     } executionTimes;
 
@@ -75,9 +90,9 @@ private:
     void choleskySolveTriangularSystemColumn(double gpuProportion, std::size_t blockSizeBytes, int k, int blockID);
     void choleskyUpdateDiagonal(int k, int blockID);
     void choleskyUpdateLowerBlockTriangle(int k, int blockID);
-    void printTimes(int k) const;
+    void printTimes(int k) ;
     void copyResultFromGPU(double gpuProportion, int blockCountATotal, std::size_t blockSizeBytes);
-    void printFinalTimes() const;
+    void printFinalTimes() ;
 };
 
 

@@ -33,6 +33,8 @@ namespace conf {
         double idleWatt_CPU = 30.0; /// CPU power draw in Watts when the CPU is idle. Used to estimate total power draw.
         hws::sample_category sampleCategories = static_cast<hws::sample_category>(0b00000101); /// enable power and general samples
 
+        std::string algorithm = "cg"; /// algorithm to use: 'cg' or 'cholesky'
+
         int workGroupSizeGEMM_xy = 16; /// work-group size in x/y direction for GEMM kernels
         int minBlockCountCholesky = 3; /// minimum number of rows assigned to the GPU in the Cholesky decomposition
     };
@@ -74,6 +76,9 @@ namespace conf {
     inline int& workGroupSizeGEMM_xy = get().workGroupSizeGEMM_xy;
 
     inline int& minBlockCountCholesky = get().minBlockCountCholesky;
+
+    inline std::string& algorithm = get().algorithm;
+
 }
 
 #endif //CONFIGURATION_HPP

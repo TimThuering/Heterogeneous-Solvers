@@ -111,8 +111,7 @@ void CG::solveHeterogeneous() {
 
         auto endIteration = std::chrono::steady_clock::now();
         auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
-        metricsTracker.updateMetrics(iteration, blockCountGPU, blockCountCPU, iterationTime,
-                                     loadBalancer->updateInterval);
+        metricsTracker.updateMetrics(iteration, blockCountGPU, blockCountCPU, iterationTime, loadBalancer->updateInterval);
         std::cout << iteration << ": Iteration time: " << iterationTime << "ms" << std::endl;
 
         auto time_q = std::chrono::duration<double, std::milli>(timePoint2 - timePoint1).count();

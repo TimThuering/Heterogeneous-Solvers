@@ -154,13 +154,12 @@ void MetricsTracker::writeJSON(std::string& path) {
     metricsJSON << "{\n";
 
     metricsJSON << "\"configuration\": {\n";
+    metricsJSON << std::string("\t \"algorithm\":                       ") + "\"" + conf::algorithm + "\"" + ",\n";
     if (cpu_sampler->general_samples().get_name().has_value()) {
-        metricsJSON << std::string("\t \"CPU\":                             ") + "\"" + cpu_sampler->general_samples().
-            get_name().value() + "\"" + ",\n";
+        metricsJSON << std::string("\t \"CPU\":                             ") + "\"" + cpu_sampler->general_samples().get_name().value() + "\"" + ",\n";
     }
     if (gpu_sampler->general_samples().get_name().has_value()) {
-        metricsJSON << std::string("\t \"GPU\":                             ") + "\"" + gpu_sampler->general_samples().
-            get_name().value() + "\"" + ",\n";
+        metricsJSON << std::string("\t \"GPU\":                             ") + "\"" + gpu_sampler->general_samples().get_name().value() + "\"" + ",\n";
     }
 
     metricsJSON << "\t \"N\":                               " + std::to_string(conf::N) + ",\n";
@@ -174,8 +173,7 @@ void MetricsTracker::writeJSON(std::string& path) {
     metricsJSON << "\t \"matrixBlockSize\":                 " + std::to_string(conf::matrixBlockSize) + ",\n";
     metricsJSON << "\t \"workGroupSize\":                   " + std::to_string(conf::workGroupSize) + ",\n";
     metricsJSON << "\t \"workGroupSizeVector\":             " + std::to_string(conf::workGroupSizeVector) + ",\n";
-    metricsJSON << "\t \"workGroupSizeFinalScalarProduct\": " + std::to_string(conf::workGroupSizeFinalScalarProduct) +
-        ",\n";
+    metricsJSON << "\t \"workGroupSizeFinalScalarProduct\": " + std::to_string(conf::workGroupSizeFinalScalarProduct) + ",\n";
     metricsJSON << "\t \"iMax\":                            " + std::to_string(conf::iMax) + ",\n";
     metricsJSON << "\t \"epsilon\":                         " + std::to_string(conf::epsilon) + ",\n";
     metricsJSON << "\t \"updateInterval\":                  " + std::to_string(conf::updateInterval) + ",\n";
@@ -201,36 +199,49 @@ void MetricsTracker::writeJSON(std::string& path) {
     metricsJSON << "\t \"blockCounts_GPU\":        " + vectorToJSONString<std::size_t>(blockCounts_GPU) + ",\n";
     metricsJSON << "\t \"blockCounts_CPU\":        " + vectorToJSONString<std::size_t>(blockCounts_CPU) + ",\n";
 
-    metricsJSON << "\t \"matrixVectorTimes_GPU\":  " + vectorToJSONString<double>(matrixVectorTimes_GPU) + ",\n";
-    metricsJSON << "\t \"matrixVectorTimes_CPU\":  " + vectorToJSONString<double>(matrixVectorTimes_CPU) + ",\n";
+    if (conf::algorithm == "cg") {
+        metricsJSON << "\t \"matrixVectorTimes_GPU\":  " + vectorToJSONString<double>(matrixVectorTimes_GPU) + ",\n";
+        metricsJSON << "\t \"matrixVectorTimes_CPU\":  " + vectorToJSONString<double>(matrixVectorTimes_CPU) + ",\n";
 
-    metricsJSON << "\t \"times_q\":                " + vectorToJSONString<double>(times_q) + ",\n";
-    metricsJSON << "\t \"times_alpha\":            " + vectorToJSONString<double>(times_alpha) + ",\n";
-    metricsJSON << "\t \"times_x\":                " + vectorToJSONString<double>(times_x) + ",\n";
-    metricsJSON << "\t \"times_r\":                " + vectorToJSONString<double>(times_r) + ",\n";
-    metricsJSON << "\t \"times_delta\":            " + vectorToJSONString<double>(times_delta) + ",\n";
-    metricsJSON << "\t \"times_d\":                " + vectorToJSONString<double>(times_d) + ",\n";
+        metricsJSON << "\t \"times_q\":                " + vectorToJSONString<double>(times_q) + ",\n";
+        metricsJSON << "\t \"times_alpha\":            " + vectorToJSONString<double>(times_alpha) + ",\n";
+        metricsJSON << "\t \"times_x\":                " + vectorToJSONString<double>(times_x) + ",\n";
+        metricsJSON << "\t \"times_r\":                " + vectorToJSONString<double>(times_r) + ",\n";
+        metricsJSON << "\t \"times_delta\":            " + vectorToJSONString<double>(times_delta) + ",\n";
+        metricsJSON << "\t \"times_d\":                " + vectorToJSONString<double>(times_d) + ",\n";
 
-    metricsJSON << "\t \"memcopy_d\":              " + vectorToJSONString<double>(memcopy_d) + ",\n";
+        metricsJSON << "\t \"memcopy_d\":              " + vectorToJSONString<double>(memcopy_d) + ",\n";
+    } else if (conf::algorithm == "cholesky") {
+        metricsJSON << "\t \"shiftTimes\":                      " + vectorToJSONString<double>(shiftTimes) + ",\n";
+        metricsJSON << "\t \"choleskyDiagonalBlockTimes\":      " + vectorToJSONString<double>(choleskyDiagonalBlockTimes) + ",\n";
+        metricsJSON << "\t \"copyTimes\":                       " + vectorToJSONString<double>(copyTimes) + ",\n";
+
+        metricsJSON << "\t \"triangularSolveTimes_GPU\":        " + vectorToJSONString<double>(triangularSolveTimes_GPU) + ",\n";
+        metricsJSON << "\t \"triangularSolveTimes_CPU\":        " + vectorToJSONString<double>(triangularSolveTimes_CPU) + ",\n";
+        metricsJSON << "\t \"triangularSolveTimes_total\":      " + vectorToJSONString<double>(triangularSolveTimes_total) + ",\n";
+
+        metricsJSON << "\t \"matrixMatrixDiagonalTimes_GPU\":   " + vectorToJSONString<double>(matrixMatrixDiagonalTimes_GPU) + ",\n";
+        metricsJSON << "\t \"matrixMatrixDiagonalTimes_CPU\":   " + vectorToJSONString<double>(matrixMatrixDiagonalTimes_CPU) + ",\n";
+        metricsJSON << "\t \"matrixMatrixDiagonalTimes_total\": " + vectorToJSONString<double>(matrixMatrixDiagonalTimes_total) + ",\n";
+
+        metricsJSON << "\t \"matrixMatrixTimes_GPU\":           " + vectorToJSONString<double>(matrixMatrixTimes_GPU) + ",\n";
+        metricsJSON << "\t \"matrixMatrixTimes_CPU\":           " + vectorToJSONString<double>(matrixMatrixTimes_CPU) + ",\n";
+        metricsJSON << "\t \"matrixMatrixTimes_total\":         " + vectorToJSONString<double>(matrixMatrixTimes_total) + ",\n";
+    }
+
 
 #ifndef INTEL
-    metricsJSON << "\t \"rawUtilizationData_GPU\": " + vectorToJSONString<unsigned int>(
-        generalSamples_GPU.get_compute_utilization().value_or(std::vector<unsigned int>(0))) + ",\n";
+    metricsJSON << "\t \"rawUtilizationData_GPU\": " + vectorToJSONString<unsigned int>(generalSamples_GPU.get_compute_utilization().value_or(std::vector<unsigned int>(0))) + ",\n";
 #elif
     metricsJSON << "\t \"rawUtilizationData_GPU\": " + std::string("[]") + ",\n";
 #endif
-    metricsJSON << "\t \"rawUtilizationData_CPU\": " + vectorToJSONString<double>(
-        generalSamples_CPU.get_compute_utilization().value_or(std::vector<double>(0))) + ",\n";
+    metricsJSON << "\t \"rawUtilizationData_CPU\": " + vectorToJSONString<double>(generalSamples_CPU.get_compute_utilization().value_or(std::vector<double>(0))) + ",\n";
 
-    metricsJSON << "\t \"rawPowerData_GPU\":       " + vectorToJSONString<double>(
-        powerSamples_GPU.get_power_usage().value_or(std::vector<double>(0))) + ",\n";
-    metricsJSON << "\t \"rawPowerData_CPU\":       " + vectorToJSONString<double>(
-        powerSamples_CPU.get_power_usage().value_or(std::vector<double>(0))) + ",\n";
+    metricsJSON << "\t \"rawPowerData_GPU\":       " + vectorToJSONString<double>(powerSamples_GPU.get_power_usage().value_or(std::vector<double>(0))) + ",\n";
+    metricsJSON << "\t \"rawPowerData_CPU\":       " + vectorToJSONString<double>(powerSamples_CPU.get_power_usage().value_or(std::vector<double>(0))) + ",\n";
 
-    metricsJSON << "\t \"rawEnergyData_GPU\":      " + vectorToJSONString<double>(
-        powerSamples_GPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
-    metricsJSON << "\t \"rawEnergyData_CPU\":      " + vectorToJSONString<double>(
-        powerSamples_CPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
+    metricsJSON << "\t \"rawEnergyData_GPU\":      " + vectorToJSONString<double>(powerSamples_GPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
+    metricsJSON << "\t \"rawEnergyData_CPU\":      " + vectorToJSONString<double>(powerSamples_CPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
 
     std::vector<long> timePointsGPU_general;
     for (auto& x : gpu_sampler->sampling_time_points()) {

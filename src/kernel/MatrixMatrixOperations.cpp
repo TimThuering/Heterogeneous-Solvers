@@ -813,8 +813,6 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(sycl::queue& 
             for (int ii = 0; ii < valuesPerWorkItem_xy; ++ii) {
                 for (int jj = 0; jj < valuesPerWorkItem_xy; ++jj) {
                     A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
-                    // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] -= workItemTile[ii][jj];
-                    // A[blockStartIndex_A + (i + ii) * matrixBlockSize + (j + jj)] = wgSize_xy * local_i + local_j;
                 }
             }
         });
