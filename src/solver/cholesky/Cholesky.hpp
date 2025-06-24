@@ -11,7 +11,7 @@ using namespace sycl;
 
 class Cholesky {
 public:
-    Cholesky(SymmetricMatrix& A,queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
+    Cholesky(SymmetricMatrix& A, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
 
     SymmetricMatrix& A;
 
@@ -20,6 +20,8 @@ public:
 
     std::shared_ptr<LoadBalancer> loadBalancer;
     MetricsTracker metricsTracker;
+
+    double gpuProportion;
 
 
     void solve_heterogeneous();
@@ -69,9 +71,6 @@ private:
 
         sycl::event eventCPU_triangularSolve;
         sycl::event eventGPU_triangularSolve;
-
-
-
     } executionTimes;
 
     // variables
@@ -87,16 +86,15 @@ private:
     void initGPUMemory();
     void initExecutionTimes();
     void shiftSplitRowComm(int blockCountATotal, std::size_t blockSizeBytes, int k);
-    void shiftSplit(double gpuProportion, int blockCountATotal, std::size_t blockSizeBytes, int k);
-    void choleskyUpdateCurrentDiagonalBlock(double gpuProportion, std::size_t blockSizeBytes, int k, int blockID, std::size_t blockStartIndexDiagBlock);
-    void choleskySolveTriangularSystemColumn(double gpuProportion, std::size_t blockSizeBytes, int k, int blockID);
+    void shiftSplit(int blockCountATotal, std::size_t blockSizeBytes, int k);
+    void choleskyUpdateCurrentDiagonalBlock(std::size_t blockSizeBytes, int k, int blockID, std::size_t blockStartIndexDiagBlock);
+    void choleskySolveTriangularSystemColumn(std::size_t blockSizeBytes, int k, int blockID);
     void choleskyUpdateDiagonal(int k, int blockID);
     void choleskyUpdateLowerBlockTriangle(int k, int blockID);
-    void printTimes(int k) ;
-    void copyResultFromGPU(double gpuProportion, int blockCountATotal, std::size_t blockSizeBytes);
-    void printFinalTimes() ;
+    void printTimes(int k);
+    void copyResultFromGPU(int blockCountATotal, std::size_t blockSizeBytes);
+    void printFinalTimes();
 };
-
 
 
 #endif //CHOLESKY_HPP

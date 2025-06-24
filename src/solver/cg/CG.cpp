@@ -528,16 +528,14 @@ void CG::rebalanceProportions(double& gpuProportion) {
     std::size_t blockStartCPU_new = blockCountGPU_new;
 
     if (blockCountGPU_new > maxBlockCountGPU) {
-        std::cout << "Change in block counts would result into too much gpu memory usage. New GPU block count: " <<
-            maxBlockCountGPU << std::endl;
+        std::cout << "Change in block counts would result into too much gpu memory usage. New GPU block count: " << maxBlockCountGPU << std::endl;
 
         blockCountGPU_new = maxBlockCountGPU;
         blockCountCPU_new = A.blockCountXY - maxBlockCountGPU;
         blockStartCPU_new = maxBlockCountGPU;
     }
 
-    if (blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU +
-        conf::blockUpdateThreshold) {
+    if (blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU + conf::blockUpdateThreshold) {
         if (blockCountGPU_new > blockCountGPU) {
             const std::size_t additionalBlocks = blockCountGPU_new - blockCountGPU;
             // exchange missing parts of d vector
@@ -579,8 +577,7 @@ void CG::rebalanceProportions(double& gpuProportion) {
         blockCountCPU = blockCountCPU_new;
         blockStartCPU = blockStartCPU_new;
     } else if (blockCountGPU_new != blockCountGPU) {
-        std::cout << "Change in block counts smaller than threshold --> no re-balancing: " << blockCountGPU << " --> "
-            << blockCountGPU_new << std::endl;
+        std::cout << "Change in block counts smaller than threshold --> no re-balancing: " << blockCountGPU << " --> " << blockCountGPU_new << std::endl;
     }
 
 

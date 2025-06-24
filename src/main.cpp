@@ -178,7 +178,7 @@ int main(int argc, char* argv[]) {
         CG cg(A, b, cpuQueue, gpuQueue, loadBalancer);
         cg.solveHeterogeneous();
     } else if (conf::algorithm == "cholesky") {
-        Cholesky cholesky(A, cpuQueue, gpuQueue);
+        Cholesky cholesky(A, cpuQueue, gpuQueue, loadBalancer);
         cholesky.solve_heterogeneous();
         // cholesky.solve();
         // MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(cpuQueue,A.matrixData.data(),0,0,2,A.blockCountXY -2, A.blockCountXY);
