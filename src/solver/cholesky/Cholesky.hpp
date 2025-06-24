@@ -3,6 +3,7 @@
 
 #include <sycl/sycl.hpp>
 
+#include "LoadBalancer.hpp"
 #include "MetricsTracker.hpp"
 #include "SymmetricMatrix.hpp"
 
@@ -10,13 +11,14 @@ using namespace sycl;
 
 class Cholesky {
 public:
-    Cholesky(SymmetricMatrix& A,queue& cpuQueue, queue& gpuQueue);
+    Cholesky(SymmetricMatrix& A,queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
 
     SymmetricMatrix& A;
 
     queue& cpuQueue;
     queue& gpuQueue;
 
+    std::shared_ptr<LoadBalancer> loadBalancer;
     MetricsTracker metricsTracker;
 
 

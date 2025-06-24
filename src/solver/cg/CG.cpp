@@ -162,13 +162,9 @@ void CG::initGPUdataStructures() {
         return;
     }
 
-    const std::size_t gpuAvailableMemorySize = 0.9 * gpuQueue.get_device().get_info<
-            sycl::info::device::global_mem_size>() - 6
-        * b.rightHandSideData.size() * sizeof(conf::fp_type);
+    const std::size_t gpuAvailableMemorySize = 0.9 * gpuQueue.get_device().get_info<sycl::info::device::global_mem_size>() - 6 * b.rightHandSideData.size() * sizeof(conf::fp_type);
 
-    const double maxBlocksGPUMemory = std::floor(static_cast<double>(gpuAvailableMemorySize) /
-        (static_cast<double>(conf::matrixBlockSize) * static_cast<double>(conf::matrixBlockSize) * sizeof(
-            conf::fp_type)));
+    const double maxBlocksGPUMemory = std::floor(static_cast<double>(gpuAvailableMemorySize) / (static_cast<double>(conf::matrixBlockSize) * static_cast<double>(conf::matrixBlockSize) * sizeof(conf::fp_type)));
 
     const int totalBlockCountA = (A.blockCountXY * (A.blockCountXY + 1) / 2);
 
@@ -229,8 +225,7 @@ void CG::initGPUdataStructures() {
     // temporary vector
     tmp_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
-    if (A_gpu == nullptr || b_gpu == nullptr || x_gpu == nullptr
-        || r_gpu == nullptr || d_gpu == nullptr || q_gpu == nullptr || tmp_gpu == nullptr) {
+    if (A_gpu == nullptr || b_gpu == nullptr || x_gpu == nullptr || r_gpu == nullptr || d_gpu == nullptr || q_gpu == nullptr || tmp_gpu == nullptr) {
         throw std::runtime_error("Error during GPU memory allocation");
     }
 }
@@ -279,12 +274,10 @@ void CG::freeDataStructures() {
 void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
     // r = b - Ax
     if (blockCountGPU != 0) {
-        MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, x_gpu, r_gpu,
-                                                  0, 0, blockCountGPU, A.blockCountXY, A.blockCountXY);
+        MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, x_gpu, r_gpu, 0, 0, blockCountGPU, A.blockCountXY, A.blockCountXY);
     }
     if (blockCountCPU != 0) {
-        MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), x.data(), r_cpu, blockStartCPU, 0,
-                                                  blockCountCPU, A.blockCountXY, A.blockCountXY);
+        MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), x.data(), r_cpu, blockStartCPU, 0, blockCountCPU, A.blockCountXY, A.blockCountXY);
     }
     waitAllQueues();
 
@@ -292,8 +285,7 @@ void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
         VectorOperations::subVectorBlock(gpuQueue, b_gpu, r_gpu, r_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::subVectorBlock(cpuQueue, b.rightHandSideData.data(), r_cpu, r_cpu, blockStartCPU,
-                                         blockCountCPU);
+        VectorOperations::subVectorBlock(cpuQueue, b.rightHandSideData.data(), r_cpu, r_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 
@@ -305,8 +297,7 @@ void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
     }
     if (blockCountCPU != 0) {
         cpuQueue.submit([&](handler& h) {
-            h.memcpy(&d_cpu[blockStartCPU * conf::matrixBlockSize], &r_cpu[blockStartCPU * conf::matrixBlockSize],
-                     blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
+            h.memcpy(&d_cpu[blockStartCPU * conf::matrixBlockSize], &r_cpu[blockStartCPU * conf::matrixBlockSize], blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
     }
     waitAllQueues();
@@ -351,8 +342,7 @@ void CG::compute_q() {
     if ((blockCountGPU != 0 && blockCountCPU != 0)) {
         // exchange parts of d vector so that both CPU and GPU hold the complete vector
         gpuQueue.submit([&](handler& h) {
-            h.memcpy(&d_gpu[blockStartCPU * conf::matrixBlockSize], &d_cpu[blockStartCPU * conf::matrixBlockSize],
-                     blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
+            h.memcpy(&d_gpu[blockStartCPU * conf::matrixBlockSize], &d_cpu[blockStartCPU * conf::matrixBlockSize], blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
         gpuQueue.submit([&](handler& h) {
             h.memcpy(d_cpu, d_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
@@ -369,29 +359,23 @@ void CG::compute_q() {
     sycl::event eventCPU;
     // q = Ad
     if (blockCountGPU != 0) {
-        eventGPU = MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0,
-                                                                 blockCountGPU, A.blockCountXY, A.blockCountXY);
+        eventGPU = MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0, blockCountGPU, A.blockCountXY, A.blockCountXY);
     }
     if (blockCountCPU != 0) {
-        eventCPU = MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu,
-                                                                 blockStartCPU, 0,
-                                                                 blockCountCPU, A.blockCountXY, A.blockCountXY);
+        eventCPU = MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0, blockCountCPU, A.blockCountXY, A.blockCountXY);
     }
     waitAllQueues();
 
     // append execution times
     if (blockCountGPU != 0) {
         metricsTracker.matrixVectorTimes_GPU.push_back(
-            static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
-                eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
-        // std::cout << "------------------------------------- mvTime = " << metricsTracker.matrixVectorTimes_GPU.back() << std::endl;
+            static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
     } else {
         metricsTracker.matrixVectorTimes_GPU.push_back(0);
     }
     if (blockCountCPU != 0) {
         metricsTracker.matrixVectorTimes_CPU.push_back(
-            static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() -
-                eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
+            static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
     } else {
         metricsTracker.matrixVectorTimes_CPU.push_back(0);
     }
@@ -403,12 +387,10 @@ void CG::compute_alpha(conf::fp_type& alpha, conf::fp_type& delta_new) {
 
     // 𝛼 = δ_new / d^T * q
     if (blockCountGPU != 0) {
-        workGroupCountScalarProduct_GPU = VectorOperations::scalarProduct(
-            gpuQueue, d_gpu, q_gpu, tmp_gpu, 0, blockCountGPU);
+        workGroupCountScalarProduct_GPU = VectorOperations::scalarProduct(gpuQueue, d_gpu, q_gpu, tmp_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct_CPU(
-            cpuQueue, d_cpu, q_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
+        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct_CPU(cpuQueue, d_cpu, q_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 
@@ -438,8 +420,7 @@ void CG::update_x(conf::fp_type alpha) {
         VectorOperations::scaleAndAddVectorBlock(gpuQueue, x_gpu, alpha, d_gpu, x_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::scaleAndAddVectorBlock(cpuQueue, x.data(), alpha, d_cpu, x.data(), blockStartCPU,
-                                                 blockCountCPU);
+        VectorOperations::scaleAndAddVectorBlock(cpuQueue, x.data(), alpha, d_cpu, x.data(), blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 }
@@ -448,8 +429,7 @@ void CG::computeRealResidual() {
     if ((blockCountGPU != 0 && blockCountCPU != 0)) {
         // exchange parts of x vector so that both CPU and GPU hold the complete vector
         gpuQueue.submit([&](handler& h) {
-            h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize],
-                     blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
+            h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize], blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
         gpuQueue.submit([&](handler& h) {
             h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
@@ -460,13 +440,10 @@ void CG::computeRealResidual() {
 
     // r = b - Ax
     if (blockCountGPU != 0) {
-        MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, x_gpu, r_gpu, 0, 0, blockCountGPU,
-                                                      A.blockCountXY,
-                                                      A.blockCountXY);
+        MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, x_gpu, r_gpu, 0, 0, blockCountGPU, A.blockCountXY, A.blockCountXY);
     }
     if (blockCountCPU != 0) {
-        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), x.data(), r_cpu, blockStartCPU, 0,
-                                                      blockCountCPU, A.blockCountXY, A.blockCountXY);
+        MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), x.data(), r_cpu, blockStartCPU, 0, blockCountCPU, A.blockCountXY, A.blockCountXY);
     }
     waitAllQueues();
 
@@ -474,8 +451,7 @@ void CG::computeRealResidual() {
         VectorOperations::subVectorBlock(gpuQueue, b_gpu, r_gpu, r_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::subVectorBlock(cpuQueue, b.rightHandSideData.data(), r_cpu, r_cpu, blockStartCPU,
-                                         blockCountCPU);
+        VectorOperations::subVectorBlock(cpuQueue, b.rightHandSideData.data(), r_cpu, r_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 }
@@ -486,8 +462,7 @@ void CG::update_r(conf::fp_type alpha) {
         VectorOperations::scaleAndAddVectorBlock(gpuQueue, r_gpu, -1.0 * alpha, q_gpu, r_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        VectorOperations::scaleAndAddVectorBlock(cpuQueue, r_cpu, -1.0 * alpha, q_cpu, r_cpu, blockStartCPU,
-                                                 blockCountCPU);
+        VectorOperations::scaleAndAddVectorBlock(cpuQueue, r_cpu, -1.0 * alpha, q_cpu, r_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 }
@@ -567,43 +542,34 @@ void CG::rebalanceProportions(double& gpuProportion) {
             const std::size_t additionalBlocks = blockCountGPU_new - blockCountGPU;
             // exchange missing parts of d vector
             gpuQueue.submit([&](handler& h) {
-                h.memcpy(&d_gpu[blockStartCPU * conf::matrixBlockSize], &d_cpu[blockStartCPU * conf::matrixBlockSize],
-                         additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                h.memcpy(&d_gpu[blockStartCPU * conf::matrixBlockSize], &d_cpu[blockStartCPU * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
 
             // exchange missing parts of x vector
             gpuQueue.submit([&](handler& h) {
-                h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize],
-                         additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
 
             // exchange missing parts of r vector
             gpuQueue.submit([&](handler& h) {
-                h.memcpy(&r_gpu[blockStartCPU * conf::matrixBlockSize], &r_cpu[blockStartCPU * conf::matrixBlockSize],
-                         additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                h.memcpy(&r_gpu[blockStartCPU * conf::matrixBlockSize], &r_cpu[blockStartCPU * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
         } else if (blockCountCPU_new > blockCountCPU) {
             const std::size_t additionalBlocks = blockCountCPU_new - blockCountCPU;
 
             // exchange missing parts of d vector
             gpuQueue.submit([&](handler& h) {
-                h.memcpy(&d_cpu[blockStartCPU_new * conf::matrixBlockSize],
-                         &d_gpu[blockStartCPU_new * conf::matrixBlockSize],
-                         additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                h.memcpy(&d_cpu[blockStartCPU_new * conf::matrixBlockSize], &d_gpu[blockStartCPU_new * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
 
             // exchange missing parts of x vector
             gpuQueue.submit([&](handler& h) {
-                h.memcpy(&x[blockStartCPU_new * conf::matrixBlockSize],
-                         &x_gpu[blockStartCPU_new * conf::matrixBlockSize],
-                         additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                h.memcpy(&x[blockStartCPU_new * conf::matrixBlockSize], &x_gpu[blockStartCPU_new * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
 
             // exchange missing parts of r vector
             gpuQueue.submit([&](handler& h) {
-                h.memcpy(&r_cpu[blockStartCPU_new * conf::matrixBlockSize],
-                         &r_gpu[blockStartCPU_new * conf::matrixBlockSize],
-                         additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
+                h.memcpy(&r_cpu[blockStartCPU_new * conf::matrixBlockSize], &r_gpu[blockStartCPU_new * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
         }
 
