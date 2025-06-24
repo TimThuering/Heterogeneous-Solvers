@@ -88,20 +88,53 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
         // iteration with re-balancing: move split up or down by possibly multiple rows, depending on new requested load distribution
 
         // const double gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
-        const double gpuProportion_new = 0.2;
+        const double gpuProportion_new = 0.8;
 
         // compute new block counts for new requested GPU proportion
         const int blockCountGPU_new = std::min(std::max(static_cast<int>(std::ceil((A.blockCountXY - 1 - k) * gpuProportion_new)), minBlockCountGPU), A.blockCountXY - (k + 1));
         const int blockCountCPU_new = std::max(A.blockCountXY - 1 - k - blockCountGPU_new, 0);
         const int blockStartGPU_new = std::max(A.blockCountXY - blockCountGPU_new, k + 1);
 
+        // TODO include threshold again. normal shift has to be done anyways
         if (blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU + conf::blockUpdateThreshold) {
             if (blockCountGPU_new > blockCountGPU) {
                 // GPU proportion increased --> move split up
-                const int additionalBlocks = blockCountGPU_new - blockCountGPU;
+                const int additionalBlocks =  blockStartGPU - blockStartGPU_new;
+
+                std::cout << "---- Re-balancing: ----" << std::endl;
+                std::cout << "Shifting CPU block count from " << blockCountCPU << " to " << blockCountCPU_new << std::endl;
+
+
+                // copy part of each column that was computed on the CPU and now has to be computed by the GPU after re-balancing
+                for (int c = 0; c < blockCountCPU_new + k + 2 + (additionalBlocks - 1); ++c) {
+                    const int columnsToRight = A.blockCountXY - c;
+                    // first block in the column updated by the GPU
+                    int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2) ;
+
+                    int blocksToCopy = additionalBlocks;
+
+                    if (c < blockCountCPU_new + k + 1) {
+                        blockID += std::max(A.blockCountXY - c - (blockCountGPU + additionalBlocks), 0);
+                    } else {
+                        blocksToCopy = additionalBlocks - (c - (blockCountCPU_new + k + 1));
+                    }
+
+                    std::cout << blockID << " + " << blocksToCopy << std::endl;
+
+
+                    const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+
+                    // for current column copy additionalBlocks amount of blocks
+                    gpuQueue.submit([&](handler& h) {
+                        h.memcpy( &A_gpu[blockStartIndexFirstGPUBlock],&A.matrixData[blockStartIndexFirstGPUBlock], blockSizeBytes * blocksToCopy);
+                    });
+                }
+                gpuQueue.wait();
+
+
             } else if (blockCountCPU_new > blockCountCPU) {
                 // CPU proportion increased --> move split down
-                const int additionalBlocks = blockCountCPU_new - blockCountCPU;
+                const int additionalBlocks = blockStartGPU_new - blockStartGPU;
 
                 std::cout << "---- Re-balancing: ----" << std::endl;
                 std::cout << "Shifting CPU block count from " << blockCountCPU << " to " << blockCountCPU_new << std::endl;
@@ -137,7 +170,23 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
             waitAllQueues();
 
         } else if (blockCountGPU_new != blockCountGPU) {
+            // TODO make this cleaner
             std::cout << "Change in block counts smaller than threshold --> no re-balancing: " << blockCountGPU << " --> " << blockCountGPU_new << std::endl;
+
+            // compute new block counts to keep CPU/GPU proportion similar throughout the algorithm
+            const int newBlockCountGPU = std::min(std::max(static_cast<int>(std::ceil((A.blockCountXY - 1 - k) * gpuProportion)), minBlockCountGPU), A.blockCountXY - (k + 1));
+            const int newBlockCountCPU = std::max(A.blockCountXY - 1 - k - newBlockCountGPU, 0);
+            const int newBlockStartGPU = std::max(A.blockCountXY - newBlockCountGPU, k + 1);
+
+            // true if block counts changed and the row that splits the matrix into a CPU and a GPU part has to change
+            if (blockCountGPU != newBlockCountGPU && newBlockCountGPU >= minBlockCountGPU && gpuProportion != 1 && gpuProportion != 0) {
+                // split has shifted --> communicate the row that was previously held by the GPU and now belongs to the CPU
+                shiftSplitRowComm(blockCountATotal, blockSizeBytes, k);
+            }
+
+            blockCountGPU = newBlockCountGPU;
+            blockCountCPU = newBlockCountCPU;
+            blockStartGPU = newBlockStartGPU;
         }
         blockCountGPU = blockCountGPU_new;
         blockCountCPU = blockCountCPU_new;
