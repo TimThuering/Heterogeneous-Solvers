@@ -26,8 +26,6 @@ public:
 
     void solve_heterogeneous();
 
-    void solve();
-
 private:
     // GPU data structure
     conf::fp_type* A_gpu;
