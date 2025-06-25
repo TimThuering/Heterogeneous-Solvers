@@ -67,13 +67,21 @@ void Cholesky::shiftSplitRowComm(const int blockCountATotal, const std::size_t b
 }
 
 void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSizeBytes, const int k) {
-
-
     // update GPU proportion if a re-balancing should occur in the current iteration
     if (k % loadBalancer->updateInterval == 0 && k != 0) {
-        // gpuProportion = loadBalancer->getNewProportionGPU(metricsTracker);
-        gpuProportion = 0.8;
+        // const double gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
+        double gpuProportion_new = 0;
+
+        if (gpuProportion_new == 1) {
+            gpuProportion_new -= 1e-10;
+        } else if (gpuProportion_new == 0) {
+            gpuProportion_new += 1e-10;
+        }
+
+
+        gpuProportion = gpuProportion_new;
     }
+
 
     // block count in current column for CPU and GPU below the diagonal block
     const int blockCountColumn = A.blockCountXY - (k + 1);
@@ -86,16 +94,14 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     const bool aboveUpdateThreshold = blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU + conf::blockUpdateThreshold;
 
 
-    if (k % loadBalancer->updateInterval != 0 || k == 0 || !aboveUpdateThreshold ) {
+    if (k % loadBalancer->updateInterval != 0 || k == 0 || !aboveUpdateThreshold) {
         // normal iteration: move split downwards as usual to keep proportion between GPU and CPU similar
-
 
         // true if block counts changed and the row that splits the matrix into a CPU and a GPU part has to change
         if (blockCountGPU != blockCountGPU_new && blockCountGPU_new >= minBlockCountGPU && gpuProportion != 1 && gpuProportion != 0) {
             // split has shifted --> communicate the row that was previously held by the GPU and now belongs to the CPU
             shiftSplitRowComm(blockCountATotal, blockSizeBytes, k);
         }
-
     } else {
         // iteration with re-balancing: move split up or down by possibly multiple rows, depending on new requested load distribution
 
@@ -122,7 +128,6 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
                 }
 
                 std::cout << blockID << " + " << blocksToCopy << std::endl;
-
 
                 const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
@@ -156,7 +161,6 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
 
                 std::cout << blockID << " + " << blocksToCopy << std::endl;
 
-
                 const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
                 // for current column copy additionalBlocks amount of blocks
@@ -166,9 +170,6 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
             }
             gpuQueue.wait();
         }
-
-
-
     }
     waitAllQueues();
 
@@ -176,7 +177,7 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     blockCountCPU = blockCountCPU_new;
     blockStartGPU = blockStartGPU_new;
 
-    // TODO set gpu proportion to actual proportion so that it can also get 0 / 1
+    // // TODO set gpu proportion to actual proportion so that it can also get 0 / 1
     // if (blockCountGPU == 0) {
     //     gpuProportion = 0;
     // } else if (blockCountCPU == 0) {
@@ -335,7 +336,7 @@ void Cholesky::printTimes(const int k) {
 
 void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t blockSizeBytes) {
     executionTimes.startResultCopyGPU = std::chrono::steady_clock::now();
-    if (gpuProportion != 1 && gpuProportion != 0) {
+    if (conf::initialProportionGPU != 1 && conf::initialProportionGPU != 0) {
         // Case heterogeneous: copy parts of the matrix that were computed by the GPU to the CPU
 
         // copy part of each column that was computed on the GPU to the CPU
@@ -357,7 +358,7 @@ void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t b
             });
         }
         gpuQueue.wait();
-    } else if (gpuProportion == 1) {
+    } else if (conf::initialProportionGPU == 1) {
         // Case GPU-only: copy complete matrix to the CPU
 
         gpuQueue.submit([&](handler& h) {

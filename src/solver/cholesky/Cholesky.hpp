@@ -78,7 +78,6 @@ private:
     int offsetMatrixMatrixStepGPU = 0;
     int minBlockCountGPU;
 
-
     void waitAllQueues();
 
     void initGPUMemory();
