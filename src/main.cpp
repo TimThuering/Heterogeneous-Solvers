@@ -180,6 +180,13 @@ int main(int argc, char* argv[]) {
     } else if (conf::algorithm == "cholesky") {
         Cholesky cholesky(A, cpuQueue, gpuQueue, loadBalancer);
         cholesky.solve_heterogeneous();
+        for (auto &el: A.matrixData) {
+            if (isnan(el)) {
+                std::cout << "ERROR!!!!" << std::endl;
+                return 1;
+            }
+        }
+        std::cout << "NAN check complete" << std::endl;
         // cholesky.solve();
         // MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(cpuQueue,A.matrixData.data(),0,0,2,A.blockCountXY -2, A.blockCountXY);
         // cpuQueue.wait();

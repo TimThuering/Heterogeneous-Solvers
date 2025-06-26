@@ -70,7 +70,11 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     // update GPU proportion if a re-balancing should occur in the current iteration
     if (k % loadBalancer->updateInterval == 0 && k != 0) {
         double gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
-        // double gpuProportion_new = 0;
+        // double gpuProportion_new = 0.436364;
+        // if (k == 110) {
+        //     gpuProportion_new = 0.4;
+        // }
+
 
         if (gpuProportion_new == 1) {
             gpuProportion_new -= 1e-10;
@@ -91,7 +95,9 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     const int blockCountCPU_new = std::max(blockCountColumn - blockCountGPU_new, 0);
     const int blockStartGPU_new = std::max(A.blockCountXY - blockCountGPU_new, k + 1);
 
-    const bool aboveUpdateThreshold = blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU + conf::blockUpdateThreshold;
+    // const bool aboveUpdateThreshold = blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU + conf::blockUpdateThreshold;
+    const bool aboveUpdateThreshold = std::abs(blockStartGPU_new - blockStartGPU) > 1;
+    // const bool aboveUpdateThreshold = true;
 
 
     if (k % loadBalancer->updateInterval != 0 || k == 0 || !aboveUpdateThreshold) {
@@ -101,6 +107,7 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
         if (blockCountGPU != blockCountGPU_new && blockCountGPU_new >= minBlockCountGPU && gpuProportion != 1 && gpuProportion != 0) {
             // split has shifted --> communicate the row that was previously held by the GPU and now belongs to the CPU
             shiftSplitRowComm(blockCountATotal, blockSizeBytes, k);
+            std::cout << blockCountGPU << " ---> " << blockCountGPU_new << std::endl;
         }
     } else {
         // iteration with re-balancing: move split up or down by possibly multiple rows, depending on new requested load distribution
@@ -441,6 +448,14 @@ void Cholesky::solve_heterogeneous() {
 
         // time measurement and output
         printTimes(k);
+
+        // for (auto &el: A.matrixData) {
+        //     if (isnan(el)) {
+        //         std::cout << "-------------------- ERROR!!!!---------------------------------------------------------------------------" << std::endl;
+        //         break;
+        //     }
+        // }
+        // std::cout << "NAN check complete" << std::endl;
     }
 
     metricsTracker.endTracking();
