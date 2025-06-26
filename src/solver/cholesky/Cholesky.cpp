@@ -127,7 +127,7 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
                     blocksToCopy = additionalBlocks - (c - (blockCountCPU_new + k + 1));
                 }
 
-                std::cout << blockID << " + " << blocksToCopy << std::endl;
+                // std::cout << blockID << " + " << blocksToCopy << std::endl;
 
                 const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
@@ -159,7 +159,7 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
                     blocksToCopy = additionalBlocks - (c - (blockCountCPU + k + 1) + 1);
                 }
 
-                std::cout << blockID << " + " << blocksToCopy << std::endl;
+                // std::cout << blockID << " + " << blocksToCopy << std::endl;
 
                 const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
