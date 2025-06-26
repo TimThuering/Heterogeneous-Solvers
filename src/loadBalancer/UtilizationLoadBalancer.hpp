@@ -9,7 +9,7 @@
 class UtilizationLoadBalancer : public LoadBalancer {
 
 public:
-    UtilizationLoadBalancer(int updateInterval, double initialProportionGPU);
+    UtilizationLoadBalancer(int updateInterval, double initialProportionGPU, int blockCountXY);
 
 
     double getNewProportionGPU(MetricsTracker &metricsTracker) override;

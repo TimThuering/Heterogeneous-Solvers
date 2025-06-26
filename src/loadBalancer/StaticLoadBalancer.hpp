@@ -7,7 +7,7 @@
 class StaticLoadBalancer : public LoadBalancer {
 
 public:
-    StaticLoadBalancer(int updateInterval, double gpuProportion);
+    StaticLoadBalancer(int updateInterval, double gpuProportion, int blockCountXY);
 
     double gpuProportion;
 

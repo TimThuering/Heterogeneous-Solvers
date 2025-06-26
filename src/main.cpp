@@ -148,20 +148,6 @@ int main(int argc, char* argv[]) {
     // measure CPU idle power draw in Watts
     UtilityFunctions::measureIdlePowerCPU();
 
-    std::shared_ptr<LoadBalancer> loadBalancer;
-    if (conf::mode == "static") {
-        loadBalancer = std::make_shared<StaticLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
-    } else if (conf::mode == "runtime") {
-        loadBalancer = std::make_shared<RuntimeLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
-    } else if (conf::mode == "util") {
-        loadBalancer = std::make_shared<UtilizationLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
-    } else if (conf::mode == "power") {
-        loadBalancer = std::make_shared<PowerLoadBalancer>(conf::updateInterval, conf::initialProportionGPU);
-    } else {
-        throw std::runtime_error(
-            "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
-    }
-
 
     // generate or parse Symmetric matrix
     RightHandSide b = generateMatrix
@@ -171,6 +157,20 @@ int main(int argc, char* argv[]) {
     SymmetricMatrix A = generateMatrix
                             ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue)
                             : MatrixParser::parseSymmetricMatrix(path_A, cpuQueue);
+
+    std::shared_ptr<LoadBalancer> loadBalancer;
+    if (conf::mode == "static") {
+        loadBalancer = std::make_shared<StaticLoadBalancer>(conf::updateInterval, conf::initialProportionGPU, A.blockCountXY);
+    } else if (conf::mode == "runtime") {
+        loadBalancer = std::make_shared<RuntimeLoadBalancer>(conf::updateInterval, conf::initialProportionGPU, A.blockCountXY);
+    } else if (conf::mode == "util") {
+        loadBalancer = std::make_shared<UtilizationLoadBalancer>(conf::updateInterval, conf::initialProportionGPU, A.blockCountXY);
+    } else if (conf::mode == "power") {
+        loadBalancer = std::make_shared<PowerLoadBalancer>(conf::updateInterval, conf::initialProportionGPU, A.blockCountXY);
+    } else {
+        throw std::runtime_error(
+            "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
+    }
 
     // MatrixParser::writeFullMatrix("./A_GP_1000", A);
 

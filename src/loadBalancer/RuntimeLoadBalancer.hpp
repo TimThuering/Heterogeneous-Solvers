@@ -5,7 +5,7 @@
 
 class RuntimeLoadBalancer : public LoadBalancer{
 public:
-    RuntimeLoadBalancer(int updateInterval, double initialProportionGPU);
+    RuntimeLoadBalancer(int updateInterval, double initialProportionGPU, int blockCountXY);
 
     double getNewProportionGPU(MetricsTracker &metricsTracker) override;
 

@@ -5,7 +5,7 @@
 
 class PowerLoadBalancer : public LoadBalancer {
 public:
-    PowerLoadBalancer(int updateInterval, double initialProportionGPU);
+    PowerLoadBalancer(int updateInterval, double initialProportionGPU, int blockCountXY);
 
 
     double getNewProportionGPU(MetricsTracker &metricsTracker) override;

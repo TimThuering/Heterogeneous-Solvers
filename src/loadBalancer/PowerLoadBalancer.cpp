@@ -3,8 +3,8 @@
 #include <iostream>
 #include <numeric>
 
-PowerLoadBalancer::PowerLoadBalancer(const int updateInterval, const double initialProportionGPU): LoadBalancer(
-    updateInterval, initialProportionGPU) {
+PowerLoadBalancer::PowerLoadBalancer(const int updateInterval, const double initialProportionGPU, int blockCountXY): LoadBalancer(
+    updateInterval, initialProportionGPU, blockCountXY) {
 }
 
 double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {

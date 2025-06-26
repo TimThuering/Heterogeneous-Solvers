@@ -7,8 +7,8 @@
 #include "hws/gpu_amd/hardware_sampler.hpp"
 #include "hws/gpu_intel/hardware_sampler.hpp"
 
-UtilizationLoadBalancer::UtilizationLoadBalancer(const int updateInterval, const double initialProportionGPU) :
-    LoadBalancer(updateInterval, initialProportionGPU) {
+UtilizationLoadBalancer::UtilizationLoadBalancer(const int updateInterval, const double initialProportionGPU, int blockCountXY) :
+    LoadBalancer(updateInterval, initialProportionGPU, blockCountXY) {
 }
 
 double UtilizationLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {

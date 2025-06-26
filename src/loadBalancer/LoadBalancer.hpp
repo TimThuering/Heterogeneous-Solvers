@@ -6,13 +6,15 @@
 
 class LoadBalancer {
 public:
-    LoadBalancer(int updateInterval, double initialProportionGPU);
+    LoadBalancer(int updateInterval, double initialProportionGPU, int blockCountXY);
 
     virtual double getNewProportionGPU(MetricsTracker &metricsTracker) = 0;
 
     int updateInterval;
 
     double currentProportionGPU;
+
+    int blockCountXY;
 
     virtual ~LoadBalancer() {}
 };
