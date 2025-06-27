@@ -67,27 +67,29 @@ void Cholesky::shiftSplitRowComm(const int blockCountATotal, const std::size_t b
 }
 
 void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSizeBytes, const int k) {
+
     // update GPU proportion if a re-balancing should occur in the current iteration
-    if (k % loadBalancer->updateInterval == 0 && k != 0) {
+    if (k % loadBalancer->updateInterval == 0 && k != 0 && gpuProportion != 0 && gpuProportion != 1) {
         double gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
         // double gpuProportion_new = 0.436364;
         // if (k == 110) {
         //     gpuProportion_new = 0.4;
         // }
 
-        // if (k == 10) {
-        //     gpuProportion_new = 0.65;
-        // }
+        if (k == 10) {
+            gpuProportion_new = 0;
+            minBlockCountGPU = 0;
+        }
         // if (k == 20) {
         //     gpuProportion_new = 0.6;
         // }
 
 
-        if (gpuProportion_new == 1) {
-            gpuProportion_new -= 1e-10;
-        } else if (gpuProportion_new == 0) {
-            gpuProportion_new += 1e-10;
-        }
+        // if (gpuProportion_new == 1) {
+        //     gpuProportion_new -= 1e-10;
+        // } else if (gpuProportion_new == 0) {
+        //     gpuProportion_new += 1e-10;
+        // }
 
 
         gpuProportion = gpuProportion_new;
@@ -349,7 +351,7 @@ void Cholesky::printTimes(const int k) {
 
 void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t blockSizeBytes) {
     executionTimes.startResultCopyGPU = std::chrono::steady_clock::now();
-    if (conf::initialProportionGPU != 1 && conf::initialProportionGPU != 0) {
+    if (gpuProportion != 1 && gpuProportion != 0) {
         // Case heterogeneous: copy parts of the matrix that were computed by the GPU to the CPU
 
         // copy part of each column that was computed on the GPU to the CPU
@@ -371,7 +373,7 @@ void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t b
             });
         }
         gpuQueue.wait();
-    } else if (conf::initialProportionGPU == 1) {
+    } else if (gpuProportion == 1) {
         // Case GPU-only: copy complete matrix to the CPU
 
         gpuQueue.submit([&](handler& h) {
