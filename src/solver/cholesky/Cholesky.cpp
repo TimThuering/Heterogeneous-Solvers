@@ -75,6 +75,13 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
         //     gpuProportion_new = 0.4;
         // }
 
+        // if (k == 10) {
+        //     gpuProportion_new = 0.65;
+        // }
+        // if (k == 20) {
+        //     gpuProportion_new = 0.6;
+        // }
+
 
         if (gpuProportion_new == 1) {
             gpuProportion_new -= 1e-10;
@@ -95,12 +102,8 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     const int blockCountCPU_new = std::max(blockCountColumn - blockCountGPU_new, 0);
     const int blockStartGPU_new = std::max(A.blockCountXY - blockCountGPU_new, k + 1);
 
-    // const bool aboveUpdateThreshold = blockCountGPU_new > blockCountGPU + conf::blockUpdateThreshold || blockCountCPU_new > blockCountCPU + conf::blockUpdateThreshold;
-    const bool aboveUpdateThreshold = std::abs(blockStartGPU_new - blockStartGPU) > 1;
-    // const bool aboveUpdateThreshold = true;
 
-
-    if (k % loadBalancer->updateInterval != 0 || k == 0 || !aboveUpdateThreshold) {
+    if (k % loadBalancer->updateInterval != 0 || k == 0) {
         // normal iteration: move split downwards as usual to keep proportion between GPU and CPU similar
 
         // true if block counts changed and the row that splits the matrix into a CPU and a GPU part has to change
@@ -112,7 +115,7 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     } else {
         // iteration with re-balancing: move split up or down by possibly multiple rows, depending on new requested load distribution
 
-        if (blockCountGPU_new > blockCountGPU) {
+        if (blockStartGPU_new < blockStartGPU) {
             // GPU proportion increased --> move split up
             const int additionalBlocks = blockStartGPU - blockStartGPU_new;
 
@@ -144,9 +147,12 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
                 });
             }
             gpuQueue.wait();
-        } else if (blockCountCPU_new > blockCountCPU) {
+        } else if (blockStartGPU_new > blockStartGPU) {
             // CPU proportion increased --> move split down
             const int additionalBlocks = blockStartGPU_new - blockStartGPU;
+            if (additionalBlocks == 1) {
+                std::cout << std::endl;
+            }
 
             std::cout << "---- Re-balancing: ----" << std::endl;
             std::cout << "Shifting CPU block count from " << blockCountCPU << " to " << blockCountCPU_new << std::endl;
