@@ -133,6 +133,7 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     blockCountGPU = blockCountGPU_new;
     blockCountCPU = blockCountCPU_new;
     blockStartGPU = blockStartGPU_new;
+    loadBalancer->currentProportionGPU = gpuProportion;
 }
 
 void Cholesky::choleskyUpdateCurrentDiagonalBlock(const std::size_t blockSizeBytes, const int k, const int blockID, const std::size_t blockStartIndexDiagBlock) {

@@ -43,10 +43,10 @@ double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) 
 
             // convert absolute time to time per block
             for (std::size_t i = 0; i < timesGPU.size(); i++) {
-                const double verticalBlockCount_CPU = static_cast<double>(metricsTracker.blockCounts_CPU[i]);
+                const double verticalBlockCount_CPU = static_cast<double>(blocksCPU[i]);
                 const double totalBlockCount_CPU = ((verticalBlockCount_CPU - 1) * verticalBlockCount_CPU) / 2.0;
 
-                const double verticalBlockCount_GPU = static_cast<double>(metricsTracker.blockCounts_GPU[i]);
+                const double verticalBlockCount_GPU = static_cast<double>(blocksGPU[i]);
                 const double totalBlockCount = ((verticalBlockCount_GPU + verticalBlockCount_CPU - 1) * (verticalBlockCount_GPU + verticalBlockCount_CPU)) / 2.0;
                 const double totalBlockCount_GPU = totalBlockCount - totalBlockCount_CPU;
 
