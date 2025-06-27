@@ -82,8 +82,7 @@ private:
 
     void initGPUMemory();
     void initExecutionTimes();
-    void shiftSplitRowComm(int blockCountATotal, std::size_t blockSizeBytes, int k);
-    void shiftSplit(int blockCountATotal, std::size_t blockSizeBytes, int k);
+    void shiftSplit(int blockCountATotal, std::size_t blockSizeBytes, int k, std::size_t blockStartIndexDiagBlock);
     void choleskyUpdateCurrentDiagonalBlock(std::size_t blockSizeBytes, int k, int blockID, std::size_t blockStartIndexDiagBlock);
     void choleskySolveTriangularSystemColumn(std::size_t blockSizeBytes, int k, int blockID);
     void choleskyUpdateDiagonal(int k, int blockID);

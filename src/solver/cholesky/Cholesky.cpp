@@ -44,57 +44,24 @@ void Cholesky::initExecutionTimes() {
     executionTimes.endMatrixMatrix = executionTimes.startMatrixMatrix;
 }
 
-void Cholesky::shiftSplitRowComm(const int blockCountATotal, const std::size_t blockSizeBytes, const int k) {
-    executionTimes.startCopy_row = std::chrono::steady_clock::now();
-
-    std::cout << "Copying Blocks" << std::endl;
-
-    // copy part of each column that was computed on the GPU and now has to be computed by the CPU after re-balancing
-    for (int c = 0; c < blockCountCPU + k + 1; ++c) {
-        const int columnsToRight = A.blockCountXY - c;
-        // first block in the column updated by the GPU
-        const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2) + std::max(A.blockCountXY - c - blockCountGPU, 0);
-
-        const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
-
-        gpuQueue.submit([&](handler& h) {
-            h.memcpy(&A.matrixData[blockStartIndexFirstGPUBlock], &A_gpu[blockStartIndexFirstGPUBlock], blockSizeBytes);
-        });
-    }
-    gpuQueue.wait();
-
-    executionTimes.endCopy_row = std::chrono::steady_clock::now();
-}
-
-void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSizeBytes, const int k) {
-
+void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSizeBytes, const int k, std::size_t blockStartIndexDiagBlock) {
     // update GPU proportion if a re-balancing should occur in the current iteration
     if (k % loadBalancer->updateInterval == 0 && k != 0 && gpuProportion != 0 && gpuProportion != 1) {
-        double gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
-        // double gpuProportion_new = 0.436364;
-        // if (k == 110) {
-        //     gpuProportion_new = 0.4;
-        // }
+        const double gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
 
-        if (k == 10) {
-            gpuProportion_new = 0;
+        if (gpuProportion_new == 0) {
+            // set min block count for GPU to 0 too, if 0% GPU is requested
             minBlockCountGPU = 0;
         }
-        // if (k == 20) {
-        //     gpuProportion_new = 0.6;
-        // }
 
-
-        // if (gpuProportion_new == 1) {
-        //     gpuProportion_new -= 1e-10;
-        // } else if (gpuProportion_new == 0) {
-        //     gpuProportion_new += 1e-10;
-        // }
-
-
+        if (gpuProportion_new == 1 && k < A.blockCountXY - minBlockCountGPU) {
+            // if GPU proportion turns 100%, current diagonal block might now be needed on the GPU if min GPU block count not yet reached
+            gpuQueue.submit([&](handler& h) {
+                h.memcpy(&A_gpu[blockStartIndexDiagBlock], &A.matrixData[blockStartIndexDiagBlock], blockSizeBytes);
+            }).wait();
+        }
         gpuProportion = gpuProportion_new;
     }
-
 
     // block count in current column for CPU and GPU below the diagonal block
     const int blockCountColumn = A.blockCountXY - (k + 1);
@@ -104,26 +71,12 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     const int blockCountCPU_new = std::max(blockCountColumn - blockCountGPU_new, 0);
     const int blockStartGPU_new = std::max(A.blockCountXY - blockCountGPU_new, k + 1);
 
-
-    if (k % loadBalancer->updateInterval != 0 || k == 0) {
-        // normal iteration: move split downwards as usual to keep proportion between GPU and CPU similar
-
-        // true if block counts changed and the row that splits the matrix into a CPU and a GPU part has to change
-        if (blockCountGPU != blockCountGPU_new && blockCountGPU_new >= minBlockCountGPU && gpuProportion != 1 && gpuProportion != 0) {
-            // split has shifted --> communicate the row that was previously held by the GPU and now belongs to the CPU
-            shiftSplitRowComm(blockCountATotal, blockSizeBytes, k);
-            std::cout << blockCountGPU << " ---> " << blockCountGPU_new << std::endl;
-        }
-    } else {
-        // iteration with re-balancing: move split up or down by possibly multiple rows, depending on new requested load distribution
+    if (blockCountGPU_new >= minBlockCountGPU) {
+        // re-balancing: move split up or down by possibly multiple rows, depending on new calculated load distribution
 
         if (blockStartGPU_new < blockStartGPU) {
             // GPU proportion increased --> move split up
             const int additionalBlocks = blockStartGPU - blockStartGPU_new;
-
-            std::cout << "---- Re-balancing: ----" << std::endl;
-            std::cout << "Shifting CPU block count from " << blockCountCPU << " to " << blockCountCPU_new << std::endl;
-
 
             // copy part of each column that was computed on the CPU and now has to be computed by the GPU after re-balancing
             for (int c = 0; c < blockCountCPU_new + k + 1 + additionalBlocks; ++c) {
@@ -139,8 +92,6 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
                     blocksToCopy = additionalBlocks - (c - (blockCountCPU_new + k + 1));
                 }
 
-                // std::cout << blockID << " + " << blocksToCopy << std::endl;
-
                 const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
                 // for current column copy additionalBlocks amount of blocks
@@ -152,13 +103,6 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
         } else if (blockStartGPU_new > blockStartGPU) {
             // CPU proportion increased --> move split down
             const int additionalBlocks = blockStartGPU_new - blockStartGPU;
-            if (additionalBlocks == 1) {
-                std::cout << std::endl;
-            }
-
-            std::cout << "---- Re-balancing: ----" << std::endl;
-            std::cout << "Shifting CPU block count from " << blockCountCPU << " to " << blockCountCPU_new << std::endl;
-
 
             // copy part of each column that was computed on the GPU and now has to be computed by the CPU after re-balancing
             for (int c = 0; c < blockCountCPU + k + additionalBlocks; ++c) {
@@ -173,8 +117,6 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
                 } else {
                     blocksToCopy = additionalBlocks - (c - (blockCountCPU + k + 1) + 1);
                 }
-
-                // std::cout << blockID << " + " << blocksToCopy << std::endl;
 
                 const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
@@ -191,13 +133,6 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     blockCountGPU = blockCountGPU_new;
     blockCountCPU = blockCountCPU_new;
     blockStartGPU = blockStartGPU_new;
-
-    // // TODO set gpu proportion to actual proportion so that it can also get 0 / 1
-    // if (blockCountGPU == 0) {
-    //     gpuProportion = 0;
-    // } else if (blockCountCPU == 0) {
-    //     gpuProportion = 1;
-    // }
 }
 
 void Cholesky::choleskyUpdateCurrentDiagonalBlock(const std::size_t blockSizeBytes, const int k, const int blockID, const std::size_t blockStartIndexDiagBlock) {
@@ -429,18 +364,18 @@ void Cholesky::solve_heterogeneous() {
     for (int k = 0; k < A.blockCountXY; ++k) {
         initExecutionTimes();
 
+        // ID and start index of diagonal block A_kk
+        const int columnsToRight = A.blockCountXY - k;
+        const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
+        const std::size_t blockStartIndexDiagBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+
         // check if row that splits GPU/CPU part of the matrix has to change and apply the change if necessary
-        shiftSplit(blockCountATotal, blockSizeBytes, k);
+        shiftSplit(blockCountATotal, blockSizeBytes, k, blockStartIndexDiagBlock);
 
         // change offset for matrix-matrix step from 0 to 1 depending on how far we are into the computation
         if (blockStartGPU <= k + 1) {
             offsetMatrixMatrixStepGPU = 1;
         }
-
-        // ID and start index of diagonal block A_kk
-        const int columnsToRight = A.blockCountXY - k;
-        const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
-        const std::size_t blockStartIndexDiagBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
         // perform Cholesky decomposition on diagonal block A_kk
         choleskyUpdateCurrentDiagonalBlock(blockSizeBytes, k, blockID, blockStartIndexDiagBlock);
@@ -456,14 +391,6 @@ void Cholesky::solve_heterogeneous() {
 
         // time measurement and output
         printTimes(k);
-
-        // for (auto &el: A.matrixData) {
-        //     if (isnan(el)) {
-        //         std::cout << "-------------------- ERROR!!!!---------------------------------------------------------------------------" << std::endl;
-        //         break;
-        //     }
-        // }
-        // std::cout << "NAN check complete" << std::endl;
     }
 
     metricsTracker.endTracking();
