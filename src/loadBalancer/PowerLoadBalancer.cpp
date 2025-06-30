@@ -74,11 +74,12 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
 
         double blockCount_total = 0.0;
         double proportionGPU_heterogeneous = 1.0;
+        double totalVerticalBlockCountNextIteration = 0.0;
         if (conf::algorithm == "cg") {
             blockCount_total = static_cast<double>(blockCount_GPU) + static_cast<double>(blockCount_CPU);
             proportionGPU_heterogeneous = (conf::runtimeLBFactorCPU * runtimePerBlock_CPU) / (conf::runtimeLBFactorCPU * runtimePerBlock_CPU + runtimePerBlock_GPU);
         } else if (conf::algorithm == "cholesky") {
-            const double totalVerticalBlockCountNextIteration = static_cast<double>(blockCountXY - metricsTracker.matrixMatrixTimes_GPU.size() - 2);
+            totalVerticalBlockCountNextIteration = static_cast<double>(blockCountXY - metricsTracker.matrixMatrixTimes_GPU.size() - 2);
             blockCount_total = (totalVerticalBlockCountNextIteration * (totalVerticalBlockCountNextIteration + 1)) / 2.0;
 
             proportionGPU_heterogeneous = (conf::runtimeLBFactorCPU * runtimePerBlock_CPU) / (conf::runtimeLBFactorCPU * runtimePerBlock_CPU + runtimePerBlock_GPU);
@@ -95,7 +96,7 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
         const double blockCountGPU_heterogeneous = std::ceil(blockCount_total * proportionGPU_heterogeneous);
         const double blockCountCPU_heterogeneous = blockCount_total - blockCountGPU_heterogeneous;
 
-        const double joulesCommunication = watts_GPU * communicationTimePerBlock * blockCountGPU_heterogeneous + watts_CPU * communicationTimePerBlock * blockCountCPU_heterogeneous;
+        const double joulesCommunication = watts_GPU * communicationTimePerBlock * totalVerticalBlockCountNextIteration * proportionGPU_heterogeneous + watts_CPU * communicationTimePerBlock * totalVerticalBlockCountNextIteration * proportionGPU_heterogeneous;
         const double joulesHeterogeneous = watts_GPU * runtimePerBlock_GPU * blockCountGPU_heterogeneous + watts_CPU * runtimePerBlock_CPU * blockCountCPU_heterogeneous + joulesCommunication;
 
         std::cout << "Joules GPU: " << joulesGPUOnly << std::endl;
