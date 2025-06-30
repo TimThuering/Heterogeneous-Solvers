@@ -122,11 +122,15 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
 }
 
 void MetricsTracker::startTracking() {
-    sampler.start_sampling();
+    if (conf::enableHWS) {
+        sampler.start_sampling();
+    }
 }
 
 void MetricsTracker::endTracking() {
-    sampler.stop_sampling();
+    if (conf::enableHWS) {
+        sampler.stop_sampling();
+    }
 }
 
 void MetricsTracker::writeJSON(std::string& path) {

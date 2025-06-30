@@ -58,11 +58,12 @@ double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) 
             const double totalVerticalBlockCountNextIteration = static_cast<double>(blockCountXY - metricsTracker.matrixMatrixTimes_GPU.size() - 2);
             const double totalBlockCountNextIteration = (totalVerticalBlockCountNextIteration * (totalVerticalBlockCountNextIteration + 1)) / 2;
 
-            const double averageRuntimePerBlock_GPU = std::accumulate(timesCPU.begin(), timesCPU.end(), 0.0) / updateInterval;
-            const double averageRuntimePerBlock_CPU = conf::runtimeLBFactorCPU * std::accumulate(timesGPU.begin(), timesGPU.end(), 0.0) / updateInterval;
+            const double averageRuntimePerBlock_GPU = std::accumulate(timesGPU.begin(), timesGPU.end(), 0.0) / updateInterval;
+            const double averageRuntimePerBlock_CPU = std::accumulate(timesCPU.begin(), timesCPU.end(), 0.0) / updateInterval;
 
             const double newTotalProportionGPU = averageRuntimePerBlock_CPU / (averageRuntimePerBlock_CPU + averageRuntimePerBlock_GPU);
-            const double newTotalBlockCount_CPU = std::floor(totalBlockCountNextIteration * newTotalProportionGPU);
+            const double newTotalBlockCount_CPU = std::floor(totalBlockCountNextIteration * (1 - newTotalProportionGPU));
+
             const double newVerticalBlockCount_CPU = std::floor((-1 + std::sqrt(1 + 8 * newTotalBlockCount_CPU)) / 2);
             const double newVerticalProportionCPU = newVerticalBlockCount_CPU / totalVerticalBlockCountNextIteration;
             const double newVerticalProportionGPU = 1 - newVerticalProportionCPU;

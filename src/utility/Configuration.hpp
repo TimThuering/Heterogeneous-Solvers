@@ -32,6 +32,7 @@ namespace conf {
         std::size_t blockUpdateThreshold = 1; /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
         double idleWatt_CPU = 30.0; /// CPU power draw in Watts when the CPU is idle. Used to estimate total power draw.
         hws::sample_category sampleCategories = static_cast<hws::sample_category>(0b00000101); /// enable power and general samples
+        bool enableHWS = true; /// enables sampling with hws library, might affect CPU/GPU performance
 
         std::string algorithm = "cg"; /// algorithm to use: 'cg' or 'cholesky'
 
@@ -78,6 +79,9 @@ namespace conf {
     inline int& minBlockCountCholesky = get().minBlockCountCholesky;
 
     inline std::string& algorithm = get().algorithm;
+
+    inline bool& enableHWS = get().enableHWS;
+
 
 }
 

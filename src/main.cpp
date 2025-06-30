@@ -39,9 +39,7 @@ int main(int argc, char* argv[]) {
         ("o,output", "path to the output directory", cxxopts::value<std::string>())
         ("d,gp_input", "path to the input data for GP matrix generation", cxxopts::value<std::string>())
         ("gp_output", "path to the output data for GP matrix generation", cxxopts::value<std::string>())
-        ("m,mode",
-         "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'",
-         cxxopts::value<std::string>())
+        ("m,mode", "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'", cxxopts::value<std::string>())
         ("z,matrix_bsz", "block size for the symmetric matrix storage", cxxopts::value<int>())
         // ("w,wg_size", "work-group size for matrix-vector operations", cxxopts::value<int>())
         ("v,wg_size_vec", "work-group size for vector-vector operations", cxxopts::value<int>())
@@ -53,10 +51,11 @@ int main(int argc, char* argv[]) {
         ("r,write_result", "write the result vector x to a .txt file", cxxopts::value<bool>())
         ("f,cpu_lb_factor", "factor that scales the CPU times for runtime load balancing", cxxopts::value<double>())
         ("t,block_update_th",
-         "when block count change during re-balancing is equal or below this number, no re-balancing occurs",
-         cxxopts::value<std::size_t>())
+         "when block count change during re-balancing is equal or below this number, no re-balancing occurs", cxxopts::value<std::size_t>())
         ("size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>())
-        ("algorithm", "the algorithm that should be used: can be 'cg' or 'cholesky'", cxxopts::value<std::string>());
+        ("algorithm", "the algorithm that should be used: can be 'cg' or 'cholesky'", cxxopts::value<std::string>())
+        ("enableHWS", "enables sampling with hws library, might affect CPU/GPU performance", cxxopts::value<bool>());
+
 
     const auto arguments = argumentOptions.parse(argc, argv);
 
@@ -136,6 +135,10 @@ int main(int argc, char* argv[]) {
         conf::blockUpdateThreshold = arguments["block_update_th"].as<std::size_t>();
     }
 
+    if (arguments.count("enableHWS")) {
+        conf::enableHWS = arguments["enableHWS"].as<bool>();
+    }
+
 
     sycl::property_list properties{sycl::property::queue::enable_profiling()};
 
@@ -180,7 +183,7 @@ int main(int argc, char* argv[]) {
     } else if (conf::algorithm == "cholesky") {
         Cholesky cholesky(A, cpuQueue, gpuQueue, loadBalancer);
         cholesky.solve_heterogeneous();
-        for (auto &el: A.matrixData) {
+        for (auto& el : A.matrixData) {
             if (isnan(el)) {
                 std::cout << "ERROR!!!!" << std::endl;
                 return 1;
