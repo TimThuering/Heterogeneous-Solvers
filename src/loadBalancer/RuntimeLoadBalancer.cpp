@@ -3,7 +3,7 @@
 #include "RuntimeLoadBalancer.hpp"
 
 RuntimeLoadBalancer::RuntimeLoadBalancer(int updateInterval, double initialProportionGPU, int blockCountXY) : LoadBalancer(updateInterval,
-                                                                                                         initialProportionGPU, blockCountXY) {
+                                                                                                                           initialProportionGPU, blockCountXY) {
 }
 
 double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
@@ -59,7 +59,7 @@ double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) 
             const double totalBlockCountNextIteration = (totalVerticalBlockCountNextIteration * (totalVerticalBlockCountNextIteration + 1)) / 2;
 
             const double averageRuntimePerBlock_GPU = std::accumulate(timesGPU.begin(), timesGPU.end(), 0.0) / updateInterval;
-            const double averageRuntimePerBlock_CPU = std::accumulate(timesCPU.begin(), timesCPU.end(), 0.0) / updateInterval;
+            const double averageRuntimePerBlock_CPU = conf::runtimeLBFactorCPU * std::accumulate(timesCPU.begin(), timesCPU.end(), 0.0) / updateInterval;
 
             const double newTotalProportionGPU = averageRuntimePerBlock_CPU / (averageRuntimePerBlock_CPU + averageRuntimePerBlock_GPU);
             const double newTotalBlockCount_CPU = std::floor(totalBlockCountNextIteration * (1 - newTotalProportionGPU));
@@ -73,7 +73,7 @@ double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) 
             }
 
 
-            std:: cout << "Changing GPU proportion from" << currentProportionGPU << " to " << newVerticalProportionGPU << std::endl;
+            std::cout << "Changing GPU proportion from" << currentProportionGPU << " to " << newVerticalProportionGPU << std::endl;
 
             currentProportionGPU = newVerticalProportionGPU;
             return currentProportionGPU;
