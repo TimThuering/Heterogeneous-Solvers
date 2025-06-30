@@ -45,6 +45,8 @@ void Cholesky::initExecutionTimes() {
 }
 
 void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSizeBytes, const int k, std::size_t blockStartIndexDiagBlock) {
+    executionTimes.startCopy_row = std::chrono::steady_clock::now();
+
     // update GPU proportion if a re-balancing should occur in the current iteration
     if (k % loadBalancer->updateInterval == 0 && k != 0 && gpuProportion != 0 && gpuProportion != 1) {
         const double gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
@@ -134,6 +136,8 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     blockCountCPU = blockCountCPU_new;
     blockStartGPU = blockStartGPU_new;
     loadBalancer->currentProportionGPU = gpuProportion;
+
+    executionTimes.endCopy_row = std::chrono::steady_clock::now();
 }
 
 void Cholesky::choleskyUpdateCurrentDiagonalBlock(const std::size_t blockSizeBytes, const int k, const int blockID, const std::size_t blockStartIndexDiagBlock) {
