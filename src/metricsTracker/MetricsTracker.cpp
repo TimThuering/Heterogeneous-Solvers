@@ -184,6 +184,9 @@ void MetricsTracker::writeJSON(std::string& path) {
     metricsJSON << "\t \"initialProportionGPU\":            " + std::to_string(conf::initialProportionGPU) + ",\n";
     metricsJSON << "\t \"runtimeLBFactorCPU\":              " + std::to_string(conf::runtimeLBFactorCPU) + ",\n";
     metricsJSON << "\t \"blockUpdateThreshold\":            " + std::to_string(conf::blockUpdateThreshold) + ",\n";
+    metricsJSON << "\t \"gpuOptimizationLevel\":            " + std::to_string(conf::gpuOptimizationLevel) + ",\n";
+    metricsJSON << "\t \"cpuOptimizationLevel\":            " + std::to_string(conf::cpuOptimizationLevel) + ",\n";
+    metricsJSON << "\t \"enableHWS\":                       " + std::to_string(conf::enableHWS) + ",\n";
     metricsJSON << std::string("\t \"mode\":                            ") + "\"" + conf::mode + "\"" + "\n";
 
 
@@ -193,6 +196,10 @@ void MetricsTracker::writeJSON(std::string& path) {
     metricsJSON << "\"runtime-metrics\": {\n";
 
     metricsJSON << "\t \"iterationTimes\":         " + vectorToJSONString<double>(iterationTimes) + ",\n";
+
+    metricsJSON << "\t \"memoryInitTime\":         " + std::to_string(memoryInitTime) + ",\n";
+    metricsJSON << "\t \"resultCopyTime\":         " + std::to_string(resultCopyTime) + ",\n";
+    metricsJSON << "\t \"totalTime\":              " + std::to_string(totalTime) + ",\n";
 
     metricsJSON << "\t \"averageUtilization_GPU\": " + vectorToJSONString<double>(averageUtilization_GPU) + ",\n";
     metricsJSON << "\t \"averageUtilization_CPU\": " + vectorToJSONString<double>(averageUtilization_CPU) + ",\n";

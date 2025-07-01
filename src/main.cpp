@@ -54,7 +54,9 @@ int main(int argc, char* argv[]) {
          "when block count change during re-balancing is equal or below this number, no re-balancing occurs", cxxopts::value<std::size_t>())
         ("size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>())
         ("algorithm", "the algorithm that should be used: can be 'cg' or 'cholesky'", cxxopts::value<std::string>())
-        ("enableHWS", "enables sampling with hws library, might affect CPU/GPU performance", cxxopts::value<bool>());
+        ("enableHWS", "enables sampling with hws library, might affect CPU/GPU performance", cxxopts::value<bool>())
+        ("gpu_opt", "optimization level 0-3 for GPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>())
+        ("cpu_opt", "optimization level 0-2 for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>());
 
 
     const auto arguments = argumentOptions.parse(argc, argv);
@@ -139,6 +141,13 @@ int main(int argc, char* argv[]) {
         conf::enableHWS = arguments["enableHWS"].as<bool>();
     }
 
+    if (arguments.count("gpu_opt")) {
+        conf::gpuOptimizationLevel = arguments["gpu_opt"].as<int>();
+    }
+
+    if (arguments.count("cpu_opt")) {
+        conf::cpuOptimizationLevel = arguments["cpu_opt"].as<int>();
+    }
 
     sycl::property_list properties{sycl::property::queue::enable_profiling()};
 

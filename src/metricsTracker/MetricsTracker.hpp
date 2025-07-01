@@ -56,6 +56,10 @@ public:
     // total iteration times (time to process one block column in case of cholesky)
     std::vector<double> iterationTimes;
 
+    double memoryInitTime = 0.0;
+    double resultCopyTime = 0.0;
+    double totalTime = 0.0;
+
     void startTracking();
 
     void endTracking();

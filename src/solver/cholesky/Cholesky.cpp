@@ -205,10 +205,37 @@ void Cholesky::choleskyUpdateDiagonal(const int k, const int blockID) {
 void Cholesky::choleskyUpdateLowerBlockTriangle(const int k, const int blockID) {
     executionTimes.startMatrixMatrix = std::chrono::steady_clock::now();
     if (blockCountCPU > 1) {
-        executionTimes.eventCPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
+        switch (conf::cpuOptimizationLevel) {
+        case 0:
+            executionTimes.eventCPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
+            break;
+        case 1:
+            executionTimes.eventCPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
+            break;
+        case 2:
+            executionTimes.eventCPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
+            break;
+        default:
+            throw std::runtime_error("Unknown CPU optimization level");
+        }
     }
     if (blockCountGPU > 1) {
-        executionTimes.eventGPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU2(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
+        switch (conf::gpuOptimizationLevel) {
+        case 0:
+            executionTimes.eventGPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
+            break;
+        case 1:
+            executionTimes.eventGPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
+            break;
+        case 2:
+            executionTimes.eventGPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU2(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
+            break;
+        case 3:
+            executionTimes.eventGPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(gpuQueue, A_gpu, blockID, k, blockStartGPU + offsetMatrixMatrixStepGPU, blockCountGPU - offsetMatrixMatrixStepGPU, A.blockCountXY);
+            break;
+        default:
+            throw std::runtime_error("Unknown GPU optimization level");
+        }
     }
     waitAllQueues();
     executionTimes.endMatrixMatrix = std::chrono::steady_clock::now();
@@ -327,6 +354,10 @@ void Cholesky::printFinalTimes() {
     const auto memoryInitTime = std::chrono::duration<double, std::milli>(executionTimes.endMemoryInitGPU - executionTimes.startMemoryInitGPU).count();
     const auto resultCopyTime = std::chrono::duration<double, std::milli>(executionTimes.endResultCopyGPU - executionTimes.startResultCopyGPU).count();
     const auto totalTime = std::chrono::duration<double, std::milli>(executionTimes.end - executionTimes.start).count();
+
+    metricsTracker.memoryInitTime = memoryInitTime;
+    metricsTracker.resultCopyTime = resultCopyTime;
+    metricsTracker.totalTime = totalTime;
 
     std::cout << "Memory init: " << memoryInitTime << "ms" << std::endl;
     std::cout << "Result copy: " << resultCopyTime << std::endl;
