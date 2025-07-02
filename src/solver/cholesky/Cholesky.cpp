@@ -47,9 +47,15 @@ void Cholesky::initExecutionTimes() {
 void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSizeBytes, const int k, std::size_t blockStartIndexDiagBlock) {
     executionTimes.startCopy_row = std::chrono::steady_clock::now();
 
+    double gpuProportion_new = gpuProportion;
+
     // update GPU proportion if a re-balancing should occur in the current iteration
     if (k % loadBalancer->updateInterval == 0 && k != 0 && gpuProportion != 0 && gpuProportion != 1) {
-        const double gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
+        gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
+
+        if (k ==110) {
+            gpuProportion_new = 0;
+        }
 
         if (gpuProportion_new == 0) {
             // set min block count for GPU to 0 too, if 0% GPU is requested
@@ -62,74 +68,80 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
                 h.memcpy(&A_gpu[blockStartIndexDiagBlock], &A.matrixData[blockStartIndexDiagBlock], blockSizeBytes);
             }).wait();
         }
-        gpuProportion = gpuProportion_new;
     }
 
     // block count in current column for CPU and GPU below the diagonal block
     const int blockCountColumn = A.blockCountXY - (k + 1);
 
     // compute new block counts to keep CPU/GPU proportion similar throughout the algorithm
-    const int blockCountGPU_new = std::min(std::max(static_cast<int>(std::ceil(blockCountColumn * gpuProportion)), minBlockCountGPU), blockCountColumn);
+    const int blockCountGPU_new = std::min(std::max(static_cast<int>(std::ceil(blockCountColumn * gpuProportion_new)), minBlockCountGPU), blockCountColumn);
     const int blockCountCPU_new = std::max(blockCountColumn - blockCountGPU_new, 0);
     const int blockStartGPU_new = std::max(A.blockCountXY - blockCountGPU_new, k + 1);
 
-    if (blockCountGPU_new >= minBlockCountGPU) {
-        // re-balancing: move split up or down by possibly multiple rows, depending on new calculated load distribution
 
-        if (blockStartGPU_new < blockStartGPU) {
-            // GPU proportion increased --> move split up
-            const int additionalBlocks = blockStartGPU - blockStartGPU_new;
+    if (gpuProportion != 0 && gpuProportion != 1) {
+        gpuProportion = gpuProportion_new;
 
-            // copy part of each column that was computed on the CPU and now has to be computed by the GPU after re-balancing
-            for (int c = 0; c < blockCountCPU_new + k + 1 + additionalBlocks; ++c) {
-                const int columnsToRight = A.blockCountXY - c;
-                // first block in the column updated by the GPU
-                int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
 
-                int blocksToCopy = additionalBlocks;
+        if (blockCountGPU_new >= minBlockCountGPU) {
+            // re-balancing: move split up or down by possibly multiple rows, depending on new calculated load distribution
 
-                if (c < blockCountCPU_new + k + 1) {
-                    blockID += std::max(A.blockCountXY - c - (blockCountGPU + additionalBlocks), 0);
-                } else {
-                    blocksToCopy = additionalBlocks - (c - (blockCountCPU_new + k + 1));
+            if (blockStartGPU_new < blockStartGPU) {
+                // GPU proportion increased --> move split up
+                const int additionalBlocks = blockStartGPU - blockStartGPU_new;
+
+                // copy part of each column that was computed on the CPU and now has to be computed by the GPU after re-balancing
+                for (int c = 0; c < blockCountCPU_new + k + 1 + additionalBlocks; ++c) {
+                    const int columnsToRight = A.blockCountXY - c;
+                    // first block in the column updated by the GPU
+                    int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
+
+                    int blocksToCopy = additionalBlocks;
+
+                    if (c < blockCountCPU_new + k + 1) {
+                        blockID += std::max(A.blockCountXY - c - (blockCountGPU + additionalBlocks), 0);
+                    } else {
+                        blocksToCopy = additionalBlocks - (c - (blockCountCPU_new + k + 1));
+                    }
+
+                    const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+
+                    // for current column copy additionalBlocks amount of blocks
+                    gpuQueue.submit([&](handler& h) {
+                        h.memcpy(&A_gpu[blockStartIndexFirstGPUBlock], &A.matrixData[blockStartIndexFirstGPUBlock], blockSizeBytes * blocksToCopy);
+                    });
                 }
+                gpuQueue.wait();
+            } else if (blockStartGPU_new > blockStartGPU) {
+                // CPU proportion increased --> move split down
+                const int additionalBlocks = blockStartGPU_new - blockStartGPU;
 
-                const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+                // copy part of each column that was computed on the GPU and now has to be computed by the CPU after re-balancing
+                for (int c = 0; c < blockCountCPU + k + additionalBlocks; ++c) {
+                    const int columnsToRight = A.blockCountXY - c;
+                    // first block in the column updated by the GPU
+                    int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
 
-                // for current column copy additionalBlocks amount of blocks
-                gpuQueue.submit([&](handler& h) {
-                    h.memcpy(&A_gpu[blockStartIndexFirstGPUBlock], &A.matrixData[blockStartIndexFirstGPUBlock], blockSizeBytes * blocksToCopy);
-                });
-            }
-            gpuQueue.wait();
-        } else if (blockStartGPU_new > blockStartGPU) {
-            // CPU proportion increased --> move split down
-            const int additionalBlocks = blockStartGPU_new - blockStartGPU;
+                    int blocksToCopy = additionalBlocks;
 
-            // copy part of each column that was computed on the GPU and now has to be computed by the CPU after re-balancing
-            for (int c = 0; c < blockCountCPU + k + additionalBlocks; ++c) {
-                const int columnsToRight = A.blockCountXY - c;
-                // first block in the column updated by the GPU
-                int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
+                    if (c < blockCountCPU + k + 1) {
+                        blockID += std::max(A.blockCountXY - c - blockCountGPU, 0);
+                    } else {
+                        blocksToCopy = additionalBlocks - (c - (blockCountCPU + k + 1) + 1);
+                    }
 
-                int blocksToCopy = additionalBlocks;
+                    const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
 
-                if (c < blockCountCPU + k + 1) {
-                    blockID += std::max(A.blockCountXY - c - blockCountGPU, 0);
-                } else {
-                    blocksToCopy = additionalBlocks - (c - (blockCountCPU + k + 1) + 1);
+                    // for current column copy additionalBlocks amount of blocks
+                    gpuQueue.submit([&](handler& h) {
+                        h.memcpy(&A.matrixData[blockStartIndexFirstGPUBlock], &A_gpu[blockStartIndexFirstGPUBlock], blockSizeBytes * blocksToCopy);
+                    });
                 }
-
-                const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
-
-                // for current column copy additionalBlocks amount of blocks
-                gpuQueue.submit([&](handler& h) {
-                    h.memcpy(&A.matrixData[blockStartIndexFirstGPUBlock], &A_gpu[blockStartIndexFirstGPUBlock], blockSizeBytes * blocksToCopy);
-                });
+                gpuQueue.wait();
             }
-            gpuQueue.wait();
         }
     }
+
     waitAllQueues();
 
     blockCountGPU = blockCountGPU_new;
