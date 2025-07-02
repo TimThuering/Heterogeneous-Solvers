@@ -53,10 +53,6 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
     if (k % loadBalancer->updateInterval == 0 && k != 0 && gpuProportion != 0 && gpuProportion != 1) {
         gpuProportion_new = loadBalancer->getNewProportionGPU(metricsTracker);
 
-        if (k ==110) {
-            gpuProportion_new = 0;
-        }
-
         if (gpuProportion_new == 0) {
             // set min block count for GPU to 0 too, if 0% GPU is requested
             minBlockCountGPU = 0;
