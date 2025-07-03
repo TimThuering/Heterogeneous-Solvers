@@ -23,17 +23,13 @@ public:
      * @param blockCountXY block count in x and y direction of the complete symmetric matrix
      * @param reset if true (default), the existing entries in the result vector will be ignored. If false, the result will be added to the values in the result vector.
      */
-    static sycl::event
-    matrixVectorBlock(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b, conf::fp_type* result,
-                      int blockStart_i, int blockStart_j, int blockCount_i, int blockCount_j, int blockCountXY, bool reset = true);
+    static sycl::event matrixVectorBlock(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b, conf::fp_type* result, int blockStart_i, int blockStart_j, int blockCount_i, int blockCount_j, int blockCountXY, bool reset = true);
 
-    static sycl::event
-    matrixVectorBlock_GPU(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b, conf::fp_type* result,
-                  int blockStart_i, int blockStart_j, int blockCount_i, int blockCount_j, int blockCountXY, bool reset = true);
+    static sycl::event matrixVectorBlock_GPU(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b, conf::fp_type* result, int blockStart_i, int blockStart_j, int blockCount_i, int blockCount_j, int blockCountXY, bool reset = true);
 
-    static sycl::event
-    matrixVectorBlock_CPU(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b, conf::fp_type* result,
-                  int blockStart_i, int blockStart_j, int blockCount_i, int blockCount_j, int blockCountXY, bool reset = true);
+    static sycl::event matrixVectorBlock_CPU(sycl::queue& queue, const conf::fp_type* A, const conf::fp_type* b, conf::fp_type* result, int blockStart_i, int blockStart_j, int blockCount_i, int blockCount_j, int blockCountXY, bool reset = true);
+
+    static sycl::event triangularSolveVector(sycl::queue& queue, conf::fp_type* A, conf::fp_type* b, int blockStart, int blockCount, int blockRow, int blockID, bool transposed);
 };
 
 

@@ -16,6 +16,95 @@ protected:
     std::string path_b = "../tests/testData/testVector_20.txt";
 };
 
+
+class TRSVTest : public ::testing::Test {
+protected:
+    std::string path_A = "../tests/testData/testMatrixSymmetric20x20.txt";
+
+
+    std::vector<conf::fp_type> reference = {
+        0.3603902513595023,
+        0.4647412009353097,
+        2.7253161533854984,
+        0.3007735318732128,
+        0.5872207510409728,
+        1.5852712666315125,
+        1.0594776221362836,
+        0.388333972364927,
+        2.236407028666025,
+        0.6022134289757832,
+        1.945987295528439,
+        0.9270990706988526,
+        3.849916171818029,
+        0.4383131764729952,
+        1.233587121224736,
+        0.4072011951795052,
+        1.4980895787658652,
+        0.44939017504969897,
+        0.6765944977364532,
+        1.9716118473800197,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+
+    std::vector<conf::fp_type> reference_transposed = {
+        0.7561826008952903,
+        0.43422165948281244,
+        0.160310312151354,
+        0.7533143653652702,
+        -0.02937398483250901,
+        1.6721678989524362,
+        0.42113623510921244,
+        1.8668199375622456,
+        1.1535173486635255,
+        -0.17712268119970628,
+        1.7754034138387895,
+        1.250993694774386,
+        0.9901546147145652,
+        1.3011398651252468,
+        1.0343013726618364,
+        -0.32476586630754983,
+        2.2457110290152356,
+        4.181373549733097,
+        2.6264495546679623,
+        1.6160004168501227,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+
+    std::vector<conf::fp_type> reference_one_block = {
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        2.640689705963016,
+        1.2854913706980609,
+        0.9921551039564678,
+        0.3499738886590734,
+        2.0604900442948364,
+        2.4782760557241335,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+};
+
+
 // Block size 4 --> no padding
 
 TEST_F(MatrixVectorTest, fullMatrixVector) {
@@ -627,8 +716,8 @@ TEST_F(MatrixVectorTest, fullMatrixVectorPadding_SharedMemory) {
 
 
     MatrixVectorOperations::matrixVectorBlock_GPU(queue, A.matrixData.data(), b.rightHandSideData.data(), result.data(), 0,
-                                              0,
-                                              A.blockCountXY, A.blockCountXY, A.blockCountXY);
+                                                  0,
+                                                  A.blockCountXY, A.blockCountXY, A.blockCountXY);
     queue.wait();
 
     std::vector<conf::fp_type> reference = {
@@ -645,5 +734,127 @@ TEST_F(MatrixVectorTest, fullMatrixVectorPadding_SharedMemory) {
 
     for (size_t i = 0; i < result.size(); i++) {
         EXPECT_NEAR(result[i], reference[i], 1e-12);
+    }
+}
+
+
+// Tests for TRSV kernel
+TEST_F(TRSVTest, testTRSV) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 20;
+    conf::workGroupSize = 20;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 0, 0, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference[i], 1e-12);
+    }
+}
+
+TEST_F(TRSVTest, testTRSV_transposed) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 20;
+    conf::workGroupSize = 20;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 0, 0, true);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_transposed[i], 1e-12);
+    }
+}
+
+TEST_F(TRSVTest, testTRSV_padding) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 24;
+    conf::workGroupSize = 24;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(24);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 0, 0, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference[i], 1e-12);
+    }
+}
+
+TEST_F(TRSVTest, testTRSV_padding_transposed) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 24;
+    conf::workGroupSize = 24;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(24);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 0, 0, true);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_transposed[i], 1e-12);
+    }
+}
+
+TEST_F(TRSVTest, testTRSV_one_block) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSize = 6;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(24);
+    for (size_t i = 12; i < 18; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 2, 7, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_one_block[i], 1e-12);
     }
 }

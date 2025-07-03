@@ -22,7 +22,9 @@ include(FetchContent)
 # define all program source files for the executable
 set(EXECUTABLE_FILES src/main.cpp
         src/solver/cholesky/Cholesky.cpp
-        src/solver/cholesky/Cholesky.hpp)
+        src/solver/cholesky/Cholesky.hpp
+        src/solver/cholesky/TriangularSystemSolver.cpp
+        src/solver/cholesky/TriangularSystemSolver.hpp)
 
 # define all library files that will be linked to the executable
 set(LIBRARY_FILES

@@ -295,3 +295,55 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, co
 
     return event;
 }
+
+sycl::event MatrixVectorOperations::triangularSolveVector(sycl::queue& queue, conf::fp_type* A, conf::fp_type* b, int blockStart, int blockCount, int blockRow, int blockID, bool transposed) {
+    // one work-group per rhs
+    const range globalRange(conf::matrixBlockSize);
+    const range localRange(conf::matrixBlockSize);
+    const auto kernelRange = nd_range{globalRange, localRange};
+
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+
+    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize) * static_cast<int>(conf::matrixBlockSize);
+
+    const int N = conf::N;
+
+    sycl::event event = queue.submit([&](sycl::handler& h) {
+        h.parallel_for(kernelRange, [=](auto& nd_item) {
+            int local_i = nd_item.get_local_id(0);
+
+            // block in the matrix where the results are written
+            const int blockStartIndex_B = blockRow * matrixBlockSize;
+
+            const int blockStartIndex_L = blockStartIndex;
+
+            for (int i = 0; i < matrixBlockSize; ++i) {
+                int k = i;
+                if (transposed) {
+                    k = matrixBlockSize - (k + 1);
+                }
+
+                // b_k = b_k/a_kk
+                const conf::fp_type b_k = b[blockStartIndex_B + k] / A[blockStartIndex_L + k * matrixBlockSize + k];
+
+                nd_item.barrier();
+
+                if (local_i == 0 && blockStartIndex_B + k < N) {
+                    b[blockStartIndex_B + k] = b_k;
+                }
+
+                bool condition = (!transposed) ? local_i > k : local_i < k;
+
+                if (condition && blockStartIndex_B + k < N) {
+                    // b_i = b_i - a_ik*b_k
+                    b[blockStartIndex_B + local_i] = b[blockStartIndex_B + local_i] - A[blockStartIndex_L + local_i * matrixBlockSize + k] * b_k;
+                }
+
+                nd_item.barrier();
+            }
+        });
+    });
+
+    return event;
+}
+

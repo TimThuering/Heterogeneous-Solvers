@@ -606,9 +606,9 @@ TEST_F(vectorOperationsTest, scaleAndAddLowerVectorPadding) {
         0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0,
-        -0.760949391159577, 1.28902248706595 ,-0.879545924516124,
-        -0.207823512164231,-1.635511569998751,-0.432999690009406,
-        -1.325294114789406,-1.062250203964522,
+        -0.760949391159577, 1.28902248706595, -0.879545924516124,
+        -0.207823512164231, -1.635511569998751, -0.432999690009406,
+        -1.325294114789406, -1.062250203964522,
         0.0, 0.0, 0.0, 0.0
     };
 
@@ -955,8 +955,8 @@ TEST_F(vectorOperationsTest, scalarProductFull_CPU) {
     result.resize(b.rightHandSideData.size(), -100);
 
     unsigned int workGroupCount = VectorOperations::scalarProduct_CPU(queue, b.rightHandSideData.data(),
-                                                                  b.rightHandSideData.data(), result.data(), 0,
-                                                                  b.blockCountX);
+                                                                      b.rightHandSideData.data(), result.data(), 0,
+                                                                      b.blockCountX);
     queue.wait();
     VectorOperations::sumFinalScalarProduct_CPU(queue, result.data(), workGroupCount);
     queue.wait();
@@ -976,7 +976,7 @@ TEST_F(vectorOperationsTest, scalarProductLowerVector_CPU) {
     result.resize(b.rightHandSideData.size());
 
     unsigned int workGroupCount = VectorOperations::scalarProduct_CPU(queue, b.rightHandSideData.data(),
-                                                                  b.rightHandSideData.data(), result.data(), 2, 2);
+                                                                      b.rightHandSideData.data(), result.data(), 2, 2);
     queue.wait();
 
     VectorOperations::sumFinalScalarProduct_CPU(queue, result.data(), workGroupCount);
@@ -1005,7 +1005,7 @@ TEST_F(vectorOperationsTest, scalarProductLongVector_CPU) {
     result.resize(1024, -100);
 
     unsigned int workGroupCount = VectorOperations::scalarProduct_CPU(queue, vector.data(),
-                                                                  vector.data(), result.data(), 0, 8);
+                                                                      vector.data(), result.data(), 0, 8);
     queue.wait();
 
     VectorOperations::sumFinalScalarProduct_CPU(queue, result.data(), workGroupCount);
@@ -1035,12 +1035,11 @@ TEST_F(vectorOperationsTest, scalarProductLowerLongVector_CPU) {
     result.resize(1024, -100);
 
     unsigned int workGroupCount = VectorOperations::scalarProduct_CPU(queue, vector.data(),
-                                                                  vector.data(), result.data(), 4, 4);
+                                                                      vector.data(), result.data(), 4, 4);
     queue.wait();
 
     VectorOperations::sumFinalScalarProduct_CPU(queue, result.data(), workGroupCount);
     queue.wait();
 
     EXPECT_NEAR(result[0], resultValue, 1e-12);
-
 }
