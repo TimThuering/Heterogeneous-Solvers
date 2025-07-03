@@ -296,8 +296,8 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, co
     return event;
 }
 
-sycl::event MatrixVectorOperations::triangularSolveVector(sycl::queue& queue, conf::fp_type* A, conf::fp_type* b, int blockStart, int blockCount, int blockRow, int blockID, bool transposed) {
-    // one work-group per rhs
+sycl::event MatrixVectorOperations::triangularSolveBlockVector(sycl::queue& queue, conf::fp_type* A, conf::fp_type* b, const int blockRow, const int blockID, const bool transposed) {
+    // one work-group, one work-item per entry in b
     const range globalRange(conf::matrixBlockSize);
     const range localRange(conf::matrixBlockSize);
     const auto kernelRange = nd_range{globalRange, localRange};
@@ -312,7 +312,7 @@ sycl::event MatrixVectorOperations::triangularSolveVector(sycl::queue& queue, co
         h.parallel_for(kernelRange, [=](auto& nd_item) {
             int local_i = nd_item.get_local_id(0);
 
-            // block in the matrix where the results are written
+            // block in the vector b where the results are written
             const int blockStartIndex_B = blockRow * matrixBlockSize;
 
             const int blockStartIndex_L = blockStartIndex;
@@ -347,3 +347,47 @@ sycl::event MatrixVectorOperations::triangularSolveVector(sycl::queue& queue, co
     return event;
 }
 
+sycl::event MatrixVectorOperations::matrixVectorColumnUpdate(sycl::queue& queue, conf::fp_type* A, conf::fp_type* b, const int blockStart, const int blockCount, const int blockRow, const int blockID, int blockCountXY, const bool transposed) {
+    // one work-group per block in column
+    const range globalRange(blockCount * conf::matrixBlockSize);
+    const range localRange(conf::matrixBlockSize);
+    const auto kernelRange = nd_range{globalRange, localRange};
+
+    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+
+    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize) * static_cast<int>(conf::matrixBlockSize);
+    const int totalBlockCount = blockCountXY * (blockCountXY + 1) / 2;
+
+    const int N = conf::N;
+
+    sycl::event event = queue.submit([&](sycl::handler& h) {
+        h.parallel_for(kernelRange, [=](auto& nd_item) {
+            int local_i = nd_item.get_local_id(0);
+            const int group_id = nd_item.get_group().get_group_id(0);
+
+            // block in the vector b used for the update
+            const int blockStartIndex_b_0 = blockRow * matrixBlockSize;
+
+            // block in the vector b where the results are written
+            const int blockStartIndex_b_i = (blockStart + group_id) * matrixBlockSize;
+
+            // block in the matrix used for the update
+            const int blockStartIndex_Aij = (!transposed) ? blockStartIndex + (blockStart - blockRow + group_id) * matrixBlockSize * matrixBlockSize : (totalBlockCount - ((blockCountXY - group_id - blockStart) * (blockCountXY - group_id - blockStart + 1) / 2) + blockRow - group_id - blockStart)  * matrixBlockSize * matrixBlockSize;
+
+            conf::fp_type sum = 0.0;
+            if (!transposed) {
+                for (int k = 0; k < matrixBlockSize; ++k) {
+                    sum += A[blockStartIndex_Aij + local_i * matrixBlockSize + k] * b[blockStartIndex_b_0 + k];
+                }
+            } else {
+                printf("(%i,%i): A %i, b %i\n", group_id, local_i, (totalBlockCount - ((blockCountXY - group_id - blockStart) * (blockCountXY - group_id - blockStart + 1) / 2) + blockRow - group_id - blockStart), (blockStart + group_id));
+                for (int k = 0; k < matrixBlockSize; ++k) {
+                    sum += A[blockStartIndex_Aij + k * matrixBlockSize + local_i] * b[blockStartIndex_b_0 + k];
+                }
+            }
+            b[blockStartIndex_b_i + local_i] -= sum;
+        });
+    });
+
+    return event;
+}

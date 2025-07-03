@@ -102,6 +102,379 @@ protected:
         0.,
         0.
     };
+
+    std::vector<conf::fp_type> reference_one_block_transposed = {
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        1.32464246765306,
+        1.606570240228753,
+        1.0936174491550468,
+        0.0566169178650757,
+        2.2249108197844034,
+        3.5007182746092496,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+};
+
+class ColumnUpdateTest : public ::testing::Test {
+protected:
+    std::string path_A = "../tests/testData/testMatrixSymmetric20x20.txt";
+
+
+    std::vector<conf::fp_type> reference_padding = {
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        0.6800061567623135,
+        0.6172987407777761,
+        1.3418118315314758,
+        0.5626739529988392,
+        1.0073792662088419,
+        0.8000452114375194,
+        1.1554805946030482,
+        1.0935165748073854,
+        1.558526329028839,
+        0.5464795059539416,
+        0.9163769544203051,
+        0.9059824069423807,
+        0.8105945825177572,
+        1.0562060565503404,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+    std::vector<conf::fp_type> reference =
+    {
+        1.,
+        1.,
+        1.,
+        1.,
+        3.224270138761648,
+        0.5420064378347715,
+        1.9328343290462022,
+        1.475798985003161,
+        0.2227303031907082,
+        2.7910463252099107,
+        1.1218488472988055,
+        1.6223611393292527,
+        1.0793205843017977,
+        1.908377509495425,
+        -0.08634394060849981,
+        2.9926785584132354,
+        0.9532731432472923,
+        1.2381416949513455,
+        1.127413200950034,
+        0.8313806767105143,
+    };
+
+    std::vector<conf::fp_type> reference_upper =
+    {
+        1.,
+        1.,
+        1.,
+        1.,
+        3.224270138761648,
+        0.5420064378347715,
+        1.9328343290462022,
+        1.475798985003161,
+        0.2227303031907082,
+        2.7910463252099107,
+        1.1218488472988055,
+        1.6223611393292527,
+        1.0793205843017977,
+        1.908377509495425,
+        -0.08634394060849981,
+        2.9926785584132354,
+        1.,
+        1.,
+        1.,
+        1.,
+    };
+
+    std::vector<conf::fp_type> reference_lower =
+    {
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        0.2227303031907082,
+        2.7910463252099107,
+        1.1218488472988055,
+        1.6223611393292527,
+        1.0793205843017977,
+        1.908377509495425,
+        -0.08634394060849981,
+        2.9926785584132354,
+        0.9532731432472923,
+        1.2381416949513455,
+        1.127413200950034,
+        0.8313806767105143,
+    };
+
+    std::vector<conf::fp_type> reference_mid_full =
+    {
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        2.9899717952216913,
+        -3.0672921472866355,
+        0.9249349824047655,
+        -0.4360155355621185,
+        1.0633156934446444,
+        -0.5488279971029191,
+        3.940528190788299,
+        -3.456163732524127,
+        1.0420107657410294,
+        0.3348288008068767,
+        0.6477140620406586,
+        1.3101984064838423,
+    };
+
+    std::vector<conf::fp_type> reference_mid_upper =
+    {
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        2.9899717952216913,
+        -3.0672921472866355,
+        0.9249349824047655,
+        -0.4360155355621185,
+        1.0633156934446444,
+        -0.5488279971029191,
+        3.940528190788299,
+        -3.456163732524127,
+        1.,
+        1.,
+        1.,
+        1.,
+    };
+
+    std::vector<conf::fp_type> reference_mid_lower =
+    {
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.0633156934446444,
+        -0.5488279971029191,
+        3.940528190788299,
+        -3.456163732524127,
+        1.0420107657410294,
+        0.3348288008068767,
+        0.6477140620406586,
+        1.3101984064838423,
+    };
+
+    std::vector<conf::fp_type> reference_transposed =
+    {
+        1.3810433458902607,
+        0.3640656561287854,
+        0.7857635523118307,
+        1.6193361615283093,
+        0.5186338470215056,
+        1.0203174375500916,
+        0.8756570093504092,
+        0.9201437411504003,
+        1.044788725135683,
+        0.6439793883710317,
+        1.0045512694106886,
+        0.9212393043203027,
+        0.8496171094457778,
+        0.7069617622267036,
+        1.2947900913548067,
+        0.46343333927514196,
+        1.,
+        1.,
+        1.,
+        1.,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+
+
+    std::vector<conf::fp_type> reference_upper_transposed =
+
+    {
+        1.,
+        1.,
+        1.,
+        1.,
+        0.5186338470215056,
+        1.0203174375500916,
+        0.8756570093504092,
+        0.9201437411504003,
+        1.044788725135683,
+        0.6439793883710317,
+        1.0045512694106886,
+        0.9212393043203027,
+        0.8496171094457778,
+        0.7069617622267036,
+        1.2947900913548067,
+        0.46343333927514196,
+        1.,
+        1.,
+        1.,
+        1.,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+
+    std::vector<conf::fp_type> reference_lower_transposed =
+    {
+        1.3810433458902607,
+        0.3640656561287854,
+        0.7857635523118307,
+        1.6193361615283093,
+        0.5186338470215056,
+        1.0203174375500916,
+        0.8756570093504092,
+        0.9201437411504003,
+        1.044788725135683,
+        0.6439793883710317,
+        1.0045512694106886,
+        0.9212393043203027,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+
+    std::vector<conf::fp_type> reference_mid_full_transposed =
+    {
+        2.8959762727425504,
+        -1.5168991903831577,
+        1.3192230515667935,
+        3.1957325776757717,
+        -1.0832827569201382,
+        1.5432530497113939,
+        0.05477492404848583,
+        0.4841069377661553,
+        1.8076971972582678,
+        -0.6908382134053634,
+        1.0622134307226627,
+        0.4030311175961503,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+
+    std::vector<conf::fp_type> reference_mid_upper_transposed =
+{
+        2.8959762727425504,
+        -1.5168991903831577,
+        1.3192230515667935,
+        3.1957325776757717,
+        -1.0832827569201382,
+        1.5432530497113939,
+        0.05477492404848583,
+        0.4841069377661553,
+        1.,
+                1.,
+                1.,
+                1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        0.,
+        0.,
+        0.,
+        0.
+    };
+
+    std::vector<conf::fp_type> reference_mid_lower_transposed =
+{
+        1.,
+        1.,
+        1.,
+        1.,
+        -1.0832827569201382,
+        1.5432530497113939,
+        0.05477492404848583,
+        0.4841069377661553,
+        1.8076971972582678,
+        -0.6908382134053634,
+        1.0622134307226627,
+        0.4030311175961503,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        1.,
+        0.,
+        0.,
+        0.,
+        0.
+    };
 };
 
 
@@ -754,7 +1127,7 @@ TEST_F(TRSVTest, testTRSV) {
     }
 
 
-    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 0, 0, false);
+    MatrixVectorOperations::triangularSolveBlockVector(queue, A.matrixData.data(), b.data(), 0, 0, false);
     queue.wait();
 
 
@@ -778,7 +1151,7 @@ TEST_F(TRSVTest, testTRSV_transposed) {
     }
 
 
-    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 0, 0, true);
+    MatrixVectorOperations::triangularSolveBlockVector(queue, A.matrixData.data(), b.data(), 0, 0, true);
     queue.wait();
 
 
@@ -802,7 +1175,7 @@ TEST_F(TRSVTest, testTRSV_padding) {
     }
 
 
-    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 0, 0, false);
+    MatrixVectorOperations::triangularSolveBlockVector(queue, A.matrixData.data(), b.data(), 0, 0, false);
     queue.wait();
 
 
@@ -826,7 +1199,7 @@ TEST_F(TRSVTest, testTRSV_padding_transposed) {
     }
 
 
-    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 0, 0, true);
+    MatrixVectorOperations::triangularSolveBlockVector(queue, A.matrixData.data(), b.data(), 0, 0, true);
     queue.wait();
 
 
@@ -850,11 +1223,327 @@ TEST_F(TRSVTest, testTRSV_one_block) {
     }
 
 
-    MatrixVectorOperations::triangularSolveVector(queue, A.matrixData.data(), b.data(), 0, 1, 2, 7, false);
+    MatrixVectorOperations::triangularSolveBlockVector(queue, A.matrixData.data(), b.data(), 2, 7, false);
     queue.wait();
 
 
     for (size_t i = 0; i < b.size(); i++) {
         EXPECT_NEAR(b[i], reference_one_block[i], 1e-12);
+    }
+}
+
+// Tests for column updates
+TEST_F(ColumnUpdateTest, testUpdateFirstColumn) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 1, 4, 0, 0, A.blockCountXY, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateFirstColumn_upper) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 1, 3, 0, 0, A.blockCountXY, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_upper[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateFirstColumn_lower) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 2, 3, 0, 0, A.blockCountXY, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_lower[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateFirstColumn_padding) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 6;
+    conf::workGroupSize = 6;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(24);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 1, 3, 0, 0, A.blockCountXY, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_padding[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateMidColumn) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 2, 3, 1, 5, A.blockCountXY, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_mid_full[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateMidColumn_upper) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 2, 2, 1, 5, A.blockCountXY, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_mid_upper[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateMidColumn_lower) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 3, 2, 1, 5, A.blockCountXY, false);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_mid_lower[i], 1e-12);
+    }
+}
+
+
+// Tests for column updates with transposed matrix
+TEST_F(ColumnUpdateTest, testUpdateFirstColumn_transposed) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 0, 4, 4, 14, A.blockCountXY, true);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_transposed[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateFirstColumn_upper_transposed) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 1, 3, 4, 14, A.blockCountXY, true);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_upper_transposed[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateFirstColumn_lower_transposed) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 0, 3, 4, 14, A.blockCountXY, true);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_lower_transposed[i], 1e-12);
+    }
+}
+
+
+TEST_F(ColumnUpdateTest, testUpdateMidColumn_transposed) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 0, 3, 3, 12, A.blockCountXY, true);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_mid_full_transposed[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateMidColumn_upper_transposed) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 0, 2, 3, 12, A.blockCountXY, true);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_mid_upper_transposed[i], 1e-12);
+    }
+}
+
+TEST_F(ColumnUpdateTest, testUpdateMidColumn_lower_transposed) {
+    queue queue(cpu_selector_v);
+    conf::matrixBlockSize = 4;
+    conf::workGroupSize = 4;
+    SymmetricMatrix A = MatrixParser::parseSymmetricMatrix(path_A, queue);
+
+
+    const usm_allocator<conf::fp_type, usm::alloc::shared> allocator{queue};
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> b(allocator);
+    b.resize(20);
+    for (size_t i = 0; i < 20; i++) {
+        b[i] = 1;
+    }
+
+
+    MatrixVectorOperations::matrixVectorColumnUpdate(queue, A.matrixData.data(), b.data(), 1, 2, 3, 12, A.blockCountXY, true);
+    queue.wait();
+
+
+    for (size_t i = 0; i < b.size(); i++) {
+        EXPECT_NEAR(b[i], reference_mid_lower_transposed[i], 1e-12);
     }
 }
