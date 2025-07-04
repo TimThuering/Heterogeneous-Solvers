@@ -202,9 +202,6 @@ int main(int argc, char* argv[]) {
         std::cout << "NAN check complete" << std::endl;
         TriangularSystemSolver solver(A, cholesky.A_gpu, b, cpuQueue, gpuQueue, loadBalancer);
         solver.solve();
-        for (auto& el : b.rightHandSideData) {
-            std::cout << el << std::endl;
-        }
     } else {
         throw std::runtime_error("Invalid algorithm: " + algorithm);
     }

@@ -1,6 +1,7 @@
 #include "TriangularSystemSolver.hpp"
 
 #include "MatrixVectorOperations.hpp"
+#include "UtilityFunctions.hpp"
 
 TriangularSystemSolver::TriangularSystemSolver(SymmetricMatrix& A, conf::fp_type* A_gpu, RightHandSide& b, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer) :
     A(A),
@@ -91,4 +92,8 @@ void TriangularSystemSolver::solve() {
     const auto solveTime = std::chrono::duration<double, std::milli>(end - start).count();
 
     std::cout << "Time to solve the triangular system: " << solveTime << "ms" << std::endl;
+
+    if (conf::writeResult) {
+        UtilityFunctions::writeResult(".", b.rightHandSideData);
+    }
 }
