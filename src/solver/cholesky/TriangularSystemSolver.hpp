@@ -10,10 +10,14 @@ using namespace sycl;
 
 class TriangularSystemSolver {
 public:
-    TriangularSystemSolver(SymmetricMatrix& A, RightHandSide& b,  queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
+    TriangularSystemSolver(SymmetricMatrix& A,  conf::fp_type* A_gpu, RightHandSide& b,   queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
 
     SymmetricMatrix& A;
     RightHandSide& b;
+
+    // GPU data structure
+    conf::fp_type* A_gpu;
+    conf::fp_type* b_gpu;
 
 
     queue& cpuQueue;

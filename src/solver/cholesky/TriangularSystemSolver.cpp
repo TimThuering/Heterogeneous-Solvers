@@ -2,9 +2,10 @@
 
 #include "MatrixVectorOperations.hpp"
 
-TriangularSystemSolver::TriangularSystemSolver(SymmetricMatrix& A, RightHandSide& b, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer) :
+TriangularSystemSolver::TriangularSystemSolver(SymmetricMatrix& A, conf::fp_type* A_gpu, RightHandSide& b, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer) :
     A(A),
     b(b),
+    A_gpu(A_gpu),
     cpuQueue(cpuQueue),
     gpuQueue(gpuQueue),
     loadBalancer(std::move(loadBalancer)) {
@@ -12,6 +13,15 @@ TriangularSystemSolver::TriangularSystemSolver(SymmetricMatrix& A, RightHandSide
 
 void TriangularSystemSolver::solve() {
     const auto start = std::chrono::steady_clock::now();
+
+    bool useGPU = conf::initialProportionGPU == 1;
+
+    if (useGPU) {
+        b_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+        gpuQueue.submit([&](handler& h) {
+            h.memcpy(b_gpu, b.rightHandSideData.data(), b.rightHandSideData.size() * sizeof(conf::fp_type));
+        }).wait();
+    }
 
     // helper variables for various calculations
     const int blockCountATotal = (A.blockCountXY * (A.blockCountXY + 1) / 2);
@@ -23,12 +33,24 @@ void TriangularSystemSolver::solve() {
         const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
 
         // Solve triangular system for diagonal block: b_j = Solve(A_jj, b_j)
-        MatrixVectorOperations::triangularSolveBlockVector(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), j, blockID, false);
-        cpuQueue.wait();
+        if (useGPU) {
+            MatrixVectorOperations::triangularSolveBlockVector(gpuQueue, A_gpu, b_gpu, j, blockID, false);
+            gpuQueue.wait();
+        } else {
+            MatrixVectorOperations::triangularSolveBlockVector(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), j, blockID, false);
+            cpuQueue.wait();
+        }
 
-        // Update column below diagonal block
-        MatrixVectorOperations::matrixVectorColumnUpdate(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), j + 1, A.blockCountXY - (j + 1), j, blockID, A.blockCountXY, false);
-        cpuQueue.wait();
+        if (j < A.blockCountXY - 1) {
+            // Update column below diagonal block
+            if (useGPU) {
+                MatrixVectorOperations::matrixVectorColumnUpdate(gpuQueue, A_gpu, b_gpu, j + 1, A.blockCountXY - (j + 1), j, blockID, A.blockCountXY, false);
+                gpuQueue.wait();
+            } else {
+                MatrixVectorOperations::matrixVectorColumnUpdate(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), j + 1, A.blockCountXY - (j + 1), j, blockID, A.blockCountXY, false);
+                cpuQueue.wait();
+            }
+        }
     }
 
     // for each column in upper triangular matrix --> each row with transposed blocks in the lower triangular matrix
@@ -38,12 +60,31 @@ void TriangularSystemSolver::solve() {
         const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
 
         // Solve triangular system for diagonal block: b_j = Solve(A_jj, b_j)
-        MatrixVectorOperations::triangularSolveBlockVector(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), j, blockID, true);
-        cpuQueue.wait();
+        if (useGPU) {
+            MatrixVectorOperations::triangularSolveBlockVector(gpuQueue, A_gpu, b_gpu, j, blockID, true);
+            gpuQueue.wait();
+        } else {
+            MatrixVectorOperations::triangularSolveBlockVector(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), j, blockID, true);
+            cpuQueue.wait();
+        }
 
-        // Update column below diagonal block
-        MatrixVectorOperations::matrixVectorColumnUpdate(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), 0, j, j, blockID, A.blockCountXY, true);
-        cpuQueue.wait();
+        if (j > 0) {
+            // Update column below diagonal block
+            if (useGPU) {
+                MatrixVectorOperations::matrixVectorColumnUpdate(gpuQueue, A_gpu, b_gpu, 0, j, j, blockID, A.blockCountXY, true);
+                gpuQueue.wait();
+            } else {
+                MatrixVectorOperations::matrixVectorColumnUpdate(cpuQueue, A.matrixData.data(), b.rightHandSideData.data(), 0, j, j, blockID, A.blockCountXY, true);
+                cpuQueue.wait();
+            }
+        }
+    }
+
+    if (useGPU) {
+        // copy data back to the CPU
+        gpuQueue.submit([&](handler& h) {
+            h.memcpy(b.rightHandSideData.data(), b_gpu, b.rightHandSideData.size() * sizeof(conf::fp_type));
+        }).wait();
     }
 
     const auto end = std::chrono::steady_clock::now();

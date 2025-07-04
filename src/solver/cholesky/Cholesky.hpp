@@ -14,6 +14,8 @@ public:
     Cholesky(SymmetricMatrix& A, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
 
     SymmetricMatrix& A;
+    // GPU data structure
+    conf::fp_type* A_gpu;
 
     queue& cpuQueue;
     queue& gpuQueue;
@@ -27,8 +29,7 @@ public:
     void solve_heterogeneous();
 
 private:
-    // GPU data structure
-    conf::fp_type* A_gpu;
+
 
     struct executionTimes {
         std::chrono::time_point<std::chrono::steady_clock> start;
