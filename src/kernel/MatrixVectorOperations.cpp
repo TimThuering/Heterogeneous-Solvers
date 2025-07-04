@@ -336,7 +336,11 @@ sycl::event MatrixVectorOperations::triangularSolveBlockVector(sycl::queue& queu
 
                 if (condition && blockStartIndex_B + k < N) {
                     // b_i = b_i - a_ik*b_k
-                    b[blockStartIndex_B + local_i] = b[blockStartIndex_B + local_i] - A[blockStartIndex_L + local_i * matrixBlockSize + k] * b_k;
+                    if (!transposed) {
+                        b[blockStartIndex_B + local_i] = b[blockStartIndex_B + local_i] - A[blockStartIndex_L + local_i * matrixBlockSize + k] * b_k;
+                    } else {
+                        b[blockStartIndex_B + local_i] = b[blockStartIndex_B + local_i] - A[blockStartIndex_L + k * matrixBlockSize + local_i] * b_k;
+                    }
                 }
 
                 nd_item.barrier();
@@ -380,7 +384,7 @@ sycl::event MatrixVectorOperations::matrixVectorColumnUpdate(sycl::queue& queue,
                     sum += A[blockStartIndex_Aij + local_i * matrixBlockSize + k] * b[blockStartIndex_b_0 + k];
                 }
             } else {
-                printf("(%i,%i): A %i, b %i\n", group_id, local_i, (totalBlockCount - ((blockCountXY - group_id - blockStart) * (blockCountXY - group_id - blockStart + 1) / 2) + blockRow - group_id - blockStart), (blockStart + group_id));
+                // printf("(%i,%i): A %i, b %i\n", group_id, local_i, (totalBlockCount - ((blockCountXY - group_id - blockStart) * (blockCountXY - group_id - blockStart + 1) / 2) + blockRow - group_id - blockStart), (blockStart + group_id));
                 for (int k = 0; k < matrixBlockSize; ++k) {
                     sum += A[blockStartIndex_Aij + k * matrixBlockSize + local_i] * b[blockStartIndex_b_0 + k];
                 }

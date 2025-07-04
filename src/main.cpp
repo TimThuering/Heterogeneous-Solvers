@@ -19,6 +19,7 @@
 #include "UtilityFunctions.hpp"
 #include "MatrixOperations.hpp"
 #include "cholesky/Cholesky.hpp"
+#include "cholesky/TriangularSystemSolver.hpp"
 
 using namespace sycl;
 
@@ -199,10 +200,8 @@ int main(int argc, char* argv[]) {
             }
         }
         std::cout << "NAN check complete" << std::endl;
-        // cholesky.solve();
-        // MatrixMatrixOperations::matrixMatrixStep_optimizedGPU3(cpuQueue,A.matrixData.data(),0,0,2,A.blockCountXY -2, A.blockCountXY);
-        // cpuQueue.wait();
-        // MatrixParser::writeFullMatrix("./A_MM_test_512", A);
+        TriangularSystemSolver solver(A, b, cpuQueue, gpuQueue, loadBalancer);
+        solver.solve();
     } else {
         throw std::runtime_error("Invalid algorithm: " + algorithm);
     }
