@@ -51,11 +51,11 @@ int main(int argc, char* argv[]) {
         ("g,init_gpu_perc", "initial proportion of work assigned to gpu", cxxopts::value<double>())
         ("r,write_result", "write the result vector x to a .txt file", cxxopts::value<bool>())
         ("f,cpu_lb_factor", "factor that scales the CPU times for runtime load balancing", cxxopts::value<double>())
-        ("t,block_update_th",
-         "when block count change during re-balancing is equal or below this number, no re-balancing occurs", cxxopts::value<std::size_t>())
+        ("t,block_update_th", "when block count change during re-balancing is equal or below this number, no re-balancing occurs", cxxopts::value<std::size_t>())
         ("size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>())
         ("algorithm", "the algorithm that should be used: can be 'cg' or 'cholesky'", cxxopts::value<std::string>())
         ("enableHWS", "enables sampling with hws library, might affect CPU/GPU performance", cxxopts::value<bool>())
+        ("bc_cholesky_GPU_only", "total block Count from which on the computation will be GPU only", cxxopts::value<int>())
         ("gpu_opt", "optimization level 0-3 for GPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>())
         ("cpu_opt", "optimization level 0-2 for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>());
 
@@ -140,6 +140,10 @@ int main(int argc, char* argv[]) {
 
     if (arguments.count("enableHWS")) {
         conf::enableHWS = arguments["enableHWS"].as<bool>();
+    }
+
+    if (arguments.count("bc_cholesky_GPU_only")) {
+        conf::blockCountCholeskyGPU_only = arguments["bc_cholesky_GPU_only"].as<int>();
     }
 
     if (arguments.count("gpu_opt")) {

@@ -38,6 +38,7 @@ namespace conf {
 
         int workGroupSizeGEMM_xy = 16; /// work-group size in x/y direction for GEMM kernels
         int minBlockCountCholesky = 3; /// minimum number of rows assigned to the GPU in the Cholesky decomposition
+        int blockCountCholeskyGPU_only = 3; /// total block Count from which on the computation will be GPU only
         int gpuOptimizationLevel = 3; /// optimization level for GPU optimized matrix-matrix kernel (higher values for more optimized kernels)
         int cpuOptimizationLevel = 2; /// optimization level for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)
     };
@@ -79,6 +80,8 @@ namespace conf {
     inline int& workGroupSizeGEMM_xy = get().workGroupSizeGEMM_xy;
 
     inline int& minBlockCountCholesky = get().minBlockCountCholesky;
+
+    inline int& blockCountCholeskyGPU_only = get().blockCountCholeskyGPU_only;
 
     inline std::string& algorithm = get().algorithm;
 
