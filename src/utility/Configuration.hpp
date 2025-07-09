@@ -28,7 +28,8 @@ namespace conf {
         bool writeResult = false; /// write the result vector into a .txt file
         std::string mode = "runtime"; /// mode for the heterogeneous scheduling
         std::size_t N = 0; /// size of the NxN matrix
-        double runtimeLBFactorCPU = 1.2; /// factor that scales the CPU runtimes to influence the scheduling
+        double runtimeLBFactorCPU = 1.2; /// factor that scales the CPU runtimes to influence the scheduling for lowest runtime
+        double energyLBFactorCPU = 0.8; /// factor that scales the CPU runtimes to influence the scheduling for power efficiency
         std::size_t blockUpdateThreshold = 1; /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
         double idleWatt_CPU = 30.0; /// CPU power draw in Watts when the CPU is idle. Used to estimate total power draw.
         hws::sample_category sampleCategories = static_cast<hws::sample_category>(0b00000101); /// enable power and general samples
@@ -70,6 +71,8 @@ namespace conf {
     inline std::size_t& N = get().N;
 
     inline double& runtimeLBFactorCPU = get().runtimeLBFactorCPU;
+
+    inline double& energyLBFactorCPU = get().energyLBFactorCPU;
 
     inline std::size_t& blockUpdateThreshold = get().blockUpdateThreshold;
 

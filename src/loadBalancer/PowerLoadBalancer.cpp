@@ -31,8 +31,8 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
         double runtimePerBlock_GPU = 0.0;
         double runtimePerBlock_CPU = 0.0;
         double communicationTimePerBlock = 0.0;
-        double triangularSolveTimePerBlock_CPU = 0.0;
-        double triangularSolveTimePerBlock_GPU = 0.0;
+        double shiftTimePerBlock = 0.0;
+
 
         // Compute runtime statistics
         if (conf::algorithm == "cg") {
@@ -48,9 +48,8 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
 
             std::vector<double> timesGPU(metricsTracker.matrixMatrixTimes_GPU.begin() + offset, metricsTracker.matrixMatrixTimes_GPU.end());
             std::vector<double> timesCPU(metricsTracker.matrixMatrixTimes_CPU.begin() + offset, metricsTracker.matrixMatrixTimes_CPU.end());
-            std::vector<double> timesCommunication(metricsTracker.shiftTimes.begin() + offset, metricsTracker.shiftTimes.end());
-            std::vector<double> timesTriangularSolveCPU(metricsTracker.triangularSolveTimes_CPU.begin() + offset, metricsTracker.triangularSolveTimes_CPU.end());
-            std::vector<double> timesTriangularSolveGPU(metricsTracker.triangularSolveTimes_GPU.begin() + offset, metricsTracker.triangularSolveTimes_GPU.end());
+            std::vector<double> timesShift(metricsTracker.shiftTimes.begin() + offset, metricsTracker.shiftTimes.end());
+            std::vector<double> timesCommunication(metricsTracker.copyTimes.begin() + offset, metricsTracker.copyTimes.end());
 
             std::vector<std::size_t> blocksGPU(metricsTracker.blockCounts_GPU.begin() + offset, metricsTracker.blockCounts_GPU.end());
             std::vector<std::size_t> blocksCPU(metricsTracker.blockCounts_CPU.begin() + offset, metricsTracker.blockCounts_CPU.end());
@@ -66,20 +65,18 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
 
                 timesCPU[i] = timesCPU[i] / totalBlockCount_CPU;
                 timesGPU[i] = timesGPU[i] / totalBlockCount_GPU;
-                timesCommunication[i] = timesCommunication[i] / (verticalBlockCount_CPU + verticalBlockCount_GPU);
-                timesTriangularSolveCPU[i] = timesTriangularSolveCPU[i] / verticalBlockCount_CPU;
-                timesTriangularSolveGPU[i] = timesTriangularSolveGPU[i] / verticalBlockCount_GPU;
+                timesShift[i] = timesShift[i] / (verticalBlockCount_CPU + verticalBlockCount_GPU);
+                timesCommunication[i] = timesCommunication[i] / (verticalBlockCount_CPU);
+
             }
 
             runtimePerBlock_GPU = std::accumulate(timesGPU.begin(), timesGPU.end(), 0.0) / updateInterval;
             runtimePerBlock_CPU = std::accumulate(timesCPU.begin(), timesCPU.end(), 0.0) / updateInterval;
+            shiftTimePerBlock = std::accumulate(timesShift.begin(), timesShift.end(), 0.0) / updateInterval;
             communicationTimePerBlock = std::accumulate(timesCommunication.begin(), timesCommunication.end(), 0.0) / updateInterval;
-            triangularSolveTimePerBlock_CPU = std::accumulate(timesTriangularSolveCPU.begin(), timesTriangularSolveCPU.end(), 0.0) / updateInterval;
-            triangularSolveTimePerBlock_GPU = std::accumulate(timesTriangularSolveGPU.begin(), timesTriangularSolveGPU.end(), 0.0) / updateInterval;
         }
 
         // Compare energy efficiency for scenarios gpu-only, cpu-only and heterogeneous
-
         double blockCount_total = 0.0;
         double proportionGPU_heterogeneous = 1.0;
         double totalVerticalBlockCountNextIteration = 0.0;
@@ -101,23 +98,22 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
             proportionGPU_heterogeneous = 1 - newVerticalProportionCPU;
         }
 
-        // const double joulesCommunication = watts_GPU * communicationTimePerBlock * totalVerticalBlockCountNextIteration + watts_CPU * communicationTimePerBlock * totalVerticalBlockCountNextIteration;
-        // const double joulesTriangularSolve_CPU = watts_CPU * triangularSolveTimePerBlock_CPU * newVerticalBlockCount_CPU;
-        // const double joulesTriangularSolve_GPU =  watts_GPU * triangularSolveTimePerBlock_GPU * (totalVerticalBlockCountNextIteration - newVerticalBlockCount_CPU);
-        // const double joulesTriangularSolve_heterogeneous = joulesTriangularSolve_CPU + joulesTriangularSolve_GPU;
+        const double joulesShift = (watts_GPU + watts_CPU) * shiftTimePerBlock * totalVerticalBlockCountNextIteration;
+        const double joulesCommunication = (watts_GPU + watts_CPU) * communicationTimePerBlock * newVerticalBlockCount_CPU;
 
         const double joulesGPUOnly = watts_GPU * runtimePerBlock_GPU * blockCount_total + conf::idleWatt_CPU * runtimePerBlock_GPU * blockCount_total;
-        const double joulesCPUOnly = watts_CPU * runtimePerBlock_CPU * blockCount_total ;
+        const double joulesCPUOnly = watts_CPU * runtimePerBlock_CPU * conf::energyLBFactorCPU * blockCount_total;
 
         const double blockCountCPU_heterogeneous = (newVerticalBlockCount_CPU * (newVerticalBlockCount_CPU + 1) )/ 2.0;
         const double blockCountGPU_heterogeneous = blockCount_total - blockCountCPU_heterogeneous;
 
-
-        const double joulesHeterogeneous = watts_GPU * runtimePerBlock_GPU * blockCountGPU_heterogeneous + watts_CPU * runtimePerBlock_CPU * conf::runtimeLBFactorCPU * blockCountCPU_heterogeneous;
+        const double joulesHeterogeneous = watts_GPU * runtimePerBlock_GPU * blockCountGPU_heterogeneous + watts_CPU * runtimePerBlock_CPU * conf::runtimeLBFactorCPU * blockCountCPU_heterogeneous + joulesCommunication + joulesShift;
 
         std::cout << "Joules GPU: " << joulesGPUOnly << std::endl;
         std::cout << "Joules CPU: " << joulesCPUOnly << std::endl;
         std::cout << "Joules Heterogeneous: " << joulesHeterogeneous << std::endl;
+        std::cout << "Joules comm: " << joulesCommunication << std::endl;
+        std::cout << "Joules shift: " << joulesShift << std::endl;
         std::cout << "heterogeneous gpu proportion: " << proportionGPU_heterogeneous << std::endl;
 
         std::cout << "expected heterogeneous Time: " <<  std::max(runtimePerBlock_GPU * blockCountGPU_heterogeneous , runtimePerBlock_CPU * conf::runtimeLBFactorCPU *  blockCountCPU_heterogeneous )<< std::endl;
