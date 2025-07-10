@@ -60,6 +60,9 @@ public:
      * @return
      */
     static sycl::event matrixVectorColumnUpdate(sycl::queue& queue, conf::fp_type* A, conf::fp_type* b, int blockStart, int blockCount, int blockRow, int blockID, int blockCountXY, bool transposed);
+
+
+    static sycl::event matrixVectorGP(sycl::queue& queue, conf::fp_type* A, conf::fp_type* b, conf::fp_type* result, int n, int m);
 };
 
 

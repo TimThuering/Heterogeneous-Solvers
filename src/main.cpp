@@ -20,6 +20,7 @@
 #include "MatrixOperations.hpp"
 #include "cholesky/Cholesky.hpp"
 #include "cholesky/TriangularSystemSolver.hpp"
+#include "gaussianProcess/GaussianProcess.hpp"
 
 using namespace sycl;
 
@@ -34,12 +35,12 @@ int main(int argc, char* argv[]) {
     cxxopts::Options argumentOptions("Heterogeneous Conjugate Gradients", "CG Algorithm with CPU-GPU co-execution");
 
     argumentOptions.add_options()
-        ("A,path_A", "path to .txt file containing symmetric positive definite matrix A",
-         cxxopts::value<std::string>())
+        ("A,path_A", "path to .txt file containing symmetric positive definite matrix A", cxxopts::value<std::string>())
         ("b,path_b", "path to .txt file containing the right-hand side b", cxxopts::value<std::string>())
         ("o,output", "path to the output directory", cxxopts::value<std::string>())
         ("d,gp_input", "path to the input data for GP matrix generation", cxxopts::value<std::string>())
         ("gp_output", "path to the output data for GP matrix generation", cxxopts::value<std::string>())
+        ("gp_test", "path to the test input data for GP regression", cxxopts::value<std::string>())
         ("m,mode", "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'", cxxopts::value<std::string>())
         ("z,matrix_bsz", "block size for the symmetric matrix storage", cxxopts::value<int>())
         // ("w,wg_size", "work-group size for matrix-vector operations", cxxopts::value<int>())
@@ -53,20 +54,32 @@ int main(int argc, char* argv[]) {
         ("f,cpu_lb_factor", "factor that scales the CPU times for runtime load balancing", cxxopts::value<double>())
         ("t,block_update_th", "when block count change during re-balancing is equal or below this number, no re-balancing occurs", cxxopts::value<std::size_t>())
         ("size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>())
+        ("test_size", "size of the test data for a gaussian processs", cxxopts::value<std::size_t>())
         ("algorithm", "the algorithm that should be used: can be 'cg' or 'cholesky'", cxxopts::value<std::string>())
         ("enableHWS", "enables sampling with hws library, might affect CPU/GPU performance", cxxopts::value<bool>())
         ("bc_cholesky_GPU_only", "total block Count from which on the computation will be GPU only", cxxopts::value<int>())
         ("gpu_opt", "optimization level 0-3 for GPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>())
-        ("cpu_opt", "optimization level 0-2 for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>());
+        ("cpu_opt", "optimization level 0-2 for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>())
+        ("gpr", "perform gaussian process regression (GPR)", cxxopts::value<bool>());
 
 
     const auto arguments = argumentOptions.parse(argc, argv);
 
     bool generateMatrix = false;
+    bool performGPR = false;
     std::string path_A;
     std::string path_b;
     std::string path_gp_input;
     std::string path_gp_output;
+    std::string path_gp_test;
+
+    if (arguments.count("gpr")) {
+        performGPR = arguments["gpr"].as<bool>();
+        if (!(arguments.count("gp_input") && arguments.count("gp_output") && arguments.count("gp_test"))) {
+            throw std::runtime_error("Not all required arguments for GPR provided");
+        }
+    }
+
     std::string algorithm = "cg";
     if (arguments.count("path_A") && arguments.count("path_b")) {
         path_A = arguments["path_A"].as<std::string>();
@@ -78,9 +91,14 @@ int main(int argc, char* argv[]) {
         if (arguments.count("size")) {
             conf::N = arguments["size"].as<std::size_t>();
         }
+        if (arguments.count("test_size")) {
+            conf::N_test = arguments["test_size"].as<std::size_t>();
+        }
+        if (arguments.count("gp_test")) {
+            path_gp_test = arguments["gp_test"].as<std::string>();
+        }
     } else {
-        throw std::runtime_error(
-            "No path to .txt file for matrix A specified and no path to input data for matrix generation specified");
+        throw std::runtime_error("No path to .txt file for matrix A specified and no path to input data for matrix generation specified");
     }
 
     if (arguments.count("algorithm")) {
@@ -191,24 +209,28 @@ int main(int argc, char* argv[]) {
 
     // MatrixParser::writeFullMatrix("./A_GP_1000", A);
 
-    if (conf::algorithm == "cg") {
-        CG cg(A, b, cpuQueue, gpuQueue, loadBalancer);
-        cg.solveHeterogeneous();
-    } else if (conf::algorithm == "cholesky") {
-        Cholesky cholesky(A, cpuQueue, gpuQueue, loadBalancer);
-        cholesky.solve_heterogeneous();
-        for (auto& el : A.matrixData) {
-            if (isnan(el)) {
-                std::cout << "ERROR!!!!" << std::endl;
-                return 1;
-            }
-        }
-        std::cout << "NAN check complete" << std::endl;
-        TriangularSystemSolver solver(A, cholesky.A_gpu, b, cpuQueue, gpuQueue, loadBalancer);
-        solver.solve();
+    if (performGPR) {
+        GaussianProcess GP(A, b, path_gp_input, path_gp_test, cpuQueue, gpuQueue, loadBalancer);
+        GP.start();
     } else {
-        throw std::runtime_error("Invalid algorithm: " + algorithm);
+        if (conf::algorithm == "cg") {
+            CG cg(A, b, cpuQueue, gpuQueue, loadBalancer);
+            cg.solveHeterogeneous();
+        } else if (conf::algorithm == "cholesky") {
+            Cholesky cholesky(A, cpuQueue, gpuQueue, loadBalancer);
+            cholesky.solve_heterogeneous();
+            for (auto& el : A.matrixData) {
+                if (isnan(el)) {
+                    std::cout << "ERROR!!!!" << std::endl;
+                    return 1;
+                }
+            }
+            std::cout << "NAN check complete" << std::endl;
+            TriangularSystemSolver solver(A, cholesky.A_gpu, b, cpuQueue, gpuQueue, loadBalancer);
+            solver.solve();
+        } else {
+            throw std::runtime_error("Invalid algorithm: " + algorithm);
+        }
     }
-
     return 0;
 }

@@ -28,6 +28,7 @@ namespace conf {
         bool writeResult = false; /// write the result vector into a .txt file
         std::string mode = "runtime"; /// mode for the heterogeneous scheduling
         std::size_t N = 0; /// size of the NxN matrix
+        std::size_t N_test = 0; /// size of test data for the gaussian process
         double runtimeLBFactorCPU = 1.2; /// factor that scales the CPU runtimes to influence the scheduling for lowest runtime
         double energyLBFactorCPU = 0.8; /// factor that scales the CPU runtimes to influence the scheduling for power efficiency
         std::size_t blockUpdateThreshold = 1; /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
@@ -69,6 +70,8 @@ namespace conf {
     inline std::string& mode = get().mode;
 
     inline std::size_t& N = get().N;
+
+    inline std::size_t& N_test = get().N_test;
 
     inline double& runtimeLBFactorCPU = get().runtimeLBFactorCPU;
 

@@ -376,7 +376,7 @@ sycl::event MatrixVectorOperations::matrixVectorColumnUpdate(sycl::queue& queue,
             const int blockStartIndex_b_i = (blockStart + group_id) * matrixBlockSize;
 
             // block in the matrix used for the update
-            const int blockStartIndex_Aij = (!transposed) ? blockStartIndex + (blockStart - blockRow + group_id) * matrixBlockSize * matrixBlockSize : (totalBlockCount - ((blockCountXY - group_id - blockStart) * (blockCountXY - group_id - blockStart + 1) / 2) + blockRow - group_id - blockStart)  * matrixBlockSize * matrixBlockSize;
+            const int blockStartIndex_Aij = (!transposed) ? blockStartIndex + (blockStart - blockRow + group_id) * matrixBlockSize * matrixBlockSize : (totalBlockCount - ((blockCountXY - group_id - blockStart) * (blockCountXY - group_id - blockStart + 1) / 2) + blockRow - group_id - blockStart) * matrixBlockSize * matrixBlockSize;
 
             conf::fp_type sum = 0.0;
             if (!transposed) {
@@ -392,6 +392,24 @@ sycl::event MatrixVectorOperations::matrixVectorColumnUpdate(sycl::queue& queue,
             b[blockStartIndex_b_i + local_i] -= sum;
         });
     });
+
+    return event;
+}
+
+sycl::event MatrixVectorOperations::matrixVectorGP(sycl::queue& queue, conf::fp_type* A, conf::fp_type* b, conf::fp_type* result, int n, int m) {
+    sycl::event event = queue.submit([&](sycl::handler& h) {
+        h.parallel_for(m, [=](auto& id) {
+            const unsigned int i = id[0];
+
+            conf::fp_type sum = 0.0;
+            for (int k = 0; k < n; ++k) {
+                sum += A[i * n + k] * b[k];
+            }
+            result[i] = sum;
+        });
+    });
+
+    queue.wait();
 
     return event;
 }

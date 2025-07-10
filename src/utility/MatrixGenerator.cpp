@@ -130,7 +130,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
             std::size_t matrixBlockSize = conf::matrixBlockSize;
 
             queue.submit([&](handler& h) {
-                h.parallel_for(range<2>(matrixBlockSize,matrixBlockSize), [=](id<2> idx) {
+                h.parallel_for(range<2>(matrixBlockSize, matrixBlockSize), [=](id<2> idx) {
                     const unsigned int i_local = idx[0];
                     const unsigned int j_local = idx[1];
                     const unsigned long i_global = matrixBlockSize * i_block + i_local;
@@ -153,7 +153,6 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
                         covarianceFunction += noiseVariance;
                     }
                     matrixData[blockStartIndex + i_local * matrixBlockSize + j_local] = covarianceFunction;
-
                 });
             });
         }
@@ -163,8 +162,59 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
     return matrix;
 }
 
-RightHandSide MatrixGenerator::parseRHS_GP(std::string& path, sycl::queue& queue) {
+void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::string& path_test, sycl::queue& queue, conf::fp_type* K_star) {
+    std::cout << "-- generating Kernel matrix of size " << conf::N << "x" << conf::N_test << std::endl;
 
+
+    constexpr std::size_t nRegressors = 8;
+    constexpr std::size_t offset = nRegressors - 1;
+
+
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> trainingInput{
+        usm_allocator<conf::fp_type, usm::alloc::shared>(queue)
+    };
+    trainingInput.resize(conf::N + offset);
+
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> testInput{
+        usm_allocator<conf::fp_type, usm::alloc::shared>(queue)
+    };
+    testInput.resize(conf::N_test + offset);
+
+    readInputVector(path_train, trainingInput, conf::N, offset);
+
+    readInputVector(path_test, testInput, conf::N_test, offset);
+
+    conf::fp_type* trainingInputData = trainingInput.data();
+    conf::fp_type* testInputData = testInput.data();
+
+    // Default values for hyperparameters
+    constexpr double verticalLengthscale = 1.0;
+    constexpr double lengthscale = 1.0;
+
+    const std::size_t N_test = conf::N_test;
+    const std::size_t N = conf::N;
+
+    // compute transposed K_star kernel matrix
+    queue.submit([&](handler& h) {
+        h.parallel_for(range<2>(N_test,  N), [=](id<2> idx) {
+            const unsigned int i = idx[1];
+            const unsigned int j = idx[0];
+
+            double distance = 0.0;
+            for (unsigned int k = 0; k < nRegressors; k++) {
+                const double tmp = trainingInputData[i + k] - testInputData[j + k];
+                distance += tmp * tmp;
+            }
+            const double covarianceFunction = verticalLengthscale * sycl::exp(-0.5 / (lengthscale * lengthscale) * distance);
+
+            K_star[j * N + i] = covarianceFunction;
+        });
+    });
+    queue.wait();
+
+}
+
+RightHandSide MatrixGenerator::parseRHS_GP(std::string& path, sycl::queue& queue) {
     std::cout << "-- parsing data for rhs of size " << conf::N << std::endl;
 
     RightHandSide rhs(conf::N, conf::matrixBlockSize, queue);
@@ -204,4 +254,26 @@ RightHandSide MatrixGenerator::generateRHS(sycl::queue& queue) {
         b.rightHandSideData[i] = value;
     }
     return b;
+}
+
+void MatrixGenerator::readInputVector(std::string& path, std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>>& dataVector, int N, int offset) {
+
+    std::ifstream dataInputStream(path);
+    std::string valueString;
+
+    // parse input data
+    int rowIndex = 0;
+    while (std::getline(dataInputStream, valueString)) {
+        conf::fp_type value = static_cast<conf::fp_type>(std::stod(valueString));
+        dataVector[rowIndex + offset] = value;
+        rowIndex++;
+        if (rowIndex == N) {
+            break;
+        }
+    }
+    dataInputStream.close();
+
+    if (rowIndex != N) {
+        throw std::runtime_error("Not enough data available!");
+    }
 }
