@@ -12,6 +12,12 @@ Cholesky::Cholesky(SymmetricMatrix& A, queue& cpuQueue, queue& gpuQueue, std::sh
     loadBalancer(std::move(loadBalancer)) {
 }
 
+Cholesky::~Cholesky() {
+    if (conf::initialProportionGPU != 0) {
+        sycl::free(A_gpu, gpuQueue);
+    }
+}
+
 void Cholesky::initGPUMemory() {
     // init GPU data structure for matrix A on which the Cholesky decomposition should be performed
     A_gpu = malloc_device<conf::fp_type>(A.matrixData.size(), gpuQueue);
@@ -453,6 +459,7 @@ void Cholesky::solve_heterogeneous() {
     // if (conf::writeResult) {
     //     MatrixParser::writeFullMatrix("./A_chol_result", A);
     // }
+
 }
 
 void Cholesky::waitAllQueues() {

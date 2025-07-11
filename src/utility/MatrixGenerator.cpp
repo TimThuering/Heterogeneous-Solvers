@@ -72,7 +72,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
     std::cout << "-- generating SPD matrix of size " << conf::N << "x" << conf::N << std::endl;
     SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queue);
 
-    std::size_t nRegressors = 8;
+    std::size_t nRegressors = 1;
     std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> trainingInput{
         usm_allocator<conf::fp_type, usm::alloc::shared>(queue)
     };
@@ -166,7 +166,7 @@ void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::str
     std::cout << "-- generating Kernel matrix of size " << conf::N << "x" << conf::N_test << std::endl;
 
 
-    constexpr std::size_t nRegressors = 8;
+    constexpr std::size_t nRegressors = 1;
     constexpr std::size_t offset = nRegressors - 1;
 
 

@@ -12,6 +12,7 @@ using namespace sycl;
 class Cholesky {
 public:
     Cholesky(SymmetricMatrix& A, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
+    ~Cholesky();
 
     SymmetricMatrix& A;
     // GPU data structure

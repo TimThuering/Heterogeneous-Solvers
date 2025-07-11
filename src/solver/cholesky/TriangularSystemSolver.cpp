@@ -96,4 +96,9 @@ void TriangularSystemSolver::solve() {
     if (conf::writeResult) {
         UtilityFunctions::writeResult(".", b.rightHandSideData);
     }
+
+    if (useGPU) {
+        sycl::free(b_gpu, gpuQueue);
+    }
+
 }
