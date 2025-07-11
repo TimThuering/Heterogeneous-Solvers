@@ -2,6 +2,7 @@
 
 #include "MatrixGenerator.hpp"
 #include "MatrixVectorOperations.hpp"
+#include "UtilityFunctions.hpp"
 #include "cholesky/Cholesky.hpp"
 #include "cholesky/TriangularSystemSolver.hpp"
 
@@ -36,9 +37,8 @@ void GaussianProcess::start() {
 
     MatrixVectorOperations::matrixVectorGP(cpuQueue,K_star.data(),train_y.rightHandSideData.data(),result.data(),conf::N, conf::N_test);
 
-    for (auto &el : result) {
-        std::cout << el << std::endl;
+
+    if (conf::writeResult) {
+        UtilityFunctions::writeResult(".", result);
     }
-
-
 }

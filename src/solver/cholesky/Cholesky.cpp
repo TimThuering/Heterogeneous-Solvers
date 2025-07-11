@@ -450,9 +450,9 @@ void Cholesky::solve_heterogeneous() {
     std::filesystem::create_directories(filePath);
     metricsTracker.writeJSON(filePath);
 
-    if (conf::writeResult) {
-        MatrixParser::writeFullMatrix("./A_chol_result", A);
-    }
+    // if (conf::writeResult) {
+    //     MatrixParser::writeFullMatrix("./A_chol_result", A);
+    // }
 }
 
 void Cholesky::waitAllQueues() {
