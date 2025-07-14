@@ -27,7 +27,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
             const int blockID = block_i + referenceBlockCount - columnBlocksToRight;
 
             // start index of block in matrix data structure
-            const int blockStartIndex = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+            const std::size_t blockStartIndex = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
 
             if (block_i == block_j) {
@@ -38,8 +38,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
                             block_j * conf::matrixBlockSize + j < conf::N) {
                             const conf::fp_type value = distribution(generator);
                             if (i == j) {
-                                matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] = std::abs(value) +
-                                    static_cast<conf::fp_type>(conf::N);
+                                matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] = std::abs(value) + static_cast<conf::fp_type>(conf::N);
                             } else {
                                 // location (i,j)
                                 matrix.matrixData[blockStartIndex + i * conf::matrixBlockSize + j] = value;
@@ -118,7 +117,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
             const int blockID = i_block + referenceBlockCount - columnBlocksToRight;
 
             // start index of block in matrix data structure
-            const int blockStartIndex = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+            const std::size_t blockStartIndex = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
             // Diagonal noise for stability
             const double noiseVariance = 0.01;
@@ -138,16 +137,12 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
                     if (i_global >= N || j_global >= N) {
                         return;
                     }
-                    // printf("(%i,%i)\n", i_local, j_local);
-                    // printf("(%i,%i)\n", i_global, j_global);
-                    //
                     double distance = 0.0;
                     for (unsigned int k = 0; k < nRegressors; k++) {
                         const double tmp = trainingInputData[i_global + k] - trainingInputData[j_global + k];
                         distance += tmp * tmp;
                     }
-                    double covarianceFunction = verticalLengthscale * sycl::exp(
-                        -0.5 / (lengthscale * lengthscale) * distance);
+                    double covarianceFunction = verticalLengthscale * sycl::exp(-0.5 / (lengthscale * lengthscale) * distance);
 
                     if (i_global == j_global) {
                         covarianceFunction += noiseVariance;
@@ -196,7 +191,7 @@ void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::str
 
     // compute transposed K_star kernel matrix
     queue.submit([&](handler& h) {
-        h.parallel_for(range<2>(N_test,  N), [=](id<2> idx) {
+        h.parallel_for(range<2>(N_test, N), [=](id<2> idx) {
             const unsigned int i = idx[1];
             const unsigned int j = idx[0];
 
@@ -207,11 +202,10 @@ void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::str
             }
             const double covarianceFunction = verticalLengthscale * sycl::exp(-0.5 / (lengthscale * lengthscale) * distance);
 
-            K_star[j * N + i] = covarianceFunction;
+            K_star[static_cast<std::size_t>(j) * static_cast<std::size_t>(N) + static_cast<std::size_t>(i)] = covarianceFunction;
         });
     });
     queue.wait();
-
 }
 
 RightHandSide MatrixGenerator::parseRHS_GP(std::string& path, sycl::queue& queue) {
@@ -257,7 +251,6 @@ RightHandSide MatrixGenerator::generateRHS(sycl::queue& queue) {
 }
 
 void MatrixGenerator::readInputVector(std::string& path, std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>>& dataVector, int N, int offset) {
-
     std::ifstream dataInputStream(path);
     std::string valueString;
 

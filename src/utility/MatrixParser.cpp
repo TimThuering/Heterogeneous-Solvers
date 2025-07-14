@@ -127,7 +127,7 @@ void MatrixParser::processRow(const std::string& row, const unsigned int rowInde
         const int blockIndex = blockCountLeftColumns + (rowBlockIndex - columnBlockIndex);
 
         // start index of block in matrix data structure
-        const int blockStartIndex = blockIndex * conf::matrixBlockSize * conf::matrixBlockSize;
+        const std::size_t blockStartIndex = static_cast<std::size_t>(blockIndex) * conf::matrixBlockSize * conf::matrixBlockSize;
 
         // local row index in block
         const int value_i = rowDivBlock.rem;
@@ -149,9 +149,7 @@ void MatrixParser::processRow(const std::string& row, const unsigned int rowInde
         } else // normal block
         {
             // for each column in block, j is a global index and corresponds to the column of the whole matrix
-            for (int j = columnBlockIndex * conf::matrixBlockSize; j < columnBlockIndex *
-                 conf::matrixBlockSize +
-                 conf::matrixBlockSize; ++j) // for each column in block
+            for (int j = columnBlockIndex * conf::matrixBlockSize; j < columnBlockIndex * conf::matrixBlockSize + conf::matrixBlockSize; ++j) // for each column in block
             {
                 // compute local column index value_j inside the current block from global column index j
                 const int value_j = j - columnBlockIndex * conf::matrixBlockSize;
@@ -188,7 +186,7 @@ void MatrixParser::writeBlockedMatrix(const std::string& path, const SymmetricMa
             const int blockIndex = blockCountLeftColumns + (rowDivBlock.quot - columnBlockIndex);
 
             // start index of block in matrix data structure
-            const int blockStartIndex = blockIndex * conf::matrixBlockSize * conf::matrixBlockSize;
+            const std::size_t blockStartIndex = static_cast<std::size_t>(blockIndex) * conf::matrixBlockSize * conf::matrixBlockSize;
 
             // row index in block
             const int value_i = rowDivBlock.rem;
@@ -230,7 +228,7 @@ void MatrixParser::writeFullMatrix(const std::string& path, const SymmetricMatri
             blockIndex = blockCountLeftColumns + (rowDivBlock.quot - columnBlockIndex);
 
             // start index of block in matrix data structure
-            const int blockStartIndex = blockIndex * conf::matrixBlockSize * conf::matrixBlockSize;
+            const std::size_t blockStartIndex = static_cast<std::size_t>(blockIndex) * conf::matrixBlockSize * conf::matrixBlockSize;
 
             // row index in block
             const int value_i = rowDivBlock.rem;
@@ -247,7 +245,6 @@ void MatrixParser::writeFullMatrix(const std::string& path, const SymmetricMatri
 
             // increment number of blocks in all columns left of the current column
             blockCountLeftColumns += matrix.blockCountXY - columnBlockIndex;
-
         }
 
         int diagBlockIndex = blockIndex;
@@ -255,7 +252,7 @@ void MatrixParser::writeFullMatrix(const std::string& path, const SymmetricMatri
             blockIndex = diagBlockIndex + i + 1;
 
             // start index of block in matrix data structure
-            const int blockStartIndex = blockIndex * conf::matrixBlockSize * conf::matrixBlockSize;
+            const std::size_t blockStartIndex = static_cast<std::size_t>(blockIndex) * conf::matrixBlockSize * conf::matrixBlockSize;
 
             // row index in block
             const int value_i = rowDivBlock.rem;
@@ -269,7 +266,6 @@ void MatrixParser::writeFullMatrix(const std::string& path, const SymmetricMatri
                     output << value << ";";
                 }
             }
-
         }
 
         output << std::endl;
