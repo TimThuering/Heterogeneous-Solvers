@@ -883,9 +883,9 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(sycl::queue& 
             const int wgBlockID_B = blockID + rowID + 2;
             const int wgBlockID_C = blockID + columnID + 1;
 
-            const int blockStartIndex_A = static_cast<std::size_t>(wgBlockID_A) * matrixBlockSize * matrixBlockSize;
-            const int blockStartIndex_B = static_cast<std::size_t>(wgBlockID_B) * matrixBlockSize * matrixBlockSize;
-            const int blockStartIndex_C = static_cast<std::size_t>(wgBlockID_C) * matrixBlockSize * matrixBlockSize;
+            const std::size_t blockStartIndex_A = static_cast<std::size_t>(wgBlockID_A) * matrixBlockSize * matrixBlockSize;
+            const std::size_t blockStartIndex_B = static_cast<std::size_t>(wgBlockID_B) * matrixBlockSize * matrixBlockSize;
+            const std::size_t blockStartIndex_C = static_cast<std::size_t>(wgBlockID_C) * matrixBlockSize * matrixBlockSize;
 
             const int i = local_i % matrixBlockSize;
 
