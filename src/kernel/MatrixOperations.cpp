@@ -12,7 +12,7 @@ sycl::event MatrixOperations::cholesky(sycl::queue& queue, conf::fp_type* A, con
 
     const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
-    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize * conf::matrixBlockSize);
+    const std::size_t blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize * conf::matrixBlockSize);
 
     const long N = static_cast<long>(conf::N);
 
@@ -46,8 +46,7 @@ sycl::event MatrixOperations::cholesky(sycl::queue& queue, conf::fp_type* A, con
                         if (local_i >= j) {
                             const conf::fp_type A_ik = A[blockStartIndex + local_i * matrixBlockSize + k];
                             const conf::fp_type A_jk = A[blockStartIndex + j * matrixBlockSize + k];
-                            A[blockStartIndex + local_i * matrixBlockSize + j] = A[blockStartIndex + local_i *
-                                matrixBlockSize + j] - A_ik * A_jk;
+                            A[blockStartIndex + local_i * matrixBlockSize + j] = A[blockStartIndex + local_i * matrixBlockSize + j] - A_ik * A_jk;
                         } else {
                             A[blockStartIndex + local_i * matrixBlockSize + j] = 0;
                         }
@@ -70,7 +69,7 @@ sycl::event MatrixOperations::cholesky_GPU(sycl::queue& queue, conf::fp_type* A,
 
     const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
-    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize * conf::matrixBlockSize);
+    const std::size_t blockStartIndex = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
     const long N = static_cast<long>(conf::N);
 
@@ -106,8 +105,7 @@ sycl::event MatrixOperations::cholesky_GPU(sycl::queue& queue, conf::fp_type* A,
                     for (int j = k + 1; j < matrixBlockSize; ++j) {
                         if (local_i >= j) {
                             const conf::fp_type A_jk = local_column[j];
-                            A[blockStartIndex + local_i * matrixBlockSize + j] = A[blockStartIndex + local_i *
-                                matrixBlockSize + j] - A_ik * A_jk;
+                            A[blockStartIndex + local_i * matrixBlockSize + j] = A[blockStartIndex + local_i * matrixBlockSize + j] - A_ik * A_jk;
                         } else {
                             A[blockStartIndex + local_i * matrixBlockSize + j] = 0;
                         }
@@ -131,7 +129,7 @@ sycl::event MatrixOperations::cholesky_optimizedGPU(sycl::queue& queue, conf::fp
 
     const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
 
-    const int blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize * conf::matrixBlockSize);
+    const std::size_t blockStartIndex = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
     const long N = static_cast<long>(conf::N);
 

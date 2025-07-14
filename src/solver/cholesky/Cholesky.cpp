@@ -106,7 +106,7 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
                         blocksToCopy = additionalBlocks - (c - (blockCountCPU_new + k + 1));
                     }
 
-                    const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+                    const std::size_t blockStartIndexFirstGPUBlock = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
                     // for current column copy additionalBlocks amount of blocks
                     gpuQueue.submit([&](handler& h) {
@@ -132,7 +132,7 @@ void Cholesky::shiftSplit(const int blockCountATotal, const std::size_t blockSiz
                         blocksToCopy = additionalBlocks - (c - (blockCountCPU + k + 1) + 1);
                     }
 
-                    const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+                    const std::size_t blockStartIndexFirstGPUBlock = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
                     // for current column copy additionalBlocks amount of blocks
                     gpuQueue.submit([&](handler& h) {
@@ -194,7 +194,7 @@ void Cholesky::choleskySolveTriangularSystemColumn(const std::size_t blockSizeBy
     // if heterogeneous computing is enabled, copy the blocks updated by the CPU to the GPU
     if (gpuProportion != 1 && gpuProportion != 0) {
         executionTimes.startCopy_column = std::chrono::steady_clock::now();
-        const std::size_t blockStartIndexFirstCPUSystem = (blockID + 1) * conf::matrixBlockSize * conf::matrixBlockSize;
+        const std::size_t blockStartIndexFirstCPUSystem = static_cast<std::size_t>(blockID + 1) * conf::matrixBlockSize * conf::matrixBlockSize;
         // copy updated blocks by CPU to the GPU
         gpuQueue.submit([&](handler& h) {
             h.memcpy(&A_gpu[blockStartIndexFirstCPUSystem], &A.matrixData[blockStartIndexFirstCPUSystem], blockCountCPU * blockSizeBytes);
@@ -340,7 +340,7 @@ void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t b
             const int columnsToRight = A.blockCountXY - k;
             // first block in the column updated by the GPU
             const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2) + std::max(A.blockCountXY - k - minBlockCountGPU, 0);
-            const std::size_t blockStartIndexFirstGPUBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+            const std::size_t blockStartIndexFirstGPUBlock = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
             int blockCountGPUinColumn;
             if (k <= minBlockCountGPU) {
@@ -417,7 +417,7 @@ void Cholesky::solve_heterogeneous() {
         // ID and start index of diagonal block A_kk
         const int columnsToRight = A.blockCountXY - k;
         const int blockID = blockCountATotal - (columnsToRight * (columnsToRight + 1) / 2);
-        const std::size_t blockStartIndexDiagBlock = blockID * conf::matrixBlockSize * conf::matrixBlockSize;
+        const std::size_t blockStartIndexDiagBlock = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
         // check if row that splits GPU/CPU part of the matrix has to change and apply the change if necessary
         shiftSplit(blockCountATotal, blockSizeBytes, k, blockStartIndexDiagBlock);
@@ -456,9 +456,9 @@ void Cholesky::solve_heterogeneous() {
     std::filesystem::create_directories(filePath);
     metricsTracker.writeJSON(filePath);
 
-    // if (conf::writeResult) {
-    //     MatrixParser::writeFullMatrix("./A_chol_result", A);
-    // }
+    if (conf::writeResult) {
+        MatrixParser::writeFullMatrix("./A_chol_result", A);
+    }
 
 }
 
