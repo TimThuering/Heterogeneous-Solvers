@@ -10,9 +10,9 @@ sycl::event MatrixOperations::cholesky(sycl::queue& queue, conf::fp_type* A, con
     const range localRange(conf::matrixBlockSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
-    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+    const std::size_t matrixBlockSize = conf::matrixBlockSize;
 
-    const std::size_t blockStartIndex = blockID * static_cast<int>(conf::matrixBlockSize * conf::matrixBlockSize);
+    const std::size_t blockStartIndex = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
     const long N = static_cast<long>(conf::N);
 
@@ -67,7 +67,7 @@ sycl::event MatrixOperations::cholesky_GPU(sycl::queue& queue, conf::fp_type* A,
     const range localRange(conf::matrixBlockSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
-    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+    const std::size_t matrixBlockSize = conf::matrixBlockSize;
 
     const std::size_t blockStartIndex = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
@@ -127,7 +127,7 @@ sycl::event MatrixOperations::cholesky_optimizedGPU(sycl::queue& queue, conf::fp
     const range localRange(conf::matrixBlockSize);
     const auto kernelRange = nd_range{globalRange, localRange};
 
-    const int matrixBlockSize = static_cast<int>(conf::matrixBlockSize);
+    const std::size_t matrixBlockSize = conf::matrixBlockSize;
 
     const std::size_t blockStartIndex = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
