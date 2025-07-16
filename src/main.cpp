@@ -51,6 +51,7 @@ int main(int argc, char* argv[]) {
         ("u,update_int", "interval in which CPU/GPU distribution will be rebalanced", cxxopts::value<int>())
         ("g,init_gpu_perc", "initial proportion of work assigned to gpu", cxxopts::value<double>())
         ("r,write_result", "write the result vector x to a .txt file", cxxopts::value<bool>())
+        ("write_matrix", "write the result matrix L of the cholesky decomposition to a .txt file", cxxopts::value<bool>())
         ("f,cpu_lb_factor", "factor that scales the CPU times for runtime load balancing", cxxopts::value<double>())
         ("t,block_update_th", "when block count change during re-balancing is equal or below this number, no re-balancing occurs", cxxopts::value<std::size_t>())
         ("size", "size of the matrix if a matrix should be generated from input data", cxxopts::value<std::size_t>())
@@ -146,6 +147,10 @@ int main(int argc, char* argv[]) {
 
     if (arguments.count("write_result")) {
         conf::writeResult = arguments["write_result"].as<bool>();
+    }
+
+    if (arguments.count("write_matrix")) {
+        conf::writeMatrix = arguments["write_matrix"].as<bool>();
     }
 
     if (arguments.count("cpu_lb_factor")) {

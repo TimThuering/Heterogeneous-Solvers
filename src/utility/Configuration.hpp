@@ -26,6 +26,7 @@ namespace conf {
         double initialProportionGPU = 0.5; /// initial proportion of work assigned to gpu
         std::string outputPath = "./output"; /// path for all output files
         bool writeResult = false; /// write the result vector into a .txt file
+        bool writeMatrix = false; /// write the result vector into a .txt file
         std::string mode = "runtime"; /// mode for the heterogeneous scheduling
         std::size_t N = 0; /// size of the NxN matrix
         std::size_t N_test = 0; /// size of test data for the gaussian process
@@ -66,6 +67,8 @@ namespace conf {
     inline std::string& outputPath = get().outputPath;
 
     inline bool& writeResult = get().writeResult;
+
+    inline bool& writeMatrix = get().writeMatrix;
 
     inline std::string& mode = get().mode;
 
