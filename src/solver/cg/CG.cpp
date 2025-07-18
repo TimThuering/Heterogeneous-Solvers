@@ -151,7 +151,7 @@ void CG::solveHeterogeneous() {
         }).wait();
     }
     if (conf::writeResult) {
-        UtilityFunctions::writeResult(filePath, x);
+        UtilityFunctions::writeResult(".", x);
     }
 
     freeDataStructures();

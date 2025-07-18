@@ -212,7 +212,9 @@ int main(int argc, char* argv[]) {
             "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
     }
 
-    // MatrixParser::writeFullMatrix("./A_GP_1000", A);
+    // MatrixParser::writeFullMatrix("./A_GP_1024", A);
+    // UtilityFunctions::writeResult(".", b.rightHandSideData);
+
 
     if (performGPR) {
         GaussianProcess GP(A, b, path_gp_input, path_gp_test, cpuQueue, gpuQueue, loadBalancer);

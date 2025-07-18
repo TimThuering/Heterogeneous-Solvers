@@ -316,14 +316,14 @@ intel = true;
     }
 
     std::cout << "   -- matrix-matrix:          " << matrixMatrixTime << "ms" << std::endl;
-    if (blockCountCPU > 0 && !intel) {
+    if (blockCountCPU > 1 && !intel) {
         auto matrixMatrixTime_CPU = static_cast<double>(executionTimes.eventCPU_matrixMatrix.get_profiling_info<sycl::info::event_profiling::command_end>() - executionTimes.eventCPU_matrixMatrix.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6;
         std::cout << "      - CPU:          " << matrixMatrixTime_CPU << "ms" << std::endl;
         metricsTracker.matrixMatrixTimes_CPU.push_back(matrixMatrixTime_CPU);
     } else {
         metricsTracker.matrixMatrixTimes_CPU.push_back(0);
     }
-    if (blockCountGPU > 0 && !intel) {
+    if (blockCountGPU > 1 && !intel) {
         const auto matrixMatrixTime_GPU = static_cast<double>(executionTimes.eventGPU_matrixMatrix.get_profiling_info<sycl::info::event_profiling::command_end>() - executionTimes.eventGPU_matrixMatrix.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6;
         std::cout << "      - GPU:          " << matrixMatrixTime_GPU << "ms" << std::endl;
         metricsTracker.matrixMatrixTimes_GPU.push_back(matrixMatrixTime_GPU);
@@ -348,10 +348,14 @@ void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t b
             const std::size_t blockStartIndexFirstGPUBlock = static_cast<std::size_t>(blockID) * conf::matrixBlockSize * conf::matrixBlockSize;
 
             int blockCountGPUinColumn;
-            if (k <= minBlockCountGPU) {
+            if (k <= A.blockCountXY - minBlockCountGPU) {
                 blockCountGPUinColumn = minBlockCountGPU;
             } else {
                 blockCountGPUinColumn = A.blockCountXY - k;
+            }
+
+            if (A.blockCountXY < minBlockCountGPU) {
+                blockCountGPUinColumn = A.blockCountXY;
             }
 
             gpuQueue.submit([&](handler& h) {
