@@ -45,13 +45,12 @@ void CG::solveHeterogeneous() {
     std::cout << "Block count GPU: " << blockCountGPU << std::endl;
     std::cout << "Block count CPU: " << blockCountCPU << std::endl;
 
-    // Total amount of blocks needed for the upper part of the matrix
-    const std::size_t blockCountGPUTotal = (A.blockCountXY * (A.blockCountXY + 1) / 2) - (blockCountCPU * (blockCountCPU
-        + 1) / 2);
-
     // initialize data structures
+    auto startMemInit = std::chrono::steady_clock::now();
     initGPUdataStructures();
     initCPUdataStructures();
+    auto endMemInit = std::chrono::steady_clock::now();
+    metricsTracker.memoryInitTime = std::chrono::duration<double, std::milli>(endMemInit - startMemInit).count();
 
     // variables for cg algorithm
     conf::fp_type delta_new = 0;
@@ -137,19 +136,24 @@ void CG::solveHeterogeneous() {
     auto totalTime = std::chrono::duration<double, std::milli>(end - start).count();
     std::cout << "Total time: " << totalTime << "ms (" << iteration << " iterations)" << std::endl;
     std::cout << "Residual: " << delta_new << std::endl;
+    metricsTracker.totalTime = totalTime;
 
     waitAllQueues();
     metricsTracker.endTracking();
+
+    if (blockCountGPU != 0) {
+        auto startMemCopy = std::chrono::steady_clock::now();
+        gpuQueue.submit([&](handler& h) {
+            h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
+        }).wait();
+        auto endMemCopy = std::chrono::steady_clock::now();
+        metricsTracker.resultCopyTime = std::chrono::duration<double, std::milli>(endMemCopy - startMemCopy).count();
+    }
+
     std::string timeString = UtilityFunctions::getTimeString();
     std::string filePath = conf::outputPath + "/" + timeString;
     std::filesystem::create_directories(filePath);
     metricsTracker.writeJSON(filePath);
-
-    if (blockCountGPU != 0) {
-        gpuQueue.submit([&](handler& h) {
-            h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
-        }).wait();
-    }
     if (conf::writeResult) {
         UtilityFunctions::writeResult(".", x);
     }
