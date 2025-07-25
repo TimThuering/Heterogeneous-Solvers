@@ -18,6 +18,7 @@
 #include "MatrixMatrixOperations.hpp"
 #include "UtilityFunctions.hpp"
 #include "MatrixOperations.hpp"
+#include "MatrixVectorOperations.hpp"
 #include "cholesky/Cholesky.hpp"
 #include "cholesky/TriangularSystemSolver.hpp"
 #include "gaussianProcess/GaussianProcess.hpp"
