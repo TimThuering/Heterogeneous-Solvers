@@ -363,10 +363,18 @@ void CG::compute_q() {
     sycl::event eventCPU;
     // q = Ad
     if (blockCountGPU != 0) {
-        eventGPU = MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0, blockCountGPU, A.blockCountXY, A.blockCountXY);
+        if (conf::gpuOptimizationLevel == 0) {
+            eventGPU = MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0, blockCountGPU, A.blockCountXY, A.blockCountXY);
+        } else {
+            eventGPU = MatrixVectorOperations::matrixVectorBlock_GPU(gpuQueue, A_gpu, d_gpu, q_gpu, 0, 0, blockCountGPU, A.blockCountXY, A.blockCountXY);
+        }
     }
     if (blockCountCPU != 0) {
-        eventCPU = MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0, blockCountCPU, A.blockCountXY, A.blockCountXY);
+        if (conf::cpuOptimizationLevel == 0) {
+            eventCPU = MatrixVectorOperations::matrixVectorBlock(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0, blockCountCPU, A.blockCountXY, A.blockCountXY);
+        } else {
+            eventCPU = MatrixVectorOperations::matrixVectorBlock_CPU(cpuQueue, A.matrixData.data(), d_cpu, q_cpu, blockStartCPU, 0, blockCountCPU, A.blockCountXY, A.blockCountXY);
+        }
     }
     waitAllQueues();
 
