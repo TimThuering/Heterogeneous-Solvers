@@ -9,7 +9,7 @@
 
 class UtilityFunctions {
 public:
-    static void writeResult(const std::string& path, const std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>>& x);
+    static void writeResult(const std::string& path, const std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>>& x);
 
     static std::string getTimeString();
 

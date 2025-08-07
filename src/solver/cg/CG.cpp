@@ -14,7 +14,7 @@ CG::CG(SymmetricMatrix& A, RightHandSide& b, queue& cpuQueue, queue& gpuQueue,
        std::shared_ptr<LoadBalancer> loadBalancer) :
     A(A),
     b(b),
-    x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>(cpuQueue)),
+    x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>(cpuQueue)),
     cpuQueue(cpuQueue),
     gpuQueue(gpuQueue),
     loadBalancer(std::move(loadBalancer)) {
@@ -240,16 +240,16 @@ void CG::initCPUdataStructures() {
     }
 
     // residual vector r
-    r_cpu = malloc_host<conf::fp_type>(b.rightHandSideData.size(), cpuQueue);
+    r_cpu = malloc_host<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
     // vector d
-    d_cpu = malloc_host<conf::fp_type>(b.rightHandSideData.size(), cpuQueue);
+    d_cpu = malloc_host<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
     // vector q
-    q_cpu = malloc_host<conf::fp_type>(b.rightHandSideData.size(), cpuQueue);
+    q_cpu = malloc_host<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
     // temporary vector
-    tmp_cpu = malloc_host<conf::fp_type>(b.rightHandSideData.size(), cpuQueue);
+    tmp_cpu = malloc_host<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
     if (r_cpu == nullptr || d_cpu == nullptr || q_cpu == nullptr || tmp_cpu == nullptr) {
         throw std::runtime_error("Error during CPU memory allocation");
@@ -268,10 +268,10 @@ void CG::freeDataStructures() {
     }
 
     if (blockCountCPU != 0) {
-        sycl::free(r_cpu, cpuQueue);
-        sycl::free(d_cpu, cpuQueue);
-        sycl::free(q_cpu, cpuQueue);
-        sycl::free(tmp_cpu, cpuQueue);
+        sycl::free(r_cpu, gpuQueue);
+        sycl::free(d_cpu, gpuQueue);
+        sycl::free(q_cpu, gpuQueue);
+        sycl::free(tmp_cpu, gpuQueue);
     }
 }
 

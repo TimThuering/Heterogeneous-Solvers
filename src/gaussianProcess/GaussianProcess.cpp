@@ -31,15 +31,15 @@ void GaussianProcess::start() {
         throw std::runtime_error("Invalid algorithm: " + conf::algorithm);
     }
 
-    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> K_star{
-        usm_allocator<conf::fp_type, usm::alloc::shared>(cpuQueue)
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> K_star{
+        usm_allocator<conf::fp_type, usm::alloc::host>(cpuQueue)
     };
     K_star.resize(conf::N * conf::N_test);
 
-    MatrixGenerator::generateTestKernelMatrix(path_train, path_test, cpuQueue, K_star.data());
+    MatrixGenerator::generateTestKernelMatrix(path_train, path_test, cpuQueue, gpuQueue, K_star.data());
 
-    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> result{
-        usm_allocator<conf::fp_type, usm::alloc::shared>(cpuQueue)
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result{
+        usm_allocator<conf::fp_type, usm::alloc::host>(cpuQueue)
     };
     result.resize(conf::N_test);
 

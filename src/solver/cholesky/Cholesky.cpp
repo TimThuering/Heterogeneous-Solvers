@@ -383,7 +383,7 @@ void Cholesky::printFinalTimes() {
     metricsTracker.totalTime = totalTime;
 
     std::cout << "Memory init: " << memoryInitTime << "ms" << std::endl;
-    std::cout << "Result copy: " << resultCopyTime << std::endl;
+    std::cout << "Result copy: " << resultCopyTime << "ms" << std::endl;
     std::cout << "Total time:  " << totalTime << "ms" << std::endl;
 }
 

@@ -19,7 +19,7 @@ public:
     SymmetricMatrix& A;
     RightHandSide& b;
 
-    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>> x;
+    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>> x;
 
     queue& cpuQueue;
     queue& gpuQueue;

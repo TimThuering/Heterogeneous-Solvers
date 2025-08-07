@@ -67,13 +67,13 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
     return matrix;
 }
 
-SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queue& queue) {
+SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queue& queue,  sycl::queue& queueGPU) {
     std::cout << "-- generating SPD matrix of size " << conf::N << "x" << conf::N << std::endl;
-    SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queue);
+    SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queueGPU);
 
     std::size_t nRegressors = 8;
-    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> trainingInput{
-        usm_allocator<conf::fp_type, usm::alloc::shared>(queue)
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> trainingInput{
+        usm_allocator<conf::fp_type, usm::alloc::host>(queueGPU)
     };
     std::size_t offset = nRegressors - 1;
     trainingInput.resize(conf::N + offset);
@@ -157,7 +157,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
     return matrix;
 }
 
-void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::string& path_test, sycl::queue& queue, conf::fp_type* K_star) {
+void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::string& path_test, sycl::queue& queue, sycl::queue& queueGPU, conf::fp_type* K_star) {
     std::cout << "-- generating Kernel matrix of size " << conf::N << "x" << conf::N_test << std::endl;
 
 
@@ -165,13 +165,13 @@ void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::str
     constexpr std::size_t offset = nRegressors - 1;
 
 
-    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> trainingInput{
-        usm_allocator<conf::fp_type, usm::alloc::shared>(queue)
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> trainingInput{
+        usm_allocator<conf::fp_type, usm::alloc::host>(queueGPU)
     };
     trainingInput.resize(conf::N + offset);
 
-    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> testInput{
-        usm_allocator<conf::fp_type, usm::alloc::shared>(queue)
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> testInput{
+        usm_allocator<conf::fp_type, usm::alloc::host>(queueGPU)
     };
     testInput.resize(conf::N_test + offset);
 
@@ -250,7 +250,7 @@ RightHandSide MatrixGenerator::generateRHS(sycl::queue& queue) {
     return b;
 }
 
-void MatrixGenerator::readInputVector(std::string& path, std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>>& dataVector, int N, int offset) {
+void MatrixGenerator::readInputVector(std::string& path, std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>>& dataVector, int N, int offset) {
     std::ifstream dataInputStream(path);
     std::string valueString;
 

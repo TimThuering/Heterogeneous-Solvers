@@ -23,7 +23,7 @@ public:
     const int blockCountX; /// block Count in X direction
 
     /// internal data structure using SYCL host memory
-    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>> rightHandSideData;
+    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>> rightHandSideData;
 };
 
 

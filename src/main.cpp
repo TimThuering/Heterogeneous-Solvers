@@ -191,12 +191,12 @@ int main(int argc, char* argv[]) {
 
     // generate or parse Symmetric matrix
     RightHandSide b = generateMatrix
-                          ? MatrixGenerator::parseRHS_GP(path_gp_output, cpuQueue)
-                          : MatrixParser::parseRightHandSide(path_b, cpuQueue);
+                          ? MatrixGenerator::parseRHS_GP(path_gp_output, gpuQueue)
+                          : MatrixParser::parseRightHandSide(path_b, gpuQueue);
 
     SymmetricMatrix A = generateMatrix
-                            ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue)
-                            : MatrixParser::parseSymmetricMatrix(path_A, cpuQueue);
+                            ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue, gpuQueue)
+                            : MatrixParser::parseSymmetricMatrix(path_A, gpuQueue);
 
     std::shared_ptr<LoadBalancer> loadBalancer;
     if (conf::mode == "static") {
@@ -212,10 +212,6 @@ int main(int argc, char* argv[]) {
             "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
     }
 
-    // MatrixParser::writeFullMatrix("./A_GP_1024", A);
-    // UtilityFunctions::writeResult(".", b.rightHandSideData);
-
-
     if (performGPR) {
         GaussianProcess GP(A, b, path_gp_input, path_gp_test, cpuQueue, gpuQueue, loadBalancer);
         GP.start();
@@ -226,13 +222,6 @@ int main(int argc, char* argv[]) {
         } else if (conf::algorithm == "cholesky") {
             Cholesky cholesky(A, cpuQueue, gpuQueue, loadBalancer);
             cholesky.solve_heterogeneous();
-            for (auto& el : A.matrixData) {
-                if (isnan(el)) {
-                    std::cout << "ERROR!!!!" << std::endl;
-                    return 1;
-                }
-            }
-            std::cout << "NAN check complete" << std::endl;
             TriangularSystemSolver solver(A, cholesky.A_gpu, b, cpuQueue, gpuQueue, loadBalancer);
             solver.solve();
         } else {
