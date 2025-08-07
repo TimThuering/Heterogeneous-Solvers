@@ -337,6 +337,7 @@ intel = true;
 
 void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t blockSizeBytes) {
     executionTimes.startResultCopyGPU = std::chrono::steady_clock::now();
+    std::cout << "GPU proportion: " << gpuProportion << std::endl;
     if (gpuProportion != 1 && gpuProportion != 0) {
         // Case heterogeneous: copy parts of the matrix that were computed by the GPU to the CPU
 
@@ -357,6 +358,8 @@ void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t b
             if (A.blockCountXY < minBlockCountGPU) {
                 blockCountGPUinColumn = A.blockCountXY;
             }
+
+            std::cout << blockCountGPUinColumn << std::endl;
 
             gpuQueue.submit([&](handler& h) {
                 h.memcpy(&A.matrixData[blockStartIndexFirstGPUBlock], &A_gpu[blockStartIndexFirstGPUBlock], blockCountGPUinColumn * blockSizeBytes);

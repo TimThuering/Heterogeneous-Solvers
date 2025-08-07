@@ -24,7 +24,7 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
 
             const std::size_t blockStartIndex_L = blockStartIndex;
 
-            for (int k = 0; k < matrixBlockSize; ++k) {
+            for (unsigned int k = 0; k < matrixBlockSize; ++k) {
                 // b_k = b_k/a_kk
                 const conf::fp_type b_k = A[blockStartIndex_B + group_id_j * matrixBlockSize + k] / A[blockStartIndex_L + k * matrixBlockSize + k];
 
@@ -34,7 +34,7 @@ sycl::event MatrixMatrixOperations::triangularSolve(sycl::queue& queue, conf::fp
                     A[blockStartIndex_B + group_id_j * matrixBlockSize + k] = b_k;
                 }
 
-                if (local_i > k) {
+                if (static_cast<unsigned int>(local_i) > k) {
                     // b_i = b_i - a_ik*b_k
                     A[blockStartIndex_B + group_id_j * matrixBlockSize + local_i] = A[blockStartIndex_B + group_id_j * matrixBlockSize + local_i] - A[blockStartIndex_L + local_i * matrixBlockSize + k] * b_k;
                 }
@@ -84,11 +84,11 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedGPU(sycl::queue& qu
             nd_item.barrier();
 
             // loop over columns in the lower triangular matrix
-            for (int k = 0; k < matrixBlockSize; ++k) {
-                if (local_i > k) {
+            for (unsigned int k = 0; k < matrixBlockSize; ++k) {
+                if (static_cast<unsigned int>(local_i) > k) {
                     // b_i = b_i - a_ik*b_k
                     value = value - A[blockStartIndex_L + local_i * matrixBlockSize + k] * local_column[k];
-                    if (local_i == k + 1) {
+                    if (static_cast<unsigned int>(local_i) == k + 1) {
                         // make b_{k+1} available to all work-items for the next iteration
                         local_column[local_i] = value * diagonal_ii;
                     }
@@ -125,14 +125,14 @@ sycl::event MatrixMatrixOperations::triangularSolve_optimizedCPU(sycl::queue& qu
 
             const std::size_t blockStartIndex_L = blockStartIndex;
 
-            for (int k = 0; k < matrixBlockSize; ++k) {
+            for (int k = 0; k < static_cast<int>(matrixBlockSize); ++k) {
                 // b_k = b_k/a_kk
                 const conf::fp_type b_k = A[blockStartIndex_B + group_id_j * matrixBlockSize + k] / A[blockStartIndex_L + k * matrixBlockSize + k];
 
                 A[blockStartIndex_B + group_id_j * matrixBlockSize + k] = b_k;
 
 #pragma clang loop vectorize(enable) unroll(enable)
-                for (int j = k + 1; j < matrixBlockSize; ++j) {
+                for (int j = k + 1; j < static_cast<int>(matrixBlockSize); ++j) {
                     // b_i = b_i - a_ik*b_k
                     A[blockStartIndex_B + group_id_j * matrixBlockSize + j] = A[blockStartIndex_B + group_id_j * matrixBlockSize + j] - A[blockStartIndex_L + j * matrixBlockSize + k] * b_k;
                 }
@@ -198,7 +198,7 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal(sycl::queue& q
 
             if (i >= j) {
                 // perform update for lower triangle of the diagonal
-                for (int k = 0; k < matrixBlockSize; ++k) {
+                for (unsigned int k = 0; k < matrixBlockSize; ++k) {
                     // B_diag = B_diag - B_col * B_col^T
                     A[blockStartIndex_diag + i * matrixBlockSize + j] = A[blockStartIndex_diag + i * matrixBlockSize + j] - A[blockStartIndex_col + i * matrixBlockSize + k] * A[blockStartIndex_col + j * matrixBlockSize + k];
                 }
@@ -275,7 +275,7 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedGPU(s
             }
 
             // perform update for lower triangle of the diagonal
-            for (int t = 0; t < matrixBlockSize / wgSize_xy; ++t) {
+            for (unsigned int t = 0; t < matrixBlockSize / wgSize_xy; ++t) {
                 // if tile is below diagonal or a diagonal tile, cache it in local memory
                 if (i >= j || group_mod_count_i == group_mod_count_j) {
                     // normal block
@@ -348,7 +348,7 @@ sycl::event MatrixMatrixOperations::symmetricMatrixMatrixDiagonal_optimizedCPU(s
                 conf::fp_type value = A[blockStartIndex_diag + i * matrixBlockSize + j];
                 // perform update for lower triangle of the diagonal
 #pragma clang loop vectorize(enable) unroll(enable)
-                for (int k = 0; k < matrixBlockSize; ++k) {
+                for (unsigned int k = 0; k < matrixBlockSize; ++k) {
                     // B_diag = B_diag - B_col * B_col^T
                     value = value - A[blockStartIndex_col + i * matrixBlockSize + k] * A[blockStartIndex_col + j * matrixBlockSize + k];
                 }
@@ -423,7 +423,7 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep(sycl::queue& queue, conf::f
             const int i = internalBlockOffset_i + local_i;
             const int j = internalBlockOffset_j + local_j;
 
-            for (int k = 0; k < matrixBlockSize; ++k) {
+            for (unsigned int k = 0; k < matrixBlockSize; ++k) {
                 // A = A - B * C^T
                 A[blockStartIndex_A + i * matrixBlockSize + j] = A[blockStartIndex_A + i * matrixBlockSize + j] - A[blockStartIndex_B + i * matrixBlockSize + k] * A[blockStartIndex_C + j * matrixBlockSize + k];
             }
@@ -830,7 +830,7 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(sycl::queue& q
 
             conf::fp_type value = A[blockStartIndex_A + i * matrixBlockSize + j];
 #pragma clang loop vectorize(enable) unroll(enable)
-            for (int k = 0; k < matrixBlockSize; ++k) {
+            for (unsigned int k = 0; k < matrixBlockSize; ++k) {
                 // A = A - B * C^T
                 value = value - A[blockStartIndex_B + i * matrixBlockSize + k] * A[blockStartIndex_C + j * matrixBlockSize + k];
             }
@@ -890,10 +890,10 @@ sycl::event MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(sycl::queue& 
             const int i = local_i % matrixBlockSize;
 
 
-            for (int j = 0; j < matrixBlockSize; ++j) {
+            for (unsigned int j = 0; j < matrixBlockSize; ++j) {
                 conf::fp_type value = 0;
 #pragma clang loop vectorize(enable) unroll(enable)
-                for (int k = 0; k < matrixBlockSize; ++k) {
+                for (unsigned int k = 0; k < matrixBlockSize; ++k) {
                     // A = A - B * C^T
                     value += A[blockStartIndex_B + j * matrixBlockSize + k] * A[blockStartIndex_C + i * matrixBlockSize + k];
                 }

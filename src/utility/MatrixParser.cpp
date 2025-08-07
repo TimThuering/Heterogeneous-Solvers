@@ -149,10 +149,10 @@ void MatrixParser::processRow(const std::string& row, const unsigned int rowInde
         } else // normal block
         {
             // for each column in block, j is a global index and corresponds to the column of the whole matrix
-            for (int j = columnBlockIndex * conf::matrixBlockSize; j < columnBlockIndex * conf::matrixBlockSize + conf::matrixBlockSize; ++j) // for each column in block
+            for (int j = columnBlockIndex * static_cast<int>(conf::matrixBlockSize); j < columnBlockIndex * static_cast<int>(conf::matrixBlockSize) + static_cast<int>(conf::matrixBlockSize); ++j) // for each column in block
             {
                 // compute local column index value_j inside the current block from global column index j
-                const int value_j = j - columnBlockIndex * conf::matrixBlockSize;
+                const int value_j = j - columnBlockIndex * static_cast<int>(conf::matrixBlockSize);
 
                 const conf::fp_type value = rowValues[j];
 
@@ -192,7 +192,7 @@ void MatrixParser::writeBlockedMatrix(const std::string& path, const SymmetricMa
             const int value_i = rowDivBlock.rem;
 
             // for each column in block
-            for (int value_j = 0; value_j < conf::matrixBlockSize; ++value_j) {
+            for (unsigned int value_j = 0; value_j < conf::matrixBlockSize; ++value_j) {
                 conf::fp_type value = matrix.matrixData[blockStartIndex + value_i * conf::matrixBlockSize + value_j];
                 if (value >= 0) {
                     output << " " << value << ";";
@@ -234,7 +234,7 @@ void MatrixParser::writeFullMatrix(const std::string& path, const SymmetricMatri
             const int value_i = rowDivBlock.rem;
 
             // for each column in block
-            for (int value_j = 0; value_j < conf::matrixBlockSize; ++value_j) {
+            for (unsigned int value_j = 0; value_j < conf::matrixBlockSize; ++value_j) {
                 conf::fp_type value = matrix.matrixData[blockStartIndex + value_i * conf::matrixBlockSize + value_j];
                 if (value >= 0) {
                     output << " " << value << ";";
@@ -258,7 +258,7 @@ void MatrixParser::writeFullMatrix(const std::string& path, const SymmetricMatri
             const int value_i = rowDivBlock.rem;
 
             // for each column in block
-            for (int value_j = 0; value_j < conf::matrixBlockSize; ++value_j) {
+            for (unsigned int value_j = 0; value_j < conf::matrixBlockSize; ++value_j) {
                 conf::fp_type value = matrix.matrixData[blockStartIndex + value_j * conf::matrixBlockSize + value_i];
                 if (value >= 0) {
                     output << " " << value << ";";

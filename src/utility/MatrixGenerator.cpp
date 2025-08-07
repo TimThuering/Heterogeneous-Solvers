@@ -15,7 +15,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
     std::mt19937 generator(123);
     std::uniform_real_distribution<> distribution(-1.0, 1.0);
 
-    for (std::size_t block_i = 0; block_i < matrix.blockCountXY; ++block_i) {
+    for (std::size_t block_i = 0; block_i < static_cast<std::size_t>(matrix.blockCountXY); ++block_i) {
         for (std::size_t block_j = 0; block_j <= block_i; ++block_j) {
             // number of blocks in row to the right (if matrix would be full)
             const int block_j_inv = matrix.blockCountXY - (block_j + 1);
@@ -32,7 +32,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
 
             if (block_i == block_j) {
                 // Diagonal block
-                for (std::size_t i = 0; i < matrix.blockSize; ++i) {
+                for (std::size_t i = 0; i < static_cast<std::size_t>(matrix.blockSize); ++i) {
                     for (std::size_t j = 0; j <= i; ++j) {
                         if (block_i * conf::matrixBlockSize + i < conf::N &&
                             block_j * conf::matrixBlockSize + j < conf::N) {
@@ -50,8 +50,8 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
                 }
             } else {
                 // Non-diagonal block
-                for (std::size_t i = 0; i < matrix.blockSize; ++i) {
-                    for (std::size_t j = 0; j < matrix.blockSize; ++j) {
+                for (std::size_t i = 0; i < static_cast<std::size_t>(matrix.blockSize); ++i) {
+                    for (std::size_t j = 0; j < static_cast<std::size_t>(matrix.blockSize); ++j) {
                         if (block_i * conf::matrixBlockSize + i < conf::N &&
                             block_j * conf::matrixBlockSize + j < conf::N) {
                             const conf::fp_type value = distribution(generator);
@@ -85,7 +85,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
     std::string valueString;
 
     // parse input data
-    int rowIndex = 0;
+    std::size_t rowIndex = 0;
     while (std::getline(dataInputStream, valueString)) {
         conf::fp_type value = static_cast<conf::fp_type>(std::stod(valueString));
         trainingInput[rowIndex + offset] = value;
@@ -217,7 +217,7 @@ RightHandSide MatrixGenerator::parseRHS_GP(std::string& path, sycl::queue& queue
     std::string valueString;
 
     // parse input data
-    int rowIndex = 0;
+    std::size_t rowIndex = 0;
     while (std::getline(dataInputStream, valueString)) {
         conf::fp_type value = static_cast<conf::fp_type>(std::stod(valueString));
         rhs.rightHandSideData[rowIndex] = value;
