@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.9)
-project(Heterogeneous_Conjugate_Gradients)
+project(Heterogeneous_SPD_solvers)
 
 set(CMAKE_CXX_STANDARD 17)
 
-option(ENABLE_TESTS "Enable Test" ON)
+option(ENABLE_TESTS "Enable Test" OFF)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
 set(GPU_VENDOR "NVIDIA" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
 
@@ -63,7 +63,7 @@ set(LIBRARY_FILES
         src/loadBalancer/PowerLoadBalancer.cpp
         src/loadBalancer/PowerLoadBalancer.hpp)
 
-add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
+add_library(heterogeneous_solvers_lib ${LIBRARY_FILES})
 
 include_directories(src)
 include_directories(src/dataStructures)
@@ -76,17 +76,17 @@ include_directories(src/loadBalancer)
 include_directories(src/metricsTracker)
 
 # create and executable, add SYCL to executable and link OpenMP and custom library files
-add_executable(Heterogeneous_CG ${EXECUTABLE_FILES})
-target_link_libraries(Heterogeneous_CG PUBLIC Heterogeneous_CG_lib)
-add_sycl_to_target(TARGET Heterogeneous_CG SOURCES ${EXECUTABLE_FILES})
-target_link_options(Heterogeneous_CG PUBLIC -fopenmp)
+add_executable(heterogeneous_solvers ${EXECUTABLE_FILES})
+target_link_libraries(heterogeneous_solvers PUBLIC heterogeneous_solvers_lib)
+add_sycl_to_target(TARGET heterogeneous_solvers SOURCES ${EXECUTABLE_FILES})
+target_link_options(heterogeneous_solvers PUBLIC -fopenmp)
 
 # enable FP64 double precision
 if (USE_DOUBLE)
-    target_compile_definitions(Heterogeneous_CG_lib PUBLIC USE_DOUBLE=1)
+    target_compile_definitions(heterogeneous_solvers_lib PUBLIC USE_DOUBLE=1)
 endif ()
 
-target_compile_definitions(Heterogeneous_CG_lib PUBLIC ${GPU_VENDOR})
+target_compile_definitions(heterogeneous_solvers_lib PUBLIC ${GPU_VENDOR})
 
 
 message("Building the hardware sampling library")
@@ -101,10 +101,10 @@ FetchContent_Declare(
         GIT_TAG fbd284d7d18081c4b44fbff3b402afbe8a81610a
 )
 FetchContent_MakeAvailable(hws)
-add_dependencies(Heterogeneous_CG hws)
-target_include_directories(Heterogeneous_CG PUBLIC ${hws_SOURCE_DIR}/include)
-target_link_libraries(Heterogeneous_CG PUBLIC hws::hws)
-target_link_libraries(Heterogeneous_CG_lib PUBLIC hws::hws)
+add_dependencies(heterogeneous_solvers hws)
+target_include_directories(heterogeneous_solvers PUBLIC ${hws_SOURCE_DIR}/include)
+target_link_libraries(heterogeneous_solvers PUBLIC hws::hws)
+target_link_libraries(heterogeneous_solvers_lib PUBLIC hws::hws)
 
 # include the cxxopts library for cli arguments
 FetchContent_Declare(
@@ -113,8 +113,8 @@ FetchContent_Declare(
         GIT_TAG v3.2.0
 )
 FetchContent_MakeAvailable(cxxopts)
-add_dependencies(Heterogeneous_CG cxxopts)
-target_include_directories(Heterogeneous_CG PUBLIC ${cxxopts_SOURCE_DIR}/include)
+add_dependencies(heterogeneous_solvers cxxopts)
+target_include_directories(heterogeneous_solvers PUBLIC ${cxxopts_SOURCE_DIR}/include)
 
 # Tests
 if (${ENABLE_TESTS})
@@ -133,10 +133,10 @@ if (${ENABLE_TESTS})
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 
-    add_executable(Heterogeneous_CG_Test ${TEST_SOURCE_FILES})
+    add_executable(heterogeneous_solvers_test ${TEST_SOURCE_FILES})
     enable_testing()
     include(GoogleTest)
-    gtest_discover_tests(Heterogeneous_CG_Test)
-    target_link_libraries(Heterogeneous_CG_Test GTest::gtest_main Heterogeneous_CG_lib)
+    gtest_discover_tests(heterogeneous_solvers_test)
+    target_link_libraries(heterogeneous_solvers_test GTest::gtest_main heterogeneous_solvers_lib)
     message("Tests are enabled")
 endif ()
