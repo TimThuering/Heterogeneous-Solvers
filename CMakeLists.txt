@@ -7,8 +7,6 @@ option(ENABLE_TESTS "Enable Test" OFF)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
 set(GPU_VENDOR "NVIDIA" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
 
-
-
 # find AdaptiveCpp SYCL implementation
 find_package(AdaptiveCpp CONFIG REQUIRED)
 
@@ -18,16 +16,15 @@ find_package(OpenMP REQUIRED)
 # include FetchContent
 include(FetchContent)
 
-
 # define all program source files for the executable
 set(EXECUTABLE_FILES src/main.cpp)
 
 # define all library files that will be linked to the executable
 set(LIBRARY_FILES
+        src/utility/Configuration.cpp
         src/utility/Configuration.hpp
         src/utility/MatrixParser.cpp
         src/utility/MatrixParser.hpp
-        src/utility/Configuration.cpp
         src/utility/UtilityFunctions.cpp
         src/utility/UtilityFunctions.hpp
         src/utility/MatrixGenerator.cpp
@@ -87,7 +84,6 @@ if (USE_DOUBLE)
 endif ()
 
 target_compile_definitions(heterogeneous_solvers_lib PUBLIC ${GPU_VENDOR})
-
 
 message("Building the hardware sampling library")
 # build and link the hws library
