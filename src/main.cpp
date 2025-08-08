@@ -60,6 +60,7 @@ int main(int argc, char* argv[]) {
         ("gpu_opt", "optimization level 0-3 for GPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>())
         ("cpu_opt", "optimization level 0-2 for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>())
         ("print_verbose", "enable/disable verbose console output", cxxopts::value<bool>())
+        ("check_result", "enable/disable result check that outputs error of Ax - b", cxxopts::value<bool>())
         ("gpr", "perform gaussian process regression (GPR)", cxxopts::value<bool>());
 
 
@@ -176,6 +177,10 @@ int main(int argc, char* argv[]) {
         conf::printVerbose = arguments["print_verbose"].as<bool>();
     }
 
+    if (arguments.count("check_result")) {
+        conf::checkResult = arguments["check_result"].as<bool>();
+    }
+
     sycl::property_list properties{sycl::property::queue::enable_profiling()};
 
     queue gpuQueue(gpu_selector_v, properties);
@@ -222,6 +227,10 @@ int main(int argc, char* argv[]) {
             cholesky.solve_heterogeneous();
             TriangularSystemSolver solver(A, cholesky.A_gpu, b, cpuQueue, gpuQueue, loadBalancer);
             solver.solve();
+            if (conf::checkResult) {
+                double error = UtilityFunctions::checkResult(b, cpuQueue, gpuQueue, path_gp_input, path_gp_output);
+                std::cout << "Average error of Ax - b: " << error << std::endl;
+            }
         } else {
             throw std::runtime_error("Invalid algorithm: " + algorithm);
         }

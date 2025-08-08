@@ -8,6 +8,10 @@
 #include <hws/cpu/hardware_sampler.hpp>
 
 #include "Configuration.hpp"
+#include "MatrixGenerator.hpp"
+#include "MatrixVectorOperations.hpp"
+#include "RightHandSide.hpp"
+#include "SymmetricMatrix.hpp"
 
 void UtilityFunctions::writeResult(const std::string& path,
                                    const std::vector<
@@ -52,4 +56,23 @@ void UtilityFunctions::measureIdlePowerCPU() {
         std::cerr << "\033[93m[WARNING]\033[0m Could not determine CPU idle power draw. Using default of " <<
             conf::idleWatt_CPU << "W." << std::endl;
     }
+}
+
+double UtilityFunctions::checkResult(RightHandSide& b, sycl::queue cpuQueue, sycl::queue gpuQueue, std::string path_gp_input, std::string path_gp_output) {
+    std::cout << "Checking result" << std::endl;
+    SymmetricMatrix A_new = MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue, gpuQueue);
+
+    RightHandSide result(conf::N, conf::matrixBlockSize, gpuQueue);
+
+    MatrixVectorOperations::matrixVectorBlock(cpuQueue,A_new.matrixData.data(),b.rightHandSideData.data(),result.rightHandSideData.data(),0,0,b.blockCountX,b.blockCountX,A_new.blockCountXY,true);
+    cpuQueue.wait();
+    RightHandSide b_new = MatrixGenerator::parseRHS_GP(path_gp_output, gpuQueue);
+
+    double error = 0.0;
+    for (unsigned int i = 0; i < b.rightHandSideData.size(); i++) {
+        error += std::abs(b_new.rightHandSideData[i] - result.rightHandSideData[i]);
+    }
+    error /= static_cast<double>(conf::N);
+
+    return error;
 }

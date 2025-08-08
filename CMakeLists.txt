@@ -20,21 +20,26 @@ include(FetchContent)
 
 
 # define all program source files for the executable
-set(EXECUTABLE_FILES src/main.cpp
-        src/solver/cholesky/Cholesky.cpp
-        src/solver/cholesky/Cholesky.hpp
-        src/solver/cholesky/TriangularSystemSolver.cpp
-        src/solver/cholesky/TriangularSystemSolver.hpp
-        src/gaussianProcess/GaussianProcess.cpp
-        src/gaussianProcess/GaussianProcess.hpp)
+set(EXECUTABLE_FILES src/main.cpp)
 
 # define all library files that will be linked to the executable
 set(LIBRARY_FILES
         src/utility/Configuration.hpp
         src/utility/MatrixParser.cpp
         src/utility/MatrixParser.hpp
+        src/utility/Configuration.cpp
+        src/utility/UtilityFunctions.cpp
+        src/utility/UtilityFunctions.hpp
+        src/utility/MatrixGenerator.cpp
+        src/utility/MatrixGenerator.hpp
         src/solver/cg/CG.cpp
         src/solver/cg/CG.hpp
+        src/solver/cholesky/Cholesky.cpp
+        src/solver/cholesky/Cholesky.hpp
+        src/solver/cholesky/TriangularSystemSolver.cpp
+        src/solver/cholesky/TriangularSystemSolver.hpp
+        src/gaussianProcess/GaussianProcess.cpp
+        src/gaussianProcess/GaussianProcess.hpp
         src/dataStructures/SymmetricMatrix.cpp
         src/dataStructures/SymmetricMatrix.hpp
         src/dataStructures/RightHandSide.cpp
@@ -43,25 +48,21 @@ set(LIBRARY_FILES
         src/kernel/VectorOperations.hpp
         src/kernel/MatrixVectorOperations.cpp
         src/kernel/MatrixVectorOperations.hpp
+        src/kernel/MatrixOperations.cpp
+        src/kernel/MatrixOperations.hpp
+        src/kernel/MatrixMatrixOperations.cpp
+        src/kernel/MatrixMatrixOperations.hpp
+        src/metricsTracker/MetricsTracker.cpp
+        src/metricsTracker/MetricsTracker.hpp
         src/loadBalancer/LoadBalancer.cpp
         src/loadBalancer/LoadBalancer.hpp
         src/loadBalancer/StaticLoadBalancer.cpp
         src/loadBalancer/StaticLoadBalancer.hpp
-        src/metricsTracker/MetricsTracker.cpp
-        src/metricsTracker/MetricsTracker.hpp
         src/loadBalancer/RuntimeLoadBalancer.cpp
         src/loadBalancer/RuntimeLoadBalancer.hpp
-        src/utility/Configuration.cpp
-        src/utility/UtilityFunctions.cpp
-        src/utility/UtilityFunctions.hpp
-        src/utility/MatrixGenerator.cpp
-        src/utility/MatrixGenerator.hpp
         src/loadBalancer/PowerLoadBalancer.cpp
-        src/loadBalancer/PowerLoadBalancer.hpp
-        src/kernel/MatrixOperations.cpp
-        src/kernel/MatrixOperations.hpp
-        src/kernel/MatrixMatrixOperations.cpp
-        src/kernel/MatrixMatrixOperations.hpp)
+        src/loadBalancer/PowerLoadBalancer.hpp)
+
 add_library(Heterogeneous_CG_lib ${LIBRARY_FILES})
 
 include_directories(src)
@@ -69,6 +70,7 @@ include_directories(src/dataStructures)
 include_directories(src/utility)
 include_directories(src/solver)
 include_directories(src/solver/cg)
+include_directories(src/solver/cholesky)
 include_directories(src/kernel)
 include_directories(src/loadBalancer)
 include_directories(src/metricsTracker)

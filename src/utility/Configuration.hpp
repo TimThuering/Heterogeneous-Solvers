@@ -45,6 +45,7 @@ namespace conf {
         int cpuOptimizationLevel = 2; /// optimization level for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)
 
         bool printVerbose = false; /// enable/disable verbose output with detailed timing on the console
+        bool checkResult = false; /// enable/disable result check that outputs error of Ax - b
     };
 
     Configuration& get();
@@ -100,6 +101,8 @@ namespace conf {
     inline int& cpuOptimizationLevel = get().cpuOptimizationLevel;
 
     inline bool& printVerbose = get().printVerbose;
+
+    inline bool& checkResult = get().checkResult;
 
 
 }

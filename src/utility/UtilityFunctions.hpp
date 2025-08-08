@@ -5,6 +5,7 @@
 #include <vector>
 #include <sycl/sycl.hpp>
 #include "Configuration.hpp"
+#include "RightHandSide.hpp"
 
 
 class UtilityFunctions {
@@ -14,6 +15,8 @@ public:
     static std::string getTimeString();
 
     static void measureIdlePowerCPU();
+
+    static double checkResult(RightHandSide& b, sycl::queue cpuQueue, sycl::queue gpuQueue, std::string path_gp_input, std::string path_gp_output);
 
 
 };
