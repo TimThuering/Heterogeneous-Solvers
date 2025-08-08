@@ -35,15 +35,13 @@ CG::CG(SymmetricMatrix& A, RightHandSide& b, queue& cpuQueue, queue& gpuQueue,
 
 void CG::solveHeterogeneous() {
     const auto start = std::chrono::steady_clock::now();
+    metricsTracker.startTracking();
 
     // get new GPU proportion of workload
     double gpuProportion = loadBalancer->currentProportionGPU;
     blockCountGPU = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
     blockCountCPU = A.blockCountXY - blockCountGPU;
     blockStartCPU = blockCountGPU;
-
-    std::cout << "Block count GPU: " << blockCountGPU << std::endl;
-    std::cout << "Block count CPU: " << blockCountCPU << std::endl;
 
     // initialize data structures
     auto startMemInit = std::chrono::steady_clock::now();
@@ -72,7 +70,6 @@ void CG::solveHeterogeneous() {
 
     std::size_t iteration = 0;
 
-    metricsTracker.startTracking();
 
     bool firstIteration = true;
 
@@ -111,7 +108,9 @@ void CG::solveHeterogeneous() {
         auto endIteration = std::chrono::steady_clock::now();
         auto iterationTime = std::chrono::duration<double, std::milli>(endIteration - startIteration).count();
         metricsTracker.updateMetrics(iteration, blockCountGPU, blockCountCPU, iterationTime, loadBalancer->updateInterval);
-        std::cout << iteration << ": Iteration time: " << iterationTime << "ms" << std::endl;
+        if (conf::printVerbose) {
+            std::cout << iteration << ": Iteration time: " << iterationTime << "ms" << std::endl;
+        }
 
         auto time_q = std::chrono::duration<double, std::milli>(timePoint2 - timePoint1).count();
         auto time_alpha = std::chrono::duration<double, std::milli>(timePoint3 - timePoint2).count();
@@ -131,15 +130,7 @@ void CG::solveHeterogeneous() {
         iteration++;
         firstIteration = false;
     }
-
-    auto end = std::chrono::steady_clock::now();
-    auto totalTime = std::chrono::duration<double, std::milli>(end - start).count();
-    std::cout << "Total time: " << totalTime << "ms (" << iteration << " iterations)" << std::endl;
-    std::cout << "Residual: " << delta_new << std::endl;
-    metricsTracker.totalTime = totalTime;
-
     waitAllQueues();
-    metricsTracker.endTracking();
 
     if (blockCountGPU != 0) {
         auto startMemCopy = std::chrono::steady_clock::now();
@@ -149,6 +140,15 @@ void CG::solveHeterogeneous() {
         auto endMemCopy = std::chrono::steady_clock::now();
         metricsTracker.resultCopyTime = std::chrono::duration<double, std::milli>(endMemCopy - startMemCopy).count();
     }
+
+    auto end = std::chrono::steady_clock::now();
+    auto totalTime = std::chrono::duration<double, std::milli>(end - start).count();
+    std::cout << "Total time: " << totalTime << "ms (" << iteration << " iterations)" << std::endl;
+    std::cout << "Memory init: " << metricsTracker.memoryInitTime << "ms" << std::endl;
+    std::cout << "Result copy: " << metricsTracker.resultCopyTime << "ms" << std::endl;
+    std::cout << "Residual: " << delta_new << std::endl;
+    metricsTracker.totalTime = totalTime;
+    metricsTracker.endTracking();
 
     std::string timeString = UtilityFunctions::getTimeString();
     std::string filePath = conf::outputPath + "/" + timeString;
@@ -199,8 +199,6 @@ void CG::initGPUdataStructures() {
         // Whole matrix A fits into GPU memory
         valuesGPU = A.matrixData.size();
     }
-
-    std::cout << "GPU memory size: " << valuesGPU * sizeof(conf::fp_type) << std::endl;
 
     // Matrix A GPU
     A_gpu = malloc_device<conf::fp_type>(valuesGPU, gpuQueue);
@@ -540,7 +538,9 @@ void CG::rebalanceProportions(double& gpuProportion) {
     std::size_t blockStartCPU_new = blockCountGPU_new;
 
     if (blockCountGPU_new > maxBlockCountGPU) {
-        std::cout << "Change in block counts would result into too much gpu memory usage. New GPU block count: " << maxBlockCountGPU << std::endl;
+        if (conf::printVerbose) {
+            std::cout << "Change in block counts would result into too much gpu memory usage. New GPU block count: " << maxBlockCountGPU << std::endl;
+        }
 
         blockCountGPU_new = maxBlockCountGPU;
         blockCountCPU_new = A.blockCountXY - maxBlockCountGPU;
@@ -589,11 +589,14 @@ void CG::rebalanceProportions(double& gpuProportion) {
         blockCountCPU = blockCountCPU_new;
         blockStartCPU = blockStartCPU_new;
     } else if (blockCountGPU_new != blockCountGPU) {
-        std::cout << "Change in block counts smaller than threshold --> no re-balancing: " << blockCountGPU << " --> " << blockCountGPU_new << std::endl;
+        if (conf::printVerbose) {
+            std::cout << "Change in block counts smaller than threshold --> no re-balancing: " << blockCountGPU << " --> " << blockCountGPU_new << std::endl;
+        }
     }
 
-
-    std::cout << "Block count GPU: " << blockCountGPU << std::endl;
-    std::cout << "Block count CPU: " << blockCountCPU << std::endl;
-    std::cout << "New GPU proportion: " << gpuProportion * 100 << "%" << std::endl;
+    if (conf::printVerbose) {
+        std::cout << "Block count GPU: " << blockCountGPU << std::endl;
+        std::cout << "Block count CPU: " << blockCountCPU << std::endl;
+        std::cout << "New GPU proportion: " << gpuProportion * 100 << "%" << std::endl;
+    }
 }

@@ -53,7 +53,9 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                     std::accumulate(GPU_util.begin(), GPU_util.end(), 0.0) / static_cast<double>(GPU_util.size());
             } else {
                 // no new sample was generated in last interval, use last available utilization as fallback
-                std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!" << std::endl;
+                if (conf::printVerbose) {
+                    std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!" << std::endl;
+                }
                 averageUtil = generalSamples_GPU.get_compute_utilization().value().back();
             }
             // update index where the new samples will begin for the next interval
@@ -74,7 +76,9 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                     std::accumulate(CPU_util.begin(), CPU_util.end(), 0.0) / static_cast<double>(CPU_util.size());
             } else {
                 // no new sample was generated in last interval, use last available utilization as fallback
-                std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!" << std::endl;
+                if (conf::printVerbose) {
+                    std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!" << std::endl;
+                }
                 averageUtil = generalSamples_CPU.get_compute_utilization().value().back();
             }
             nextTimePoint_CPU = generalSamples_CPU.get_compute_utilization().value().size();
@@ -92,7 +96,9 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                 powerDraw = std::accumulate(CPU_watts.begin(), CPU_watts.end(), 0.0) /
                     static_cast<double>(CPU_watts.size());
             } else {
-                std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
+                if (conf::printVerbose) {
+                    std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
+                }
                 powerDraw = powerDraw_CPU.back();
             }
             nextTimePointPower_CPU = powerSamples_CPU.get_power_usage().value().size();
@@ -110,7 +116,9 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                 powerDraw =
                     std::accumulate(GPU_watts.begin(), GPU_watts.end(), 0.0) / static_cast<double>(GPU_watts.size());
             } else {
-                std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
+                if (conf::printVerbose) {
+                    std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
+                }
                 powerDraw = powerDraw_GPU.back();
             }
             nextTimePointPower_GPU = powerSamples_GPU.get_power_usage().value().size();

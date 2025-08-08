@@ -11,7 +11,6 @@
 #include "CG.hpp"
 #include "LoadBalancer.hpp"
 #include "StaticLoadBalancer.hpp"
-#include "UtilizationLoadBalancer.hpp"
 #include "RuntimeLoadBalancer.hpp"
 #include "PowerLoadBalancer.hpp"
 #include "MatrixGenerator.hpp"
@@ -42,7 +41,7 @@ int main(int argc, char* argv[]) {
         ("gp_input", "path to the input data for GP matrix generation", cxxopts::value<std::string>())
         ("gp_output", "path to the output data for GP matrix generation", cxxopts::value<std::string>())
         ("gp_test", "path to the test input data for GP regression", cxxopts::value<std::string>())
-        ("mode", "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime', 'power' or 'util'", cxxopts::value<std::string>())
+        ("mode", "specifies the load balancing mode between CPU and GPU, has to be 'static', 'runtime' or 'power'", cxxopts::value<std::string>())
         ("matrix_bsz", "block size for the symmetric matrix storage", cxxopts::value<int>())
         ("wg_size_vec", "work-group size for vector-vector operations", cxxopts::value<int>())
         ("wg_size_sp", "work-group size for the final scalar product step on GPUs", cxxopts::value<int>())
@@ -58,9 +57,9 @@ int main(int argc, char* argv[]) {
         ("test_size", "size of the test data for a gaussian processs", cxxopts::value<std::size_t>())
         ("algorithm", "the algorithm that should be used: can be 'cg' or 'cholesky'", cxxopts::value<std::string>())
         ("enableHWS", "enables sampling with hws library, might affect CPU/GPU performance", cxxopts::value<bool>())
-        ("bc_cholesky_GPU_only", "total block Count from which on the computation will be GPU only", cxxopts::value<int>())
         ("gpu_opt", "optimization level 0-3 for GPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>())
         ("cpu_opt", "optimization level 0-2 for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>())
+        ("print_verbose", "enable/disable verbose console output", cxxopts::value<bool>())
         ("gpr", "perform gaussian process regression (GPR)", cxxopts::value<bool>());
 
 
@@ -165,16 +164,16 @@ int main(int argc, char* argv[]) {
         conf::enableHWS = arguments["enableHWS"].as<bool>();
     }
 
-    if (arguments.count("bc_cholesky_GPU_only")) {
-        conf::blockCountCholeskyGPU_only = arguments["bc_cholesky_GPU_only"].as<int>();
-    }
-
     if (arguments.count("gpu_opt")) {
         conf::gpuOptimizationLevel = arguments["gpu_opt"].as<int>();
     }
 
     if (arguments.count("cpu_opt")) {
         conf::cpuOptimizationLevel = arguments["cpu_opt"].as<int>();
+    }
+
+    if (arguments.count("print_verbose")) {
+        conf::printVerbose = arguments["print_verbose"].as<bool>();
     }
 
     sycl::property_list properties{sycl::property::queue::enable_profiling()};
@@ -203,15 +202,14 @@ int main(int argc, char* argv[]) {
         loadBalancer = std::make_shared<StaticLoadBalancer>(conf::updateInterval, conf::initialProportionGPU, A.blockCountXY);
     } else if (conf::mode == "runtime") {
         loadBalancer = std::make_shared<RuntimeLoadBalancer>(conf::updateInterval, conf::initialProportionGPU, A.blockCountXY);
-    } else if (conf::mode == "util") {
-        loadBalancer = std::make_shared<UtilizationLoadBalancer>(conf::updateInterval, conf::initialProportionGPU, A.blockCountXY);
     } else if (conf::mode == "power") {
         loadBalancer = std::make_shared<PowerLoadBalancer>(conf::updateInterval, conf::initialProportionGPU, A.blockCountXY);
     } else {
         throw std::runtime_error(
-            "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime', 'power' or 'util'");
+            "Invalid mode selected: '" + conf::mode + "' --> must be 'static', 'runtime' or 'power'");
     }
 
+    std::cout << "-- starting with computation" << std::endl;
     if (performGPR) {
         GaussianProcess GP(A, b, path_gp_input, path_gp_test, cpuQueue, gpuQueue, loadBalancer);
         GP.start();

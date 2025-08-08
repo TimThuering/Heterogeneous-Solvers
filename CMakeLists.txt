@@ -47,8 +47,6 @@ set(LIBRARY_FILES
         src/loadBalancer/LoadBalancer.hpp
         src/loadBalancer/StaticLoadBalancer.cpp
         src/loadBalancer/StaticLoadBalancer.hpp
-        src/loadBalancer/UtilizationLoadBalancer.cpp
-        src/loadBalancer/UtilizationLoadBalancer.hpp
         src/metricsTracker/MetricsTracker.cpp
         src/metricsTracker/MetricsTracker.hpp
         src/loadBalancer/RuntimeLoadBalancer.cpp

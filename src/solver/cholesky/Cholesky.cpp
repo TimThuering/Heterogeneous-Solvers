@@ -280,64 +280,83 @@ intel = true;
 #endif
 
 
-    std::cout << "Column: " << k << ": " << columnTime << "ms" << std::endl;
-    std::cout << "   -- copy row:               " << copyTime_row << "ms" << std::endl;
-    std::cout << "   -- cholesky:               " << choleskyTime << "ms" << std::endl;
-    std::cout << "   -- triangular solve:       " << triangularSolveTime << "ms" << std::endl;
+    if (conf::printVerbose) {
+        std::cout << "Column: " << k << ": " << columnTime << "ms" << std::endl;
+        std::cout << "   -- copy row:               " << copyTime_row << "ms" << std::endl;
+        std::cout << "   -- cholesky:               " << choleskyTime << "ms" << std::endl;
+        std::cout << "   -- triangular solve:       " << triangularSolveTime << "ms" << std::endl;
+    }
     if (blockCountCPU > 0 && !intel) {
         auto triangularSolve_CPU = static_cast<double>(executionTimes.eventCPU_triangularSolve.get_profiling_info<sycl::info::event_profiling::command_end>() - executionTimes.eventCPU_triangularSolve.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6;
-        std::cout << "      - CPU:          " << triangularSolve_CPU << "ms" << std::endl;
+        if (conf::printVerbose) {
+            std::cout << "      - CPU:          " << triangularSolve_CPU << "ms" << std::endl;
+        }
         metricsTracker.triangularSolveTimes_CPU.push_back(triangularSolve_CPU);
     } else {
         metricsTracker.triangularSolveTimes_CPU.push_back(0);
     }
     if (blockCountGPU > 0 && !intel) {
         const auto triangularSolve_GPU = static_cast<double>(executionTimes.eventGPU_triangularSolve.get_profiling_info<sycl::info::event_profiling::command_end>() - executionTimes.eventGPU_triangularSolve.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6;
-        std::cout << "      - GPU:          " << triangularSolve_GPU << "ms" << std::endl;
+        if (conf::printVerbose) {
+            std::cout << "      - GPU:          " << triangularSolve_GPU << "ms" << std::endl;
+        }
         metricsTracker.triangularSolveTimes_GPU.push_back(triangularSolve_GPU);
     } else {
         metricsTracker.triangularSolveTimes_GPU.push_back(0);
     }
 
-    std::cout << "   -- matrix-matrix diagonal: " << matrixMatrixDiagonalTime << "ms" << std::endl;
+    if (conf::printVerbose) {
+        std::cout << "   -- matrix-matrix diagonal: " << matrixMatrixDiagonalTime << "ms" << std::endl;
+    }
     if (blockCountCPU > 0 && !intel) {
         auto matrixMatrixDiagTime_CPU = static_cast<double>(executionTimes.eventCPU_matrixMatrixDiag.get_profiling_info<sycl::info::event_profiling::command_end>() - executionTimes.eventCPU_matrixMatrixDiag.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6;
-        std::cout << "      - CPU:          " << matrixMatrixDiagTime_CPU << "ms" << std::endl;
+        if (conf::printVerbose) {
+            std::cout << "      - CPU:          " << matrixMatrixDiagTime_CPU << "ms" << std::endl;
+        }
         metricsTracker.matrixMatrixDiagonalTimes_CPU.push_back(matrixMatrixDiagTime_CPU);
     } else {
         metricsTracker.matrixMatrixDiagonalTimes_CPU.push_back(0);
     }
     if (blockCountGPU > 0 && !intel) {
         const auto matrixMatrixDiagTime_GPU = static_cast<double>(executionTimes.eventGPU_matrixMatrixDiag.get_profiling_info<sycl::info::event_profiling::command_end>() - executionTimes.eventGPU_matrixMatrixDiag.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6;
-        std::cout << "      - GPU:          " << matrixMatrixDiagTime_GPU << "ms" << std::endl;
+        if (conf::printVerbose) {
+            std::cout << "      - GPU:          " << matrixMatrixDiagTime_GPU << "ms" << std::endl;
+        }
         metricsTracker.matrixMatrixDiagonalTimes_GPU.push_back(matrixMatrixDiagTime_GPU);
     } else {
         metricsTracker.matrixMatrixDiagonalTimes_GPU.push_back(0);
     }
 
-    std::cout << "   -- matrix-matrix:          " << matrixMatrixTime << "ms" << std::endl;
+    if (conf::printVerbose) {
+        std::cout << "   -- matrix-matrix:          " << matrixMatrixTime << "ms" << std::endl;
+    }
     if (blockCountCPU > 1 && !intel) {
         auto matrixMatrixTime_CPU = static_cast<double>(executionTimes.eventCPU_matrixMatrix.get_profiling_info<sycl::info::event_profiling::command_end>() - executionTimes.eventCPU_matrixMatrix.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6;
-        std::cout << "      - CPU:          " << matrixMatrixTime_CPU << "ms" << std::endl;
+        if (conf::printVerbose) {
+            std::cout << "      - CPU:          " << matrixMatrixTime_CPU << "ms" << std::endl;
+        }
         metricsTracker.matrixMatrixTimes_CPU.push_back(matrixMatrixTime_CPU);
     } else {
         metricsTracker.matrixMatrixTimes_CPU.push_back(0);
     }
     if (blockCountGPU > 1 && !intel) {
         const auto matrixMatrixTime_GPU = static_cast<double>(executionTimes.eventGPU_matrixMatrix.get_profiling_info<sycl::info::event_profiling::command_end>() - executionTimes.eventGPU_matrixMatrix.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6;
-        std::cout << "      - GPU:          " << matrixMatrixTime_GPU << "ms" << std::endl;
+        if (conf::printVerbose) {
+            std::cout << "      - GPU:          " << matrixMatrixTime_GPU << "ms" << std::endl;
+        }
         metricsTracker.matrixMatrixTimes_GPU.push_back(matrixMatrixTime_GPU);
     } else {
         metricsTracker.matrixMatrixTimes_GPU.push_back(0);
     }
 
-    std::cout << std::endl;
-    std::cout << std::endl;
+    if (conf::printVerbose) {
+        std::cout << std::endl;
+        std::cout << std::endl;
+    }
 }
 
 void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t blockSizeBytes) {
     executionTimes.startResultCopyGPU = std::chrono::steady_clock::now();
-    std::cout << "GPU proportion: " << gpuProportion << std::endl;
     if (gpuProportion != 1 && gpuProportion != 0) {
         // Case heterogeneous: copy parts of the matrix that were computed by the GPU to the CPU
 
@@ -358,8 +377,6 @@ void Cholesky::copyResultFromGPU(const int blockCountATotal, const std::size_t b
             if (A.blockCountXY < minBlockCountGPU) {
                 blockCountGPUinColumn = A.blockCountXY;
             }
-
-            std::cout << blockCountGPUinColumn << std::endl;
 
             gpuQueue.submit([&](handler& h) {
                 h.memcpy(&A.matrixData[blockStartIndexFirstGPUBlock], &A_gpu[blockStartIndexFirstGPUBlock], blockCountGPUinColumn * blockSizeBytes);
@@ -392,6 +409,7 @@ void Cholesky::printFinalTimes() {
 
 void Cholesky::solve_heterogeneous() {
     executionTimes.start = std::chrono::steady_clock::now();
+    metricsTracker.startTracking();
 
     gpuProportion = conf::initialProportionGPU;
 
@@ -419,7 +437,6 @@ void Cholesky::solve_heterogeneous() {
     blockCountGPU = initialBlockCountGPU;
     blockCountCPU = initialBlockCountCPU;
     blockStartGPU = initialBlockStartGPU;
-    metricsTracker.startTracking();
 
 
     // begin with tiled Cholesky decomposition using right-looking algorithm
@@ -455,12 +472,11 @@ void Cholesky::solve_heterogeneous() {
         printTimes(k);
     }
 
-    metricsTracker.endTracking();
-
     // copies all values that have been computed on GPU and are not yet in CPU memory
     copyResultFromGPU(blockCountATotal, blockSizeBytes);
 
     executionTimes.end = std::chrono::steady_clock::now();
+    metricsTracker.endTracking();
     printFinalTimes();
 
     std::string timeString = UtilityFunctions::getTimeString();

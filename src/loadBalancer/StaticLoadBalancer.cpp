@@ -9,10 +9,7 @@ StaticLoadBalancer::StaticLoadBalancer(int updateInterval, double gpuProportion,
     }
 }
 
-double StaticLoadBalancer::getNewProportionGPU(MetricsTracker &metricsTracker) {
-    if (conf::algorithm == "cholesky" && metricsTracker.blockCounts_GPU.back() + metricsTracker.blockCounts_CPU.back() <= static_cast<unsigned int>(conf::blockCountCholeskyGPU_only)) {
-        // gpuProportion = 1;
-    }
+double StaticLoadBalancer::getNewProportionGPU([[maybe_unused]] MetricsTracker &metricsTracker) {
     return gpuProportion;
 }
 

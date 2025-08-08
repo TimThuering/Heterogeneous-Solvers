@@ -73,7 +73,9 @@ double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) 
             }
 
 
-            std::cout << "Changing GPU proportion from" << currentProportionGPU << " to " << newVerticalProportionGPU << std::endl;
+            if (conf::printVerbose) {
+                std::cout << "Changing GPU proportion from" << currentProportionGPU << " to " << newVerticalProportionGPU << std::endl;
+            }
 
             currentProportionGPU = newVerticalProportionGPU;
             return currentProportionGPU;

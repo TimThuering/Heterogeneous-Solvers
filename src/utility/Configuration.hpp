@@ -27,7 +27,7 @@ namespace conf {
         std::string outputPath = "./output"; /// path for all output files
         bool writeResult = false; /// write the result vector into a .txt file
         bool writeMatrix = false; /// write the result vector into a .txt file
-        std::string mode = "runtime"; /// mode for the heterogeneous scheduling
+        std::string mode = "static"; /// mode for the heterogeneous scheduling
         std::size_t N = 0; /// size of the NxN matrix
         std::size_t N_test = 0; /// size of test data for the gaussian process
         double runtimeLBFactorCPU = 1.2; /// factor that scales the CPU runtimes to influence the scheduling for lowest runtime
@@ -35,15 +35,16 @@ namespace conf {
         std::size_t blockUpdateThreshold = 1; /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
         double idleWatt_CPU = 30.0; /// CPU power draw in Watts when the CPU is idle. Used to estimate total power draw.
         hws::sample_category sampleCategories = static_cast<hws::sample_category>(0b00000101); /// enable power and general samples
-        bool enableHWS = true; /// enables sampling with hws library, might affect CPU/GPU performance
+        bool enableHWS = false; /// enables sampling with hws library, might affect CPU/GPU performance
 
         std::string algorithm = "cg"; /// algorithm to use: 'cg' or 'cholesky'
 
         int workGroupSizeGEMM_xy = 16; /// work-group size in x/y direction for GEMM kernels
         int minBlockCountCholesky = 3; /// minimum number of rows assigned to the GPU in the Cholesky decomposition
-        int blockCountCholeskyGPU_only = 3; /// total block Count from which on the computation will be GPU only
         int gpuOptimizationLevel = 3; /// optimization level for GPU optimized matrix-matrix kernel (higher values for more optimized kernels)
         int cpuOptimizationLevel = 2; /// optimization level for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)
+
+        bool printVerbose = false; /// enable/disable verbose output with detailed timing on the console
     };
 
     Configuration& get();
@@ -90,8 +91,6 @@ namespace conf {
 
     inline int& minBlockCountCholesky = get().minBlockCountCholesky;
 
-    inline int& blockCountCholeskyGPU_only = get().blockCountCholeskyGPU_only;
-
     inline std::string& algorithm = get().algorithm;
 
     inline bool& enableHWS = get().enableHWS;
@@ -99,6 +98,8 @@ namespace conf {
     inline int& gpuOptimizationLevel = get().gpuOptimizationLevel;
 
     inline int& cpuOptimizationLevel = get().cpuOptimizationLevel;
+
+    inline bool& printVerbose = get().printVerbose;
 
 
 }

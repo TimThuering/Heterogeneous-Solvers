@@ -109,16 +109,18 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
 
         const double joulesHeterogeneous = watts_GPU * runtimePerBlock_GPU * blockCountGPU_heterogeneous + watts_CPU * runtimePerBlock_CPU * conf::runtimeLBFactorCPU * blockCountCPU_heterogeneous + joulesCommunication + joulesShift;
 
-        std::cout << "Joules GPU: " << joulesGPUOnly << std::endl;
-        std::cout << "Joules CPU: " << joulesCPUOnly << std::endl;
-        std::cout << "Joules Heterogeneous: " << joulesHeterogeneous << std::endl;
-        std::cout << "Joules comm: " << joulesCommunication << std::endl;
-        std::cout << "Joules shift: " << joulesShift << std::endl;
-        std::cout << "heterogeneous gpu proportion: " << proportionGPU_heterogeneous << std::endl;
+        if (conf::printVerbose) {
+            std::cout << "Joules GPU: " << joulesGPUOnly << std::endl;
+            std::cout << "Joules CPU: " << joulesCPUOnly << std::endl;
+            std::cout << "Joules Heterogeneous: " << joulesHeterogeneous << std::endl;
+            std::cout << "Joules comm: " << joulesCommunication << std::endl;
+            std::cout << "Joules shift: " << joulesShift << std::endl;
+            std::cout << "heterogeneous gpu proportion: " << proportionGPU_heterogeneous << std::endl;
 
-        std::cout << "expected heterogeneous Time: " <<  std::max(runtimePerBlock_GPU * blockCountGPU_heterogeneous , runtimePerBlock_CPU * conf::runtimeLBFactorCPU *  blockCountCPU_heterogeneous )<< std::endl;
-        std::cout << "expected CPU Time: " <<  runtimePerBlock_CPU * blockCount_total << std::endl;
-        std::cout << "expected GPU Time: " <<  runtimePerBlock_GPU * blockCount_total << std::endl;
+            std::cout << "expected heterogeneous Time: " <<  std::max(runtimePerBlock_GPU * blockCountGPU_heterogeneous , runtimePerBlock_CPU * conf::runtimeLBFactorCPU *  blockCountCPU_heterogeneous )<< std::endl;
+            std::cout << "expected CPU Time: " <<  runtimePerBlock_CPU * blockCount_total << std::endl;
+            std::cout << "expected GPU Time: " <<  runtimePerBlock_GPU * blockCount_total << std::endl;
+        }
 
 
         if (joulesGPUOnly < joulesHeterogeneous && joulesGPUOnly < joulesCPUOnly) {
