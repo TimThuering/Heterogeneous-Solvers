@@ -58,7 +58,7 @@ sycl::event MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::
                 std::size_t rowStartIndex = blockStartIndex + static_cast<std::size_t>(iInBlock) * matrixBlockSize;
 
                 // go through all columns of the block and compute the matrix vector product
-                for (unsigned int j = 0; j < matrixBlockSize; ++j) {
+                for (int j = 0; j < static_cast<int>(matrixBlockSize); ++j) {
                     resultValue += A[rowStartIndex + j] * b[block_j * matrixBlockSize + j];
                 }
             }
@@ -79,7 +79,7 @@ sycl::event MatrixVectorOperations::matrixVectorBlock(queue& queue, const conf::
 
                 // go through all columns of the block and compute the matrix vector product
                 // the block in storage now has to be interpreted as transposed since we are working on the data of the symmetric block
-                for (unsigned int j = 0; j < matrixBlockSize; ++j) {
+                for (int j = 0; j < static_cast<int>(matrixBlockSize); ++j) {
                     resultValue += A[blockStartIndex + j * matrixBlockSize + iInBlock] * b[block_j * matrixBlockSize + j];
                 }
             }
@@ -152,7 +152,7 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_GPU(sycl::queue& queue, co
                 nd_item.barrier();
 
                 // go through all columns of the block and compute the matrix vector product
-                for (unsigned int j = 0; j < matrixBlockSize; ++j) {
+                for (int j = 0; j < static_cast<int>(matrixBlockSize); ++j) {
                     resultValue += A[rowStartIndex + j] * local_b[j];
                 }
             }
@@ -178,7 +178,7 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_GPU(sycl::queue& queue, co
 
                 // go through all columns of the block and compute the matrix vector product
                 // the block in storage now has to be interpreted as transposed since we are working on the data of the symmetric block
-                for (unsigned int j = 0; j < matrixBlockSize; ++j) {
+                for (int j = 0; j < static_cast<int>(matrixBlockSize); ++j) {
                     resultValue += A[blockStartIndex + j * matrixBlockSize + iInBlock] * local_b[j];
                 }
             }
@@ -244,7 +244,7 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, co
 
                 // go through all columns of the block and compute the matrix vector product
 #pragma clang loop vectorize(enable)
-                for (unsigned int j = 0; j < matrixBlockSize; ++j) {
+                for (int j = 0; j < static_cast<int>(matrixBlockSize); ++j) {
                     resultValue += A[rowStartIndex + j] * b[block_j * matrixBlockSize + j];
                 }
             }
@@ -266,7 +266,7 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, co
                 // go through all columns of the block and compute the matrix vector product
                 // the block in storage now has to be interpreted as transposed since we are working on the data of the symmetric block
 #pragma clang loop vectorize(disable)
-                for (unsigned int j = 0; j < matrixBlockSize; ++j) {
+                for (int j = 0; j < static_cast<int>(matrixBlockSize); ++j) {
                     resultValue += A[blockStartIndex + j * matrixBlockSize + iInBlock] * b[block_j * matrixBlockSize + j];
                 }
             }
@@ -361,11 +361,11 @@ sycl::event MatrixVectorOperations::matrixVectorColumnUpdate(sycl::queue& queue,
 
             conf::fp_type sum = 0.0;
             if (!transposed) {
-                for (unsigned int k = 0; k < matrixBlockSize; ++k) {
+                for (int k = 0; k < static_cast<int>(matrixBlockSize); ++k) {
                     sum += A[blockStartIndex_Aij + local_i * matrixBlockSize + k] * b[blockStartIndex_b_0 + k];
                 }
             } else {
-                for (unsigned int k = 0; k < matrixBlockSize; ++k) {
+                for (int k = 0; k < static_cast<int>(matrixBlockSize); ++k) {
                     sum += A[blockStartIndex_Aij + k * matrixBlockSize + local_i] * b[blockStartIndex_b_0 + k];
                 }
             }

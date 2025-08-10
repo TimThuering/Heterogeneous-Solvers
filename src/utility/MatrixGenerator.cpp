@@ -67,7 +67,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
     return matrix;
 }
 
-SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queue& queue,  sycl::queue& queueGPU) {
+SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queue& queue, sycl::queue& queueGPU) {
     std::cout << "-- generating SPD matrix of size " << conf::N << "x" << conf::N << std::endl;
     SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queueGPU);
 
@@ -151,6 +151,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
                 });
             });
         }
+        queue.wait();
     }
     queue.wait();
 

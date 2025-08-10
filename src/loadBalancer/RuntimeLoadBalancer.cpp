@@ -32,6 +32,10 @@ double RuntimeLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) 
         }
         return currentProportionGPU;
     } else if (conf::algorithm == "cholesky") {
+        if (metricsTracker.blockCounts_GPU.back() <= 1 || metricsTracker.blockCounts_CPU.back() <= 1) {
+            // potentially no measurements for matrix-matrix step available
+            return currentProportionGPU;
+        }
         if (metricsTracker.matrixMatrixTimes_GPU.size() >= static_cast<unsigned long>(updateInterval) && metricsTracker.matrixMatrixTimes_CPU.size() >= static_cast<unsigned long>(updateInterval)) {
             const long offset = static_cast<long>(metricsTracker.matrixMatrixTimes_GPU.size()) - updateInterval;
 

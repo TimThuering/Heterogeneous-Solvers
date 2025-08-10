@@ -112,8 +112,6 @@ int main(int argc, char* argv[]) {
 
     if (arguments.count("mode")) {
         conf::mode = arguments["mode"].as<std::string>();
-    } else {
-        conf::mode = "runtime";
     }
 
     if (arguments.count("matrix_bsz")) {

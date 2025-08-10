@@ -44,6 +44,10 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
             runtimePerBlock_GPU = averageRuntime_GPU / static_cast<double>(blockCount_GPU);
             runtimePerBlock_CPU = averageRuntime_CPU / static_cast<double>(blockCount_CPU);
         } else if (conf::algorithm == "cholesky") {
+            if (metricsTracker.blockCounts_GPU.back() <= 1 || metricsTracker.blockCounts_CPU.back() <= 1) {
+                // potentially no measurements for matrix-matrix step available
+                return currentProportionGPU;
+            }
             const long offset = static_cast<long>(metricsTracker.matrixMatrixTimes_GPU.size()) - updateInterval;
 
             std::vector<double> timesGPU(metricsTracker.matrixMatrixTimes_GPU.begin() + offset, metricsTracker.matrixMatrixTimes_GPU.end());
