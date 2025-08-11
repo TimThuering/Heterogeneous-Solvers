@@ -265,7 +265,7 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_CPU(sycl::queue& queue, co
 
                 // go through all columns of the block and compute the matrix vector product
                 // the block in storage now has to be interpreted as transposed since we are working on the data of the symmetric block
-#pragma clang loop vectorize(disable)
+#pragma clang loop vectorize(enable)
                 for (int j = 0; j < static_cast<int>(matrixBlockSize); ++j) {
                     resultValue += A[blockStartIndex + j * matrixBlockSize + iInBlock] * b[block_j * matrixBlockSize + j];
                 }
