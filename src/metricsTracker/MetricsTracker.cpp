@@ -255,7 +255,7 @@ void MetricsTracker::writeJSON(std::string& path) {
 
 #ifndef INTEL
     metricsJSON << "\t \"rawUtilizationData_GPU\": " + vectorToJSONString<unsigned int>(generalSamples_GPU.get_compute_utilization().value_or(std::vector<unsigned int>(0))) + ",\n";
-#elif
+#else
     metricsJSON << "\t \"rawUtilizationData_GPU\": " + std::string("[]") + ",\n";
 #endif
     metricsJSON << "\t \"rawUtilizationData_CPU\": " + vectorToJSONString<double>(generalSamples_CPU.get_compute_utilization().value_or(std::vector<double>(0))) + ",\n";
