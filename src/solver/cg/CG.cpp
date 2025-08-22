@@ -376,14 +376,19 @@ void CG::compute_q() {
     }
     waitAllQueues();
 
+    bool intel = false;
+#ifdef INTEL
+    intel = true;
+#endif
+
     // append execution times
-    if (blockCountGPU != 0) {
+    if (blockCountGPU != 0 && !intel) {
         metricsTracker.matrixVectorTimes_GPU.push_back(
             static_cast<double>(eventGPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventGPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
     } else {
         metricsTracker.matrixVectorTimes_GPU.push_back(0);
     }
-    if (blockCountCPU != 0) {
+    if (blockCountCPU != 0 && !intel) {
         metricsTracker.matrixVectorTimes_CPU.push_back(
             static_cast<double>(eventCPU.get_profiling_info<sycl::info::event_profiling::command_end>() - eventCPU.get_profiling_info<sycl::info::event_profiling::command_start>()) / 1.0e6);
     } else {
