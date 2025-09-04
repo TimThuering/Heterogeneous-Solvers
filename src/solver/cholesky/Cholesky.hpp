@@ -29,6 +29,8 @@ public:
 
     void solve_heterogeneous();
 
+    void writeMetricsToFile();
+
 private:
 
 

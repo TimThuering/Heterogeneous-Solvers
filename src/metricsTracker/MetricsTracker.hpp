@@ -60,6 +60,8 @@ public:
     double resultCopyTime = 0.0;
     double totalTime = 0.0;
 
+    double solveTime = 0.0; // time for the solver step after the Cholesky decomposition
+
     void startTracking();
 
     void endTracking();

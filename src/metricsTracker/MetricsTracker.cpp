@@ -212,6 +212,7 @@ void MetricsTracker::writeJSON(std::string& path) {
     metricsJSON << "\t \"memoryInitTime\":         " + std::to_string(memoryInitTime) + ",\n";
     metricsJSON << "\t \"resultCopyTime\":         " + std::to_string(resultCopyTime) + ",\n";
     metricsJSON << "\t \"totalTime\":              " + std::to_string(totalTime) + ",\n";
+    metricsJSON << "\t \"choleskySolveStepTime\":  " + std::to_string(solveTime) + ",\n";
 
     metricsJSON << "\t \"averageUtilization_GPU\": " + vectorToJSONString<double>(averageUtilization_GPU) + ",\n";
     metricsJSON << "\t \"averageUtilization_CPU\": " + vectorToJSONString<double>(averageUtilization_CPU) + ",\n";

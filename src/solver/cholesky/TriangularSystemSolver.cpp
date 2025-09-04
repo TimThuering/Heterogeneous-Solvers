@@ -12,7 +12,7 @@ TriangularSystemSolver::TriangularSystemSolver(SymmetricMatrix& A, conf::fp_type
     loadBalancer(std::move(loadBalancer)) {
 }
 
-void TriangularSystemSolver::solve() {
+double TriangularSystemSolver::solve() {
     const auto start = std::chrono::steady_clock::now();
 
     bool useGPU = conf::initialProportionGPU == 1;
@@ -89,7 +89,7 @@ void TriangularSystemSolver::solve() {
     }
 
     const auto end = std::chrono::steady_clock::now();
-    const auto solveTime = std::chrono::duration<double, std::milli>(end - start).count();
+    const double solveTime = std::chrono::duration<double, std::milli>(end - start).count();
 
     std::cout << "Time to solve the triangular system: " << solveTime << "ms" << std::endl;
 
@@ -101,4 +101,5 @@ void TriangularSystemSolver::solve() {
         sycl::free(b_gpu, gpuQueue);
     }
 
+    return solveTime;
 }

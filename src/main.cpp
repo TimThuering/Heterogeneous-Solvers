@@ -61,6 +61,7 @@ int main(int argc, char* argv[]) {
         ("cpu_opt", "optimization level 0-2 for CPU optimized matrix-matrix kernel (higher values for more optimized kernels)", cxxopts::value<int>())
         ("print_verbose", "enable/disable verbose console output", cxxopts::value<bool>())
         ("check_result", "enable/disable result check that outputs error of Ax - b", cxxopts::value<bool>())
+        ("track_chol_solve", "enable/disable hws tracking of solving step for cholesky", cxxopts::value<bool>())
         ("gpr", "perform gaussian process regression (GPR)", cxxopts::value<bool>());
 
 
@@ -179,6 +180,10 @@ int main(int argc, char* argv[]) {
         conf::checkResult = arguments["check_result"].as<bool>();
     }
 
+    if (arguments.count("track_chol_solve")) {
+        conf::trackCholeskySolveStep = arguments["track_chol_solve"].as<bool>();
+    }
+
     sycl::property_list properties{sycl::property::queue::enable_profiling()};
 
     queue gpuQueue(gpu_selector_v, properties);
@@ -224,7 +229,16 @@ int main(int argc, char* argv[]) {
             Cholesky cholesky(A, cpuQueue, gpuQueue, loadBalancer);
             cholesky.solve_heterogeneous();
             TriangularSystemSolver solver(A, cholesky.A_gpu, b, cpuQueue, gpuQueue, loadBalancer);
-            solver.solve();
+            double solveTime = solver.solve();
+            if (conf::trackCholeskySolveStep) {
+                if (conf::printVerbose && conf::enableHWS) {
+                    std::cout << "Ending tracking after solve step" << std::endl;
+                }
+                cholesky.metricsTracker.endTracking();
+            }
+            cholesky.metricsTracker.solveTime = solveTime;
+            cholesky.writeMetricsToFile();
+
             if (conf::checkResult) {
                 double error = UtilityFunctions::checkResult(b, cpuQueue, gpuQueue, path_gp_input, path_gp_output);
                 std::cout << "Average error of Ax - b: " << error << std::endl;

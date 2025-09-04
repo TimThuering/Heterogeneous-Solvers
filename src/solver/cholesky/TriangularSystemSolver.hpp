@@ -26,7 +26,7 @@ public:
     std::shared_ptr<LoadBalancer> loadBalancer;
     MetricsTracker metricsTracker;
 
-    void solve();
+    double solve();
 
 };
 

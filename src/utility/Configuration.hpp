@@ -46,6 +46,8 @@ namespace conf {
 
         bool printVerbose = false; /// enable/disable verbose output with detailed timing on the console
         bool checkResult = false; /// enable/disable result check that outputs error of Ax - b
+
+        bool trackCholeskySolveStep = true; /// hws library will track the solve step too if enabled
     };
 
     Configuration& get();
@@ -103,6 +105,8 @@ namespace conf {
     inline bool& printVerbose = get().printVerbose;
 
     inline bool& checkResult = get().checkResult;
+
+    inline bool& trackCholeskySolveStep = get().trackCholeskySolveStep;
 
 
 }

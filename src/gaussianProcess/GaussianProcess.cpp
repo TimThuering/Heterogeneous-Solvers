@@ -26,7 +26,15 @@ void GaussianProcess::start() {
         Cholesky cholesky(A, cpuQueue, gpuQueue, loadBalancer);
         cholesky.solve_heterogeneous();
         TriangularSystemSolver solver(A, cholesky.A_gpu, train_y, cpuQueue, gpuQueue, loadBalancer);
-        solver.solve();
+        double solveTime = solver.solve();
+        if (conf::trackCholeskySolveStep) {
+            if (conf::printVerbose && conf::enableHWS) {
+                std::cout << "Ending tracking after solve step" << std::endl;
+            }
+            cholesky.metricsTracker.endTracking();
+        }
+        cholesky.metricsTracker.solveTime = solveTime;
+        cholesky.writeMetricsToFile();
     } else {
         throw std::runtime_error("Invalid algorithm: " + conf::algorithm);
     }

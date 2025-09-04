@@ -476,13 +476,13 @@ void Cholesky::solve_heterogeneous() {
     copyResultFromGPU(blockCountATotal, blockSizeBytes);
 
     executionTimes.end = std::chrono::steady_clock::now();
-    metricsTracker.endTracking();
+    if (!conf::trackCholeskySolveStep) {
+        if (conf::printVerbose && conf::enableHWS) {
+            std::cout << "Ending tracking before solve step" << std::endl;
+        }
+        metricsTracker.endTracking();
+    }
     printFinalTimes();
-
-    std::string timeString = UtilityFunctions::getTimeString();
-    std::string filePath = conf::outputPath + "/" + timeString;
-    std::filesystem::create_directories(filePath);
-    metricsTracker.writeJSON(filePath);
 
     if (conf::writeMatrix) {
         MatrixParser::writeFullMatrix("./A_chol_result", A);
@@ -496,4 +496,11 @@ void Cholesky::waitAllQueues() {
     if (blockCountCPU != 0) {
         cpuQueue.wait();
     }
+}
+
+void Cholesky::writeMetricsToFile() {
+    std::string timeString = UtilityFunctions::getTimeString();
+    std::string filePath = conf::outputPath + "/" + timeString;
+    std::filesystem::create_directories(filePath);
+    metricsTracker.writeJSON(filePath);
 }
