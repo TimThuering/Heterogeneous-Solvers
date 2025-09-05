@@ -71,7 +71,6 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
                 timesGPU[i] = timesGPU[i] / totalBlockCount_GPU;
                 timesShift[i] = timesShift[i] / (verticalBlockCount_CPU + verticalBlockCount_GPU);
                 timesCommunication[i] = timesCommunication[i] / (verticalBlockCount_CPU);
-
             }
 
             runtimePerBlock_GPU = std::accumulate(timesGPU.begin(), timesGPU.end(), 0.0) / updateInterval;
@@ -108,8 +107,17 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
         const double joulesGPUOnly = watts_GPU * runtimePerBlock_GPU * blockCount_total + conf::idleWatt_CPU * runtimePerBlock_GPU * blockCount_total;
         const double joulesCPUOnly = watts_CPU * runtimePerBlock_CPU * conf::energyLBFactorCPU * blockCount_total;
 
-        const double blockCountCPU_heterogeneous = (newVerticalBlockCount_CPU * (newVerticalBlockCount_CPU + 1) )/ 2.0;
-        const double blockCountGPU_heterogeneous = blockCount_total - blockCountCPU_heterogeneous;
+        double blockCountCPU_heterogeneous = 0;
+        double blockCountGPU_heterogeneous = 0;
+        if (conf::algorithm == "cg") {
+            const std::size_t blockCountXY = blockCount_CPU + blockCount_GPU;
+            blockCountGPU_heterogeneous = std::ceil(static_cast<double>(blockCountXY) * proportionGPU_heterogeneous);
+            blockCountCPU_heterogeneous = static_cast<double>(blockCountXY) - blockCountGPU_heterogeneous;
+        } else if (conf::algorithm == "cholesky") {
+            blockCountCPU_heterogeneous = (newVerticalBlockCount_CPU * (newVerticalBlockCount_CPU + 1)) / 2.0;
+            blockCountGPU_heterogeneous = blockCount_total - blockCountCPU_heterogeneous;
+        }
+
 
         const double joulesHeterogeneous = watts_GPU * runtimePerBlock_GPU * blockCountGPU_heterogeneous + watts_CPU * runtimePerBlock_CPU * conf::runtimeLBFactorCPU * blockCountCPU_heterogeneous + joulesCommunication + joulesShift;
 
@@ -121,9 +129,9 @@ double PowerLoadBalancer::getNewProportionGPU(MetricsTracker& metricsTracker) {
             std::cout << "Joules shift: " << joulesShift << std::endl;
             std::cout << "heterogeneous gpu proportion: " << proportionGPU_heterogeneous << std::endl;
 
-            std::cout << "expected heterogeneous Time: " <<  std::max(runtimePerBlock_GPU * blockCountGPU_heterogeneous , runtimePerBlock_CPU * conf::runtimeLBFactorCPU *  blockCountCPU_heterogeneous )<< std::endl;
-            std::cout << "expected CPU Time: " <<  runtimePerBlock_CPU * blockCount_total << std::endl;
-            std::cout << "expected GPU Time: " <<  runtimePerBlock_GPU * blockCount_total << std::endl;
+            std::cout << "expected heterogeneous Time: " << std::max(runtimePerBlock_GPU * blockCountGPU_heterogeneous, runtimePerBlock_CPU * conf::runtimeLBFactorCPU * blockCountCPU_heterogeneous) << std::endl;
+            std::cout << "expected CPU Time: " << runtimePerBlock_CPU * blockCount_total << std::endl;
+            std::cout << "expected GPU Time: " << runtimePerBlock_GPU * blockCount_total << std::endl;
         }
 
 
