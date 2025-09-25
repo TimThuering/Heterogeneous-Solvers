@@ -4,34 +4,33 @@
 #include "RightHandSide.hpp"
 #include "SymmetricMatrix.hpp"
 
-
+/**
+ * This class implements the Gaussian Process pipeline for prediction
+ */
 class GaussianProcess {
 public:
-    GaussianProcess(SymmetricMatrix& A,  RightHandSide& train_y, std::string& path_train, std::string& path_test, sycl::queue& cpuQueue, sycl::queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
+    GaussianProcess(SymmetricMatrix& A, RightHandSide& train_y, std::string& path_train, std::string& path_test, sycl::queue& cpuQueue, sycl::queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer);
 
-    // training-training kernel
-    SymmetricMatrix& A;
-
-    // training targets
-    RightHandSide& train_y;
+    SymmetricMatrix& A; /// training-training kernel
 
 
-    std::string& path_train;
-    std::string& path_test;
+    RightHandSide& train_y; /// training targets
 
 
+    std::string& path_train; /// path to training data
+    std::string& path_test; /// path to test data
 
-    sycl::queue& cpuQueue;
-    sycl::queue& gpuQueue;
+
+    sycl::queue& cpuQueue; /// SYCL CPU queue
+    sycl::queue& gpuQueue; /// SYCL GPU queue
     std::shared_ptr<LoadBalancer> loadBalancer;
 
 
+    /// starts the computation for the Gaussian Processes Prediction
     void start();
 
 private:
-
 };
-
 
 
 #endif //GAUSSIANPROCESS_HPP
