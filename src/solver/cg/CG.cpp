@@ -146,7 +146,6 @@ void CG::solveHeterogeneous() {
     std::cout << "Total time: " << totalTime << "ms (" << iteration << " iterations)" << std::endl;
     std::cout << "Memory init: " << metricsTracker.memoryInitTime << "ms" << std::endl;
     std::cout << "Result copy: " << metricsTracker.resultCopyTime << "ms" << std::endl;
-    std::cout << "Residual: " << delta_new << std::endl;
     metricsTracker.totalTime = totalTime;
     metricsTracker.endTracking();
 
