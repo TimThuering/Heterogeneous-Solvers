@@ -10,6 +10,9 @@
 #include "hws/gpu_intel/hardware_sampler.hpp"
 #include "hws/system_hardware_sampler.hpp"
 
+/**
+ * This class contains a metrics tracker that tracks various runtime metrics of the algorithm execution using, among others, the hws library.
+ */
 class MetricsTracker {
 public:
     hws::system_hardware_sampler sampler{conf::sampleCategories};
@@ -62,12 +65,31 @@ public:
 
     double solveTime = 0.0; // time for the solver step after the Cholesky decomposition
 
+    /**
+     * starts tracking with the hws library
+     */
     void startTracking();
 
+    /**
+     * Ends tracking with the hws library
+     */
     void endTracking();
 
+    /**
+     * Adds new metrics that have been obtained in previous iteration to the metrics tracker data structures.
+     * @param iteration current iteration
+     * @param blockCount_GPU GPU block count
+     * @param blockCount_CPU CPU block count
+     * @param iterationTime runtime of the whole iteration
+     * @param updateInterval the update interval of the load balancer
+     */
     void updateMetrics(std::size_t iteration, std::size_t blockCount_GPU, std::size_t blockCount_CPU, double iterationTime, int updateInterval);
 
+    /**
+     * Outputs all metrics to a json file.
+     *
+     * @param path the path to store the file
+     */
     void writeJSON(std::string& path);
 
 private:

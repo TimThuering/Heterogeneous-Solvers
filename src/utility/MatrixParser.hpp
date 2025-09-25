@@ -8,7 +8,7 @@
 #include "RightHandSide.hpp"
 
 /**
- * Class that contains functions to parse matrices from .txt files
+ * Class that contains functions to parse matrices from .txt files and output them for debugging purposes
  */
 class MatrixParser {
 public:
@@ -49,6 +49,12 @@ public:
      */
     static void writeBlockedMatrix(const std::string& path, const SymmetricMatrix& matrix);
 
+    /**
+     * Writes the full symmetric matrix into a txt file for debugging purposes.
+     *
+     * @param path output path
+     * @param matrix the symmtetric matrix
+     */
     static void writeFullMatrix(const std::string& path, const SymmetricMatrix& matrix);
 
 private:

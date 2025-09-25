@@ -86,16 +86,42 @@ public:
      * Sums up the partial results from the first part of the scalar product computation to obtain the final scalar product.
      * The result will be stored in result[0]
      *
+     * This function has to be called after scalarProduct.
+     *
      * @param queue SYCL queue that determines the device for the parallel execution
      * @param result vector that stores the partial sums of each work-group
      * @param workGroupCount work-group count from the previous step
      */
     static void sumFinalScalarProduct(sycl::queue& queue, conf::fp_type* result, unsigned int workGroupCount);
 
+    /**
+     * Computes the first part of the scalar product x*y. The result are partial sums of each work-group that have to be
+     * summed up to obtain the final result.
+     *
+     * The implementation is optimized for the execution on CPUs.
+     *
+     * @param queue YCL queue that determines the device for the parallel execution
+     * @param x vector x
+     * @param y vector y
+     * @param result ector that stores the partial sums of each work-group
+     * @param blockStart_i start block of the vector
+     * @param blockCount_i block count of the vector
+     * @return the work-group count used. Corresponds to the amount of sub results calculated
+     */
     static unsigned int scalarProduct_CPU(sycl::queue& queue, const conf::fp_type* x, const conf::fp_type* y,
-                                      conf::fp_type* result,
-                                      int blockStart_i, int blockCount_i);
+                                          conf::fp_type* result,
+                                          int blockStart_i, int blockCount_i);
 
+    /**
+     * Sums up the partial results from the first part of the scalar product computation to obtain the final scalar product.
+     * The result will be stored in result[0]
+     *
+     * This function has to be called after scalarProduct_CPU.
+     *
+     * @param queue SYCL queue that determines the device for the parallel execution
+     * @param result vector that stores the partial sums of each work-group
+     * @param workGroupCount work-group count from the previous step
+     */
     static void sumFinalScalarProduct_CPU(sycl::queue& queue, conf::fp_type* result, unsigned int workGroupCount);
 
 };

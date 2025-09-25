@@ -6,6 +6,9 @@
 
 #include "Configuration.hpp"
 
+/**
+ * Class that represents the right hand side of the linear system that is solved
+ */
 class RightHandSide {
 public:
     /**
