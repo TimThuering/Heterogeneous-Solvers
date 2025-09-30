@@ -47,8 +47,7 @@ Ensure that the CUDA environment and the AdaptiveCpp compiler are correctly load
 The project has been tested with CUDA 12.2.2 and
 AdaptiveCpp [v25.02.0](https://github.com/AdaptiveCpp/AdaptiveCpp/tree/v25.02.0).
 
-Replace `sm_XX` with the correct [compute capability](https://developer.nvidia.com/cuda-gpus) of your GPU, for example
-`sm_80`.
+Replace `sm_XX` with the correct [compute capability](https://developer.nvidia.com/cuda-gpus) of your GPU, for example, `sm_80`.
 
 ```
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=acpp -DACPP_TARGETS="cuda:sm_XX;omp.accelerated" -DCMAKE_CXX_FLAGS="-march=native" ..
@@ -69,7 +68,9 @@ Make sure that ROCm is loaded correctly before the installation. The project has
 
 To build the project for Intel GPUs set the cmake variable `-DGPU_VENDOR="INTEL"` and replace `cuda:sm_XX` with
 `generic`.
-Make sure oneAPI is loaded correctly before the installation. The project has been tested with oneAPI 2025.1.
+Make sure that oneAPI is loaded correctly before the installation. The project has been tested with oneAPI 2025.1.
+
+Building of tests can be enabled with the CMake option `-DENABLE_TESTS=true`.
 
 ### Running the program
 
@@ -84,16 +85,17 @@ The tables below show a list of the mandatory and optional arguments to customiz
 
 ## Mandatory program arguments
 
-| Argument          | Description                                 | Notes                                                                                                   |
-|-------------------|---------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| `--algorithm`     | the algorithm that should be used           | can be `cg` or `cholesky`                                                                               | 
-| `--init_gpu_perc` | initial proportion of work assigned to gpu  | specifies the fixed GPU workload in case of static load balancing                                       |
-| `--matrix_bsz`    | block size for the symmetric matrix storage | must be a power of two, has to be >=64 for the most optimized GPU kernel for the Cholesky decomposition |
+| Argument          | Description                                 | Notes                                                                                                                                                |
+|-------------------|---------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--algorithm`     | the algorithm that should be used           | can be `cg` or `cholesky`                                                                                                                            | 
+| `--init_gpu_perc` | initial proportion of work assigned to gpu  | always corresponds to the proportion of matrix block rows assigned to the GPU<br/> specifies the fixed GPU workload in case of static load balancing |
+| `--matrix_bsz`    | block size for the symmetric matrix storage | must be a power of two, has to be >=64 for the most optimized GPU kernel for the Cholesky decomposition                                              |
 
 ### Mandatory program arguments to generate a kernel matrix
 
 The first option to define the matrix for the linear system: Generation of a kernel matrix based on input data.
-An exemplary dataset to generate such kernel matrices can, for example, be found in the repository by [Helmann et al.](https://darus.uni-stuttgart.de/dataset.xhtml?persistentId=doi:10.18419/DARUS-4743).
+An exemplary dataset to generate such kernel matrices can, for example, be found in the repository
+by [Helmann et al.](https://darus.uni-stuttgart.de/dataset.xhtml?persistentId=doi:10.18419/DARUS-4743).
 
 | Argument      | Description                                                                | Notes             |
 |---------------|----------------------------------------------------------------------------|-------------------|
@@ -129,22 +131,22 @@ The entries in both files have to be separated with a semicolon followed by a sp
 
 ## Optional program arguments
 
-| Argument             | Description                                                                                                                                        | Notes                              |
-|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------|
-| `--mode`             | specifies the load balancing mode between CPU and GPU, has to be `static`, `runtime` or `power`                                                    | Default: `static`                  |
-| `--output`           | path to the custom output directory                                                                                                                | -                                  |
-| `--i_max`            | maximum number of iterations for the CG algorithm                                                                                                  | Default: 1e5                       |
-| `--eps`              | epsilon value for the termination of the cg algorithm                                                                                              | Default: 1e-6                      |
-| `--update_int`       | interval in which CPU/GPU distribution will be rebalanced                                                                                          | Default: 10                        |
-| `--write_result`     | write the result vector x to a .txt file                                                                                                           | Default: `false`                   |
-| `--write_matrix`     | write the result matrix L of the cholesky decomposition to a .txt file                                                                             | Default: `false`                   |
-| `--cpu_lb_factor`    | factor that scales the CPU times for runtime load balancing                                                                                        | Default: 1.2                       |
-| `--enableHWS`        | enables sampling with hws library, might affect CPU/GPU performance                                                                                | Default: `false`                   |
-| `--gpu_opt`          | optimization level 0-3 for GPU optimized matrix-matrix kernel (higher values for more optimized kernels), CG algorithm only supports 0 / greater 0 | Default: 3                         |
-| `--cpu_opt`          | optimization level 0-2 for CPU optimized matrix-matrix kernel (higher values for more optimized kernels), CG algorithm only supports 0 / greater 0 | Default: 2; use 0 for CG algorithm |
-| `--print_verbose`    | enable/disable verbose console output                                                                                                              | Default: `false`                   |
-| `--check_result`     | enable/disable result check that outputs error of Ax - b for the Cholesky decomposition                                                            | Default: `false`                   |
-| `--track_chol_solve` | "enable/disable hws tracking of solving step for the Cholesky decomposition                                                                        | Default: `true`                    |
+| Argument             | Description                                                                                                                                        | Notes                                                       |
+|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| `--mode`             | specifies the load balancing mode between CPU and GPU, has to be `static`, `runtime` or `power`                                                    | Default: `static`                                           |
+| `--output`           | path to the custom output directory                                                                                                                | -                                                           |
+| `--i_max`            | maximum number of iterations for the CG algorithm                                                                                                  | Default: 1e5                                                |
+| `--eps`              | epsilon value for the termination of the cg algorithm                                                                                              | Default: 1e-6                                               |
+| `--update_int`       | interval in which CPU/GPU distribution will be rebalanced                                                                                          | Default: 10                                                 |
+| `--write_result`     | write the result vector x to a .txt file                                                                                                           | Default: `false`                                            |
+| `--write_matrix`     | write the result matrix L of the cholesky decomposition to a .txt file                                                                             | Default: `false`                                            |
+| `--cpu_lb_factor`    | factor that scales the CPU times for runtime load balancing                                                                                        | Default: 1.2                                                |
+| `--enableHWS`        | enables sampling with hws library, might affect CPU/GPU performance                                                                                | Default: `false`                                            |
+| `--gpu_opt`          | optimization level 0-3 for GPU optimized matrix-matrix kernel (higher values for more optimized kernels), CG algorithm only supports 0 / greater 0 | Default: 3                                                  |
+| `--cpu_opt`          | optimization level 0-2 for CPU optimized matrix-matrix kernel (higher values for more optimized kernels), CG algorithm only supports 0 / greater 0 | Default: 2; a value of 0 might be best for the CG algorithm |
+| `--print_verbose`    | enable/disable verbose console output                                                                                                              | Default: `false`                                            |
+| `--check_result`     | enable/disable result check that outputs error of Ax - b for the Cholesky decomposition                                                            | Default: `false`                                            |
+| `--track_chol_solve` | enable/disable hws tracking of solving step for the Cholesky decomposition                                                                         | Default: `true`                                             |
 
 It is recommended to specify the environment variables `OMP_NUM_THREADS` and `OMP_PROC_BIND` when using the CPU-only or
 heterogeneous execution.
