@@ -29,6 +29,9 @@ Before running the script ensure that the CUDA/ROCm/oneAPI environment is loaded
 ./install_AdaptiveCpp.sh <GPU vendor: "NVIDIA", "AMD" or "INTEL"> <Base directory> <#Jobs for compilation (e.g. core count)> <AMD only: ROCm path>
 ```
 
+Depending on the linux distribution and CUDA/ROCm/oneAPI setup, the script might not be able to install AdaptiveCpp automatically in every scenario.
+Thus, a manual installation might still be required.
+
 After the installation of AdaptiveCpp, clone this repository and create a build directory:
 
 ```
