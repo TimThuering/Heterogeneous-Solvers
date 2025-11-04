@@ -16,6 +16,9 @@ find_package(OpenMP REQUIRED)
 # include FetchContent
 include(FetchContent)
 
+# export compile commands for clangd usage
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # define all program source files for the executable
 set(EXECUTABLE_FILES src/main.cpp)
 

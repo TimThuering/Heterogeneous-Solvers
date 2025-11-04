@@ -1,0 +1,4 @@
+CompileFlags:
+  Compiler: /opt/acpp/bin/acpp
+  Add:
+    - -I/opt/acpp/include/AdaptiveCpp
