@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.11)
 project(Heterogeneous_SPD_solvers)
 
 set(CMAKE_CXX_STANDARD 17)
 
 option(ENABLE_TESTS "Enable Test" OFF)
-option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
-set(GPU_VENDOR "NVIDIA" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
+option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" OFF)
+set(GPU_VENDOR "AMD" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
 
 # find AdaptiveCpp SYCL implementation
 find_package(AdaptiveCpp CONFIG REQUIRED)
