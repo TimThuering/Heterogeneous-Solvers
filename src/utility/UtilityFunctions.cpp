@@ -64,6 +64,10 @@ double UtilityFunctions::checkResult(RightHandSide& b, sycl::queue cpuQueue, syc
 
     RightHandSide result(conf::N, conf::matrixBlockSize, gpuQueue);
 
+#if USE_DPCPP
+    cpuQueue = gpuQueue;
+#endif
+
     MatrixVectorOperations::matrixVectorBlock(cpuQueue,A_new.matrixData.data(),b.rightHandSideData.data(),result.rightHandSideData.data(),0,0,b.blockCountX,b.blockCountX,A_new.blockCountXY,true);
     cpuQueue.wait();
     RightHandSide b_new = MatrixGenerator::parseRHS_GP(path_gp_output, gpuQueue);

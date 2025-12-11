@@ -1,4 +1,5 @@
 #include "VectorOperations.hpp"
+#include <cmath>
 
 using namespace sycl;
 
@@ -107,7 +108,7 @@ unsigned int VectorOperations::scalarProduct(queue &queue, const conf::fp_type *
     queue.submit([&](handler &h) {
         local_accessor<conf::fp_type> cache(workGroupSize, h);
 
-        h.parallel_for(kernelRange, [=](nd_item<1> &nd_item) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             // row i in the matrix
             const int offset = blockStart_i * matrixBlockSize;
             const unsigned int localID = nd_item.get_local_id();
@@ -155,7 +156,7 @@ void VectorOperations::sumFinalScalarProduct(queue &queue, conf::fp_type *result
     queue.submit([&](handler &h) {
         local_accessor<conf::fp_type> cache(workGroupSize, h);
 
-        h.parallel_for(kernelRange, [=](nd_item<1> &nd_item) {
+        h.parallel_for(kernelRange, [=](auto &nd_item) {
             // row i in the matrix
             const unsigned int localID = nd_item.get_local_id();
             const unsigned int globalIndex = localID;

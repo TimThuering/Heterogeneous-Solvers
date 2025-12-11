@@ -2,6 +2,8 @@
 
 #include "RightHandSide.hpp"
 
+#include <cmath>
+
 
 RightHandSide::RightHandSide(const std::size_t N, const int blockSize, sycl::queue& queue) :
     N(N),

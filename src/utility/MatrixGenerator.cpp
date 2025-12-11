@@ -2,6 +2,9 @@
 
 #include "MatrixGenerator.hpp"
 #include "Configuration.hpp"
+
+#include <random>
+#include <fstream>
 using namespace sycl;
 
 SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::queue& queue) {
@@ -127,8 +130,11 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
             const double lengthscale = 1.0;
 
             std::size_t matrixBlockSize = conf::matrixBlockSize;
-
+#if USE_DPCPP
+            queueGPU.submit([&](handler& h) {
+#else
             queue.submit([&](handler& h) {
+#endif
                 h.parallel_for(range<2>(matrixBlockSize, matrixBlockSize), [=](id<2> idx) {
                     const unsigned int i_local = idx[0];
                     const unsigned int j_local = idx[1];
