@@ -7,11 +7,27 @@ option(ENABLE_TESTS "Enable Test" OFF)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
 set(GPU_VENDOR "NVIDIA" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
 
-# find AdaptiveCpp SYCL implementation
-find_package(AdaptiveCpp CONFIG REQUIRED)
+# DPC++ only options
+option(USE_DPCPP "Use DPC++" OFF)
+set(DPCPP_ARCH "" CACHE STRING "Device Architecture for DPC++")
 
-# find OpenMP
-find_package(OpenMP REQUIRED)
+# DPC++ only
+if (${USE_DPCPP})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
+    if (${GPU_VENDOR} STREQUAL  "NVIDIA")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvidia_gpu_${DPCPP_ARCH},spir64_x86_64")
+    endif ()
+else ()
+    # find AdaptiveCpp SYCL implementation
+    find_package(AdaptiveCpp CONFIG REQUIRED)
+endif ()
+
+
+# AdaptiveCpp only
+if (NOT ${USE_DPCPP})
+    # find OpenMP
+    find_package(OpenMP REQUIRED)
+endif ()
 
 # include FetchContent
 include(FetchContent)
@@ -75,12 +91,20 @@ include_directories(src/metricsTracker)
 # create and executable, add SYCL to executable and link OpenMP and custom library files
 add_executable(heterogeneous_solvers ${EXECUTABLE_FILES})
 target_link_libraries(heterogeneous_solvers PUBLIC heterogeneous_solvers_lib)
-add_sycl_to_target(TARGET heterogeneous_solvers SOURCES ${EXECUTABLE_FILES})
-target_link_options(heterogeneous_solvers PUBLIC -fopenmp)
+
+# AdaptiveCpp only
+if (NOT ${USE_DPCPP})
+    add_sycl_to_target(TARGET heterogeneous_solvers SOURCES ${EXECUTABLE_FILES})
+    target_link_options(heterogeneous_solvers PUBLIC -fopenmp)
+endif ()
 
 # enable FP64 double precision
 if (USE_DOUBLE)
     target_compile_definitions(heterogeneous_solvers_lib PUBLIC USE_DOUBLE=1)
+endif ()
+
+if (${USE_DPCPP})
+    target_compile_definitions(heterogeneous_solvers_lib PUBLIC USE_DPCPP=1)
 endif ()
 
 target_compile_definitions(heterogeneous_solvers_lib PUBLIC ${GPU_VENDOR})
