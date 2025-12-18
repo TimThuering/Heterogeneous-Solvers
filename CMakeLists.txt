@@ -15,7 +15,7 @@ set(DPCPP_ARCH "" CACHE STRING "Device Architecture for DPC++")
 if (${USE_DPCPP})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
     if (${GPU_VENDOR} STREQUAL  "NVIDIA")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend --cuda-gpu-arch=${DPCPP_ARCH}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvidia_gpu_${DPCPP_ARCH},spir64_x86_64")
     endif ()
 else ()
     # find AdaptiveCpp SYCL implementation
