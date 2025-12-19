@@ -147,9 +147,9 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_GPU(sycl::queue& queue, co
                 std::size_t rowStartIndex = blockStartIndex + static_cast<std::size_t>(iInBlock) * matrixBlockSize;
 
                 // cache part of rhs b in local memory
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
                 local_b[nd_item.get_local_id()] = b[block_j * matrixBlockSize + nd_item.get_local_id()];
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
 
                 // go through all columns of the block and compute the matrix vector product
                 for (int j = 0; j < static_cast<int>(matrixBlockSize); ++j) {
@@ -172,9 +172,9 @@ sycl::event MatrixVectorOperations::matrixVectorBlock_GPU(sycl::queue& queue, co
                 const std::size_t blockStartIndex = static_cast<std::size_t>(blockID) * matrixBlockSize * matrixBlockSize;
 
                 // cache part of rhs b in local memory
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
                 local_b[nd_item.get_local_id()] = b[block_j * matrixBlockSize + nd_item.get_local_id()];
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
 
                 // go through all columns of the block and compute the matrix vector product
                 // the block in storage now has to be interpreted as transposed since we are working on the data of the symmetric block

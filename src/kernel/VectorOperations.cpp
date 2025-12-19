@@ -121,13 +121,13 @@ unsigned int VectorOperations::scalarProduct(queue &queue, const conf::fp_type *
             if (globalIndex + workGroupSize < offset + vectorLength) {
                 cache[localID] += x[globalIndex + workGroupSize] * y[globalIndex + workGroupSize];
             }
-            nd_item.barrier();
+            group_barrier(nd_item.get_group(), memory_scope::work_group);
 
             for (unsigned int stride = workGroupSize / 2; stride > 0; stride = stride / 2) {
                 if (localID < stride) {
                     cache[localID] += cache[localID + stride];
                 }
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
             }
 
             if (localID == 0) {
@@ -168,13 +168,13 @@ void VectorOperations::sumFinalScalarProduct(queue &queue, conf::fp_type *result
             if (globalIndex + workGroupSize < workGroupCount) {
                 cache[localID] += result[globalIndex + workGroupSize];
             }
-            nd_item.barrier();
+            group_barrier(nd_item.get_group(), memory_scope::work_group);
 
             for (unsigned int stride = workGroupSize / 2; stride > 0; stride = stride / 2) {
                 if (localID < stride) {
                     cache[localID] += cache[localID + stride];
                 }
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
             }
 
             if (localID == 0) {

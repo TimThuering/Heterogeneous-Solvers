@@ -93,7 +93,7 @@ sycl::event MatrixOperations::cholesky_GPU(sycl::queue& queue, conf::fp_type* A,
                     }
                 }
 
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
 
                 // a_kk = sqrt(a_kk)
                 if (local_i == k) {
@@ -112,7 +112,7 @@ sycl::event MatrixOperations::cholesky_GPU(sycl::queue& queue, conf::fp_type* A,
                     }
                 }
 
-                nd_item.barrier();
+                group_barrier(nd_item.get_group(), memory_scope::work_group);
             }
         });
     });
@@ -153,7 +153,7 @@ sycl::event MatrixOperations::cholesky_optimizedGPU(sycl::queue& queue, conf::fp
                         }
                     }
 
-                    nd_item.barrier();
+                    group_barrier(nd_item.get_group(), memory_scope::work_group);
 
                     if ((blockRow * matrixBlockSize + local_i) < N) {
                         // process lower triangle right to the updated column
@@ -172,7 +172,7 @@ sycl::event MatrixOperations::cholesky_optimizedGPU(sycl::queue& queue, conf::fp
                         A[blockStartIndex + k * matrixBlockSize + k] = sqrtDiag;
                     }
 
-                    nd_item.barrier();
+                    group_barrier(nd_item.get_group(), memory_scope::work_group);
                 }
             } else {
                 // set upper triangle to 0
