@@ -48,6 +48,8 @@ namespace conf {
         bool checkResult = false; /// enable/disable result check that outputs error of Ax - b
 
         bool trackCholeskySolveStep = true; /// hws library will track the solve step too if enabled
+
+        bool unifiedAddressSpace = false; /// assume a unified address space for CPUs and GPUs.
     };
 
     Configuration& get();
@@ -107,6 +109,8 @@ namespace conf {
     inline bool& checkResult = get().checkResult;
 
     inline bool& trackCholeskySolveStep = get().trackCholeskySolveStep;
+
+    inline bool& unifiedAddressSpace = get().unifiedAddressSpace;
 
 
 }

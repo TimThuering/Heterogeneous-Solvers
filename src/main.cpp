@@ -62,6 +62,7 @@ int main(int argc, char* argv[]) {
         ("print_verbose", "enable/disable verbose console output", cxxopts::value<bool>())
         ("check_result", "enable/disable result check that outputs error of Ax - b", cxxopts::value<bool>())
         ("track_chol_solve", "enable/disable hws tracking of solving step for cholesky", cxxopts::value<bool>())
+        ("unified_address_space", "enable/disable assuming a unified address space between CPU and GPU", cxxopts::value<bool>())
         ("gpr", "perform gaussian process regression (GPR)", cxxopts::value<bool>());
 
 
@@ -182,6 +183,10 @@ int main(int argc, char* argv[]) {
 
     if (arguments.count("track_chol_solve")) {
         conf::trackCholeskySolveStep = arguments["track_chol_solve"].as<bool>();
+    }
+
+    if (arguments.count("unified_address_space")) {
+        conf::unifiedAddressSpace = arguments["unified_address_space"].as<bool>();
     }
 
     sycl::property_list properties{sycl::property::queue::enable_profiling()};

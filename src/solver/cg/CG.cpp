@@ -10,14 +10,13 @@
 
 using namespace sycl;
 
-CG::CG(SymmetricMatrix& A, RightHandSide& b, queue& cpuQueue, queue& gpuQueue,
-       std::shared_ptr<LoadBalancer> loadBalancer) :
-    A(A),
-    b(b),
-    x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>(cpuQueue)),
-    cpuQueue(cpuQueue),
-    gpuQueue(gpuQueue),
-    loadBalancer(std::move(loadBalancer)) {
+CG::CG(SymmetricMatrix &A, RightHandSide &b, queue &cpuQueue, queue &gpuQueue,
+       std::shared_ptr<LoadBalancer> loadBalancer) : A(A),
+                                                     b(b),
+                                                     x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>(gpuQueue)),
+                                                     cpuQueue(cpuQueue),
+                                                     gpuQueue(gpuQueue),
+                                                     loadBalancer(std::move(loadBalancer)) {
     // check if dimensions match
     if (A.N != b.N) {
         throw std::invalid_argument(
@@ -45,8 +44,8 @@ void CG::solveHeterogeneous() {
 
     // initialize data structures
     auto startMemInit = std::chrono::steady_clock::now();
-    initGPUdataStructures();
     initCPUdataStructures();
+    initGPUdataStructures();
     auto endMemInit = std::chrono::steady_clock::now();
     metricsTracker.memoryInitTime = std::chrono::duration<double, std::milli>(endMemInit - startMemInit).count();
 
@@ -132,9 +131,9 @@ void CG::solveHeterogeneous() {
     }
     waitAllQueues();
 
-    if (blockCountGPU != 0) {
+    if (blockCountGPU != 0 && conf::unifiedAddressSpace == false) {
         auto startMemCopy = std::chrono::steady_clock::now();
-        gpuQueue.submit([&](handler& h) {
+        gpuQueue.submit([&](handler &h) {
             h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         }).wait();
         auto endMemCopy = std::chrono::steady_clock::now();
@@ -199,32 +198,50 @@ void CG::initGPUdataStructures() {
         valuesGPU = A.matrixData.size();
     }
 
-    // Matrix A GPU
-    A_gpu = malloc_device<conf::fp_type>(valuesGPU, gpuQueue);
-    gpuQueue.submit([&](handler& h) {
-        h.memcpy(A_gpu, A.matrixData.data(), valuesGPU * sizeof(conf::fp_type));
-    }).wait();
+    if (conf::unifiedAddressSpace == false) {
+        // Matrix A GPU
+        A_gpu = malloc_device<conf::fp_type>(valuesGPU, gpuQueue);
+        gpuQueue.submit([&](handler &h) {
+            h.memcpy(A_gpu, A.matrixData.data(), valuesGPU * sizeof(conf::fp_type));
+        }).wait();
 
-    // Right-hand side b GPU
-    b_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
-    gpuQueue.submit([&](handler& h) {
-        h.memcpy(b_gpu, b.rightHandSideData.data(), b.rightHandSideData.size() * sizeof(conf::fp_type));
-    }).wait();
+        // Right-hand side b GPU
+        b_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+        gpuQueue.submit([&](handler &h) {
+            h.memcpy(b_gpu, b.rightHandSideData.data(), b.rightHandSideData.size() * sizeof(conf::fp_type));
+        }).wait();
 
-    // result vector x
-    x_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+        // result vector x
+        x_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
-    // residual vector r
-    r_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+        // residual vector r
+        r_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
-    // vector d
-    d_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+        // vector d
+        d_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
-    // vector q
-    q_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+        // vector q
+        q_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
 
-    // temporary vector
-    tmp_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+        // temporary vector
+        tmp_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+    } else {
+        // data structures can now be shared between CPU and GPU
+        A_gpu = A.matrixData.data();
+
+        b_gpu = b.rightHandSideData.data();
+
+        x_gpu = x.data();
+
+        r_gpu = r_cpu;
+
+        d_gpu = d_cpu;
+
+        q_gpu = q_cpu;
+
+        // GPU needs to have its own tmp vector
+        tmp_gpu = malloc_device<conf::fp_type>(b.rightHandSideData.size(), gpuQueue);
+    }
 
     if (A_gpu == nullptr || b_gpu == nullptr || x_gpu == nullptr || r_gpu == nullptr || d_gpu == nullptr || q_gpu == nullptr || tmp_gpu == nullptr) {
         throw std::runtime_error("Error during GPU memory allocation");
@@ -232,7 +249,7 @@ void CG::initGPUdataStructures() {
 }
 
 void CG::initCPUdataStructures() {
-    if (blockCountCPU == 0) {
+    if (blockCountCPU == 0 && conf::unifiedAddressSpace == false) {
         return;
     }
 
@@ -254,7 +271,7 @@ void CG::initCPUdataStructures() {
 }
 
 void CG::freeDataStructures() {
-    if (blockCountGPU != 0) {
+    if (blockCountGPU != 0 && conf::unifiedAddressSpace == false) {
         sycl::free(A_gpu, gpuQueue);
         sycl::free(b_gpu, gpuQueue);
         sycl::free(x_gpu, gpuQueue);
@@ -272,7 +289,7 @@ void CG::freeDataStructures() {
     }
 }
 
-void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
+void CG::initCG(conf::fp_type &delta_zero, conf::fp_type &delta_new) {
     // r = b - Ax
     if (blockCountGPU != 0) {
         MatrixVectorOperations::matrixVectorBlock(gpuQueue, A_gpu, x_gpu, r_gpu, 0, 0, blockCountGPU, A.blockCountXY, A.blockCountXY);
@@ -292,12 +309,12 @@ void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
 
     // d = r
     if (blockCountGPU != 0) {
-        gpuQueue.submit([&](handler& h) {
+        gpuQueue.submit([&](handler &h) {
             h.memcpy(d_gpu, r_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
     }
     if (blockCountCPU != 0) {
-        cpuQueue.submit([&](handler& h) {
+        cpuQueue.submit([&](handler &h) {
             h.memcpy(&d_cpu[blockStartCPU * conf::matrixBlockSize], &r_cpu[blockStartCPU * conf::matrixBlockSize], blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
     }
@@ -309,11 +326,11 @@ void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
     unsigned int workGroupCountScalarProduct_CPU = 0;
     if (blockCountGPU != 0) {
         workGroupCountScalarProduct_GPU =
-            VectorOperations::scalarProduct(gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
+                VectorOperations::scalarProduct(gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
         workGroupCountScalarProduct_CPU =
-            VectorOperations::scalarProduct_CPU(cpuQueue, r_cpu, r_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
+                VectorOperations::scalarProduct_CPU(cpuQueue, r_cpu, r_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 
@@ -329,7 +346,7 @@ void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
     delta_new = 0;
     if (blockCountGPU != 0) {
         // get value of δ_new from gpu
-        gpuQueue.submit([&](handler& h) { h.memcpy(&delta_new, tmp_gpu, sizeof(conf::fp_type)); }).wait();
+        gpuQueue.submit([&](handler &h) { h.memcpy(&delta_new, tmp_gpu, sizeof(conf::fp_type)); }).wait();
     }
     if (blockCountCPU != 0) {
         delta_new = delta_new + tmp_cpu[0];
@@ -340,12 +357,12 @@ void CG::initCG(conf::fp_type& delta_zero, conf::fp_type& delta_new) {
 void CG::compute_q() {
     auto startmemcpy = std::chrono::steady_clock::now();
 
-    if ((blockCountGPU != 0 && blockCountCPU != 0)) {
+    if ((blockCountGPU != 0 && blockCountCPU != 0) && conf::unifiedAddressSpace == false) {
         // exchange parts of d vector so that both CPU and GPU hold the complete vector
-        gpuQueue.submit([&](handler& h) {
+        gpuQueue.submit([&](handler &h) {
             h.memcpy(&d_gpu[blockStartCPU * conf::matrixBlockSize], &d_cpu[blockStartCPU * conf::matrixBlockSize], blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
-        gpuQueue.submit([&](handler& h) {
+        gpuQueue.submit([&](handler &h) {
             h.memcpy(d_cpu, d_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
     }
@@ -395,7 +412,7 @@ void CG::compute_q() {
     }
 }
 
-void CG::compute_alpha(conf::fp_type& alpha, conf::fp_type& delta_new) {
+void CG::compute_alpha(conf::fp_type &alpha, conf::fp_type &delta_new) {
     unsigned int workGroupCountScalarProduct_GPU = 0;
     unsigned int workGroupCountScalarProduct_CPU = 0;
 
@@ -419,11 +436,12 @@ void CG::compute_alpha(conf::fp_type& alpha, conf::fp_type& delta_new) {
 
     conf::fp_type result = 0;
     if (blockCountGPU != 0) {
-        gpuQueue.submit([&](handler& h) { h.memcpy(&result, tmp_gpu, sizeof(conf::fp_type)); }).wait();
+        gpuQueue.submit([&](handler &h) { h.memcpy(&result, tmp_gpu, sizeof(conf::fp_type)); }).wait();
     }
     if (blockCountCPU != 0) {
         result = result + tmp_cpu[0];
     }
+
 
     alpha = delta_new / result;
 }
@@ -440,12 +458,12 @@ void CG::update_x(conf::fp_type alpha) {
 }
 
 void CG::computeRealResidual() {
-    if ((blockCountGPU != 0 && blockCountCPU != 0)) {
+    if ((blockCountGPU != 0 && blockCountCPU != 0) && conf::unifiedAddressSpace == false) {
         // exchange parts of x vector so that both CPU and GPU hold the complete vector
-        gpuQueue.submit([&](handler& h) {
+        gpuQueue.submit([&](handler &h) {
             h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize], blockCountCPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
-        gpuQueue.submit([&](handler& h) {
+        gpuQueue.submit([&](handler &h) {
             h.memcpy(x.data(), x_gpu, blockCountGPU * conf::matrixBlockSize * sizeof(conf::fp_type));
         });
     }
@@ -481,18 +499,16 @@ void CG::update_r(conf::fp_type alpha) {
     waitAllQueues();
 }
 
-void CG::compute_delta_new(conf::fp_type& delta_new) {
+void CG::compute_delta_new(conf::fp_type &delta_new) {
     unsigned int workGroupCountScalarProduct_GPU = 0;
     unsigned int workGroupCountScalarProduct_CPU = 0;
 
     // δ_new = r^T * r
     if (blockCountGPU != 0) {
-        workGroupCountScalarProduct_GPU = VectorOperations::scalarProduct(
-            gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
+        workGroupCountScalarProduct_GPU = VectorOperations::scalarProduct(gpuQueue, r_gpu, r_gpu, tmp_gpu, 0, blockCountGPU);
     }
     if (blockCountCPU != 0) {
-        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct_CPU(
-            cpuQueue, r_cpu, r_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
+        workGroupCountScalarProduct_CPU = VectorOperations::scalarProduct_CPU(cpuQueue, r_cpu, r_cpu, tmp_cpu, blockStartCPU, blockCountCPU);
     }
     waitAllQueues();
 
@@ -507,14 +523,14 @@ void CG::compute_delta_new(conf::fp_type& delta_new) {
     // get value of δ_new from gpu
     delta_new = 0;
     if (blockCountGPU != 0) {
-        gpuQueue.submit([&](handler& h) { h.memcpy(&delta_new, tmp_gpu, sizeof(conf::fp_type)); }).wait();
+        gpuQueue.submit([&](handler &h) { h.memcpy(&delta_new, tmp_gpu, sizeof(conf::fp_type)); }).wait();
     }
     if (blockCountCPU != 0) {
         delta_new = delta_new + tmp_cpu[0];
     }
 }
 
-void CG::compute_d(conf::fp_type& beta) {
+void CG::compute_d(conf::fp_type &beta) {
     // d = r + βd
     if (blockCountGPU != 0) {
         VectorOperations::scaleAndAddVectorBlock(gpuQueue, r_gpu, beta, d_gpu, d_gpu, 0, blockCountGPU);
@@ -534,7 +550,7 @@ void CG::waitAllQueues() {
     }
 }
 
-void CG::rebalanceProportions(double& gpuProportion) {
+void CG::rebalanceProportions(double &gpuProportion) {
     // get new GPU proportion of workload
     gpuProportion = loadBalancer->getNewProportionGPU(metricsTracker);
     std::size_t blockCountGPU_new = std::ceil(static_cast<double>(A.blockCountXY) * gpuProportion);
@@ -555,34 +571,34 @@ void CG::rebalanceProportions(double& gpuProportion) {
         if (blockCountGPU_new > blockCountGPU) {
             const std::size_t additionalBlocks = blockCountGPU_new - blockCountGPU;
             // exchange missing parts of d vector
-            gpuQueue.submit([&](handler& h) {
+            gpuQueue.submit([&](handler &h) {
                 h.memcpy(&d_gpu[blockStartCPU * conf::matrixBlockSize], &d_cpu[blockStartCPU * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
 
             // exchange missing parts of x vector
-            gpuQueue.submit([&](handler& h) {
+            gpuQueue.submit([&](handler &h) {
                 h.memcpy(&x_gpu[blockStartCPU * conf::matrixBlockSize], &x[blockStartCPU * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
 
             // exchange missing parts of r vector
-            gpuQueue.submit([&](handler& h) {
+            gpuQueue.submit([&](handler &h) {
                 h.memcpy(&r_gpu[blockStartCPU * conf::matrixBlockSize], &r_cpu[blockStartCPU * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
         } else if (blockCountCPU_new > blockCountCPU) {
             const std::size_t additionalBlocks = blockCountCPU_new - blockCountCPU;
 
             // exchange missing parts of d vector
-            gpuQueue.submit([&](handler& h) {
+            gpuQueue.submit([&](handler &h) {
                 h.memcpy(&d_cpu[blockStartCPU_new * conf::matrixBlockSize], &d_gpu[blockStartCPU_new * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
 
             // exchange missing parts of x vector
-            gpuQueue.submit([&](handler& h) {
+            gpuQueue.submit([&](handler &h) {
                 h.memcpy(&x[blockStartCPU_new * conf::matrixBlockSize], &x_gpu[blockStartCPU_new * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
 
             // exchange missing parts of r vector
-            gpuQueue.submit([&](handler& h) {
+            gpuQueue.submit([&](handler &h) {
                 h.memcpy(&r_cpu[blockStartCPU_new * conf::matrixBlockSize], &r_gpu[blockStartCPU_new * conf::matrixBlockSize], additionalBlocks * conf::matrixBlockSize * sizeof(conf::fp_type));
             });
         }
