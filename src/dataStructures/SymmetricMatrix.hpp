@@ -50,7 +50,7 @@ public:
     const int blockCountXY; /// block Count in X/Y direction (if the matrix would be stored completely)
 
     /// internal matrix data structure allocated as SYCL host memory
-    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>> matrixData;
+    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>> matrixData;
 };
 
 #endif //SYMMETRICMATRIX_HPP

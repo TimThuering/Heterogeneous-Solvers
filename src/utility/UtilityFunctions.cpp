@@ -15,7 +15,7 @@
 
 void UtilityFunctions::writeResult(const std::string& path,
                                    const std::vector<
-                                       conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>>&
+                                       conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>>&
                                    x) {
     std::string filePath = path + "/x_result.txt";
     std::ofstream output(filePath);

@@ -22,7 +22,7 @@ public:
     SymmetricMatrix& A; /// SPD matrix A
     RightHandSide& b; /// right hand side b
 
-    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>> x; /// result vector of x of the linear system Ax = b
+    std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>> x; /// result vector of x of the linear system Ax = b
 
     queue& cpuQueue; /// SYCL queue for the CPU device
     queue& gpuQueue; /// SYCL queue for the GPU device

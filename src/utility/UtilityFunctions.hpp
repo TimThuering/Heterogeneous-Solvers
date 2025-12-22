@@ -17,7 +17,7 @@ public:
      * @param path result path
      * @param x result x
      */
-    static void writeResult(const std::string& path, const std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>>& x);
+    static void writeResult(const std::string& path, const std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>>& x);
 
     /**
      * This operation returns a string with the current date and time.

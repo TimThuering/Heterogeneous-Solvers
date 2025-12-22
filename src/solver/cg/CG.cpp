@@ -13,7 +13,7 @@ using namespace sycl;
 CG::CG(SymmetricMatrix &A, RightHandSide &b, queue &cpuQueue, queue &gpuQueue,
        std::shared_ptr<LoadBalancer> loadBalancer) : A(A),
                                                      b(b),
-                                                     x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>(gpuQueue)),
+                                                     x(sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::shared>(gpuQueue)),
                                                      cpuQueue(cpuQueue),
                                                      gpuQueue(gpuQueue),
                                                      loadBalancer(std::move(loadBalancer)) {
