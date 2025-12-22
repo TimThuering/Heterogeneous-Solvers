@@ -81,7 +81,7 @@ double TriangularSystemSolver::solve() {
         }
     }
 
-    if (useGPU && conf::unifiedAddressSpace == false) {
+    if (useGPU) {
         // copy data back to the CPU
         gpuQueue.submit([&](handler& h) {
             h.memcpy(b.rightHandSideData.data(), b_gpu, b.rightHandSideData.size() * sizeof(conf::fp_type));
