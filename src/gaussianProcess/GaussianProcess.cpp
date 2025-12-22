@@ -46,8 +46,8 @@ void GaussianProcess::start() {
 
     MatrixGenerator::generateTestKernelMatrix(path_train, path_test, cpuQueue, gpuQueue, K_star.data());
 
-    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::shared>> result{
-        usm_allocator<conf::fp_type, usm::alloc::shared>(cpuQueue)
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> result{
+        usm_allocator<conf::fp_type, usm::alloc::host>(cpuQueue)
     };
     result.resize(conf::N_test);
 
