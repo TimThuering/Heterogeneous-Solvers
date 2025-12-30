@@ -227,7 +227,8 @@ void Cholesky::choleskyUpdateLowerBlockTriangle(const int k, const int blockID) 
             executionTimes.eventCPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
             break;
         case 2:
-            executionTimes.eventCPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
+            executionTimes.eventCPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU_subgroup(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
+            // executionTimes.eventCPU_matrixMatrix = MatrixMatrixOperations::matrixMatrixStep_optimizedCPU2(cpuQueue, A.matrixData.data(), blockID, k, k + 2, blockCountCPU - 1, A.blockCountXY);
             break;
         default:
             throw std::runtime_error("Unknown CPU optimization level");
