@@ -265,9 +265,6 @@ public:
     static sycl::event matrixMatrixStep_optimizedCPU(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
                                                      int blockStart, int blockCount, int blockCountXY);
 
-    static sycl::event matrixMatrixStep_optimizedCPU_subgroup(sycl::queue& queue, conf::fp_type* A, int blockID, int blockRow,
-                                                 int blockStart, int blockCount, int blockCountXY);
-
     /**
      * This function performs the matrix-matrix multiplication step of the cholesky decomposition on the lower triangle of the
      * current sub-matrix.
