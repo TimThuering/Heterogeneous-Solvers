@@ -29,7 +29,8 @@ Before running the script ensure that the CUDA/ROCm/oneAPI environment is loaded
 ./install_AdaptiveCpp.sh <GPU vendor: "NVIDIA", "AMD" or "INTEL"> <Base directory> <#Jobs for compilation (e.g. core count)> <AMD only: ROCm path>
 ```
 
-Depending on the linux distribution and CUDA/ROCm/oneAPI setup, the script might not be able to install AdaptiveCpp automatically in every scenario.
+Depending on the linux distribution and CUDA/ROCm/oneAPI setup, the script might not be able to install AdaptiveCpp
+automatically in every scenario.
 Thus, a manual installation might still be required.
 
 After the installation of AdaptiveCpp, clone this repository and create a build directory:
@@ -43,14 +44,15 @@ cd build
 
 ### Building the project with AdaptiveCpp
 
-The following command builds the Projects with the AdaptiveCpp CUDA backend for NVIDIA GPUs and the OpenMP backend for
+The following command builds the project with the AdaptiveCpp CUDA backend for NVIDIA GPUs and the OpenMP backend for
 CPUs.
 
 Ensure that the CUDA environment and the AdaptiveCpp compiler are correctly loaded.
 The project has been tested with CUDA 12.2.2 and
 AdaptiveCpp [v25.02.0](https://github.com/AdaptiveCpp/AdaptiveCpp/tree/v25.02.0).
 
-Replace `sm_XX` with the correct [compute capability](https://developer.nvidia.com/cuda-gpus) of your GPU, for example, `sm_80`.
+Replace `sm_XX` with the correct [compute capability](https://developer.nvidia.com/cuda-gpus) of your GPU, for example,
+`sm_80`.
 
 ```
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=acpp -DACPP_TARGETS="cuda:sm_XX;omp.accelerated" -DCMAKE_CXX_FLAGS="-march=native" ..
@@ -74,6 +76,27 @@ To build the project for Intel GPUs set the cmake variable `-DGPU_VENDOR="INTEL"
 Make sure that oneAPI is loaded correctly before the installation. The project has been tested with oneAPI 2025.1.
 
 Building of tests can be enabled with the CMake option `-DENABLE_TESTS=true`.
+
+### Building the project with the Intel oneAPI DPC++/C++ compiler (icpx)
+
+The following command builds the project using icpx with the CUDA backend and the CPU backend.
+
+Replace `sm_XX` with the correct [compute capability](https://developer.nvidia.com/cuda-gpus) of your GPU, for example,
+`sm_80`.
+
+```
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=icpx -DUSE_DPCPP=ON -DDPCPP_ARCH=sm_XX ..
+make
+```
+
+To build the project for AMD GPUs set the cmake variable `-DGPU_VENDOR="AMD"` and replace `sm_XX` with
+`gfxXXX`.
+Set `gfxXXX` correctly according to your AMD GPU, for example, `gfx90a`.
+Make sure that ROCm is loaded correctly before the installation. The project has been tested with ROCm 6.4.0.
+
+When building the project with icpx for AMD GPUs, it might be necessary to disable the hws-library with the CMake
+variable
+`-DBUILD_HWS=OFF`.
 
 ### Running the program
 
@@ -156,6 +179,17 @@ heterogeneous execution.
 For the heterogeneous execution it is recommended to disable simultaneous multi threading.
 
 Sampling of CPU metrics with the hws-library might require root privileges.
+
+## CMake Options
+
+| Argument         | Description                                                          | Notes                                                                 |
+|------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------|
+| `-DENABLE_TESTS` | Enable building of unit tests                                        | `ON` or `OFF` (default)                                               |
+| `-DBUILD_HWS`    | Build the hardware-sampling library (hws)                            | `ON` (default) or `OFF`                                               |
+| `-DUSE_DOUBLE`   | Switch off to use FP32 single precision (experimental)               | `ON` (default) or `OFF`                                               |
+| `-DGPU_VENDOR`   | Specify GPU vendor                                                   | `NVIDIA` (default) `AMD` or `INTEL` (not supported for all compilers) |
+| `-DUSE_DPCPP`    | Switch on when using an Intel SYCL implementation                    | `ON` (default) or `OFF`                                               |
+| `-DDPCPP_ARCH`   | Specify the GPU architecture when using an Intel SYCL implementation | Mandatory for Intel SYCL implementations                              |
 
 ## References
 

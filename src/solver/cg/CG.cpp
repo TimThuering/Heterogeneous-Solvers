@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <sycl/sycl.hpp>
+#include <filesystem>
 
 #include "MatrixParser.hpp"
 #include "MatrixVectorOperations.hpp"

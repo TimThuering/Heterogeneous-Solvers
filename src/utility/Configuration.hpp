@@ -3,7 +3,10 @@
 
 #include <cstdio>
 #include <string>
+
+#ifdef BUILD_HWS
 #include "hws/sample_category.hpp"
+#endif
 
 /**
  * Namespace that contains everything regarding the configuration of the program execution
@@ -34,7 +37,9 @@ namespace conf {
         double energyLBFactorCPU = 0.8; /// factor that scales the CPU runtimes to influence the scheduling for power efficiency
         std::size_t blockUpdateThreshold = 1; /// when block count change during re-balancing is equal or below this number, no re-balancing occurs
         double idleWatt_CPU = 30.0; /// CPU power draw in Watts when the CPU is idle. Used to estimate total power draw.
+#ifdef BUILD_HWS
         hws::sample_category sampleCategories = static_cast<hws::sample_category>(0b00000101); /// enable power and general samples
+#endif
         bool enableHWS = false; /// enables sampling with hws library, might affect CPU/GPU performance
 
         std::string algorithm = "cg"; /// algorithm to use: 'cg' or 'cholesky'
@@ -88,7 +93,9 @@ namespace conf {
 
     inline double& idleWatt_CPU = get().idleWatt_CPU;
 
+#ifdef BUILD_HWS
     inline hws::sample_category& sampleCategories = get().sampleCategories;
+#endif
 
     inline int& workGroupSizeGEMM_xy = get().workGroupSizeGEMM_xy;
 

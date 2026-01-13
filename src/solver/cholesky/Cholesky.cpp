@@ -5,6 +5,8 @@
 #include "MatrixParser.hpp"
 #include "UtilityFunctions.hpp"
 
+#include <filesystem>
+
 Cholesky::Cholesky(SymmetricMatrix& A, queue& cpuQueue, queue& gpuQueue, std::shared_ptr<LoadBalancer> loadBalancer):
     A(A),
     cpuQueue(cpuQueue),

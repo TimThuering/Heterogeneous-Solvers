@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(ENABLE_TESTS "Enable Test" OFF)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
+option(BUILD_HWS "Builds the hardware-sampling library (hws)" ON)
 set(GPU_VENDOR "NVIDIA" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
 
 # DPC++ only options
@@ -14,8 +15,10 @@ set(DPCPP_ARCH "" CACHE STRING "Device Architecture for DPC++")
 # DPC++ only
 if (${USE_DPCPP})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
-    if (${GPU_VENDOR} STREQUAL  "NVIDIA")
+    if (${GPU_VENDOR} STREQUAL "NVIDIA")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvidia_gpu_${DPCPP_ARCH},spir64_x86_64")
+    elseif (${GPU_VENDOR} STREQUAL "AMD")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_x86_64,amd_gpu_${DPCPP_ARCH}")
     endif ()
 else ()
     # find AdaptiveCpp SYCL implementation
@@ -109,22 +112,27 @@ endif ()
 
 target_compile_definitions(heterogeneous_solvers_lib PUBLIC ${GPU_VENDOR})
 
-message("Building the hardware sampling library")
-# build and link the hws library
-set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
-set(HWS_SAMPLING_INTERVAL 10 CACHE INTERNAL "" FORCE)
-set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
+if (${BUILD_HWS})
+    target_compile_definitions(heterogeneous_solvers_lib PUBLIC BUILD_HWS=1)
+    target_compile_definitions(heterogeneous_solvers PUBLIC BUILD_HWS=1)
 
-FetchContent_Declare(
-        hws
-        GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
-        GIT_TAG fbd284d7d18081c4b44fbff3b402afbe8a81610a
-)
-FetchContent_MakeAvailable(hws)
-add_dependencies(heterogeneous_solvers hws)
-target_include_directories(heterogeneous_solvers PUBLIC ${hws_SOURCE_DIR}/include)
-target_link_libraries(heterogeneous_solvers PUBLIC hws::hws)
-target_link_libraries(heterogeneous_solvers_lib PUBLIC hws::hws)
+    message("Building the hardware sampling library")
+    # build and link the hws library
+    set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
+    set(HWS_SAMPLING_INTERVAL 10 CACHE INTERNAL "" FORCE)
+    set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(
+            hws
+            GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
+            GIT_TAG fbd284d7d18081c4b44fbff3b402afbe8a81610a
+    )
+    FetchContent_MakeAvailable(hws)
+    add_dependencies(heterogeneous_solvers hws)
+    target_include_directories(heterogeneous_solvers PUBLIC ${hws_SOURCE_DIR}/include)
+    target_link_libraries(heterogeneous_solvers PUBLIC hws::hws)
+    target_link_libraries(heterogeneous_solvers_lib PUBLIC hws::hws)
+endif ()
 
 # include the cxxopts library for cli arguments
 FetchContent_Declare(

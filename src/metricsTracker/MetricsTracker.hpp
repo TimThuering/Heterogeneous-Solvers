@@ -2,6 +2,9 @@
 #define HETEROGENEOUS_CONJUGATE_GRADIENTS_METRICSTRACKER_HPP
 
 #include "Configuration.hpp"
+#include <vector>
+
+#ifdef BUILD_HWS
 #include "hws/cpu/cpu_samples.hpp"
 #include "hws/cpu/hardware_sampler.hpp"
 #include "hws/gpu_nvidia/hardware_sampler.hpp"
@@ -9,13 +12,17 @@
 #include "hws/gpu_amd/hardware_sampler.hpp"
 #include "hws/gpu_intel/hardware_sampler.hpp"
 #include "hws/system_hardware_sampler.hpp"
+#endif
+
 
 /**
  * This class contains a metrics tracker that tracks various runtime metrics of the algorithm execution using, among others, the hws library.
  */
 class MetricsTracker {
 public:
+#ifdef BUILD_HWS
     hws::system_hardware_sampler sampler{conf::sampleCategories};
+#endif
 
     std::vector<double> averageUtilization_GPU;
     std::vector<double> averageUtilization_CPU;

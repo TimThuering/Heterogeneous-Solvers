@@ -6,10 +6,10 @@
 #include "UtilityFunctions.hpp"
 #include "Configuration.hpp"
 
-void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount_GPU, std::size_t blockCount_CPU,
-                                   double iterationTime,
-                                   int updateInterval) {
+void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount_GPU, std::size_t blockCount_CPU, double iterationTime, int updateInterval) {
+#ifdef BUILD_HWS
     sampler.pause_sampling();
+#endif
 
     // add new block count of iteration
     blockCounts_GPU.push_back(blockCount_GPU);
@@ -18,24 +18,25 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
     // add time of iteration
     iterationTimes.push_back(iterationTime);
 
+#ifdef BUILD_HWS
     // track metrics for load balancing before every update interval
     if ((iteration + 1) % updateInterval == 0) {
         // get samples for power and utilization from the hws library
-        auto* cpu_sampler = dynamic_cast<hws::cpu_hardware_sampler*>(sampler.samplers()[0].get());
+        auto *cpu_sampler = dynamic_cast<hws::cpu_hardware_sampler *>(sampler.samplers()[0].get());
 
         hws::cpu_general_samples generalSamples_CPU = cpu_sampler->general_samples();
         hws::cpu_power_samples powerSamples_CPU = cpu_sampler->power_samples();
 
 #ifdef NVIDIA
-        auto* gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler*>(sampler.samplers()[1].get());
+        auto *gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler *>(sampler.samplers()[1].get());
         hws::nvml_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::nvml_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #elif defined(AMD)
-        auto* gpu_sampler = dynamic_cast<hws::gpu_amd_hardware_sampler*>(sampler.samplers()[1].get());
+        auto *gpu_sampler = dynamic_cast<hws::gpu_amd_hardware_sampler *>(sampler.samplers()[1].get());
         hws::rocm_smi_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::rocm_smi_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #elif defined(INTEL)
-        auto* gpu_sampler = dynamic_cast<hws::gpu_intel_hardware_sampler*>(sampler.samplers()[1].get());
+        auto *gpu_sampler = dynamic_cast<hws::gpu_intel_hardware_sampler *>(sampler.samplers()[1].get());
         hws::level_zero_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::level_zero_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #endif
@@ -50,7 +51,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                     static_cast<long>(nextTimePoint_GPU),
                     generalSamples_GPU.get_compute_utilization().value().end());
                 averageUtil =
-                    std::accumulate(GPU_util.begin(), GPU_util.end(), 0.0) / static_cast<double>(GPU_util.size());
+                        std::accumulate(GPU_util.begin(), GPU_util.end(), 0.0) / static_cast<double>(GPU_util.size());
             } else {
                 // no new sample was generated in last interval, use last available utilization as fallback
                 if (conf::printVerbose) {
@@ -73,7 +74,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                     static_cast<long>(nextTimePoint_CPU),
                     generalSamples_CPU.get_compute_utilization().value().end());
                 averageUtil =
-                    std::accumulate(CPU_util.begin(), CPU_util.end(), 0.0) / static_cast<double>(CPU_util.size());
+                        std::accumulate(CPU_util.begin(), CPU_util.end(), 0.0) / static_cast<double>(CPU_util.size());
             } else {
                 // no new sample was generated in last interval, use last available utilization as fallback
                 if (conf::printVerbose) {
@@ -94,7 +95,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                     powerSamples_CPU.get_power_usage().value().end());
 
                 powerDraw = std::accumulate(CPU_watts.begin(), CPU_watts.end(), 0.0) /
-                    static_cast<double>(CPU_watts.size());
+                            static_cast<double>(CPU_watts.size());
             } else {
                 if (conf::printVerbose) {
                     std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
@@ -114,7 +115,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
                     powerSamples_GPU.get_power_usage().value().end());
 
                 powerDraw =
-                    std::accumulate(GPU_watts.begin(), GPU_watts.end(), 0.0) / static_cast<double>(GPU_watts.size());
+                        std::accumulate(GPU_watts.begin(), GPU_watts.end(), 0.0) / static_cast<double>(GPU_watts.size());
             } else {
                 if (conf::printVerbose) {
                     std::cerr << "\033[93m[WARNING]\033[0m Sampling frequency is too low!\n";
@@ -127,52 +128,63 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
     }
 
     sampler.resume_sampling();
+#endif
+
 }
 
 void MetricsTracker::startTracking() {
+#ifdef BUILD_HWS
     if (conf::enableHWS) {
         sampler.start_sampling();
     }
+#endif
 }
 
 void MetricsTracker::endTracking() {
+#ifdef BUILD_HWS
     if (conf::enableHWS) {
         sampler.stop_sampling();
     }
+#endif
 }
 
-void MetricsTracker::writeJSON(std::string& path) {
+void MetricsTracker::writeJSON(std::string &path) {
     std::ofstream metricsJSON(path + "/metrics.json");
     // get samples for power and utilization from the hws library
-    auto* cpu_sampler = dynamic_cast<hws::cpu_hardware_sampler*>(sampler.samplers()[0].get());
+#ifdef BUILD_HWS
+    auto *cpu_sampler = dynamic_cast<hws::cpu_hardware_sampler *>(sampler.samplers()[0].get());
 
     hws::cpu_general_samples generalSamples_CPU = cpu_sampler->general_samples();
     hws::cpu_power_samples powerSamples_CPU = cpu_sampler->power_samples();
 
 #ifdef NVIDIA
-    auto* gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler*>(sampler.samplers()[1].get());
+    auto *gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler *>(sampler.samplers()[1].get());
     hws::nvml_general_samples generalSamples_GPU = gpu_sampler->general_samples();
     hws::nvml_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #elif defined(AMD)
-    auto* gpu_sampler = dynamic_cast<hws::gpu_amd_hardware_sampler*>(sampler.samplers()[1].get());
+    auto *gpu_sampler = dynamic_cast<hws::gpu_amd_hardware_sampler *>(sampler.samplers()[1].get());
     hws::rocm_smi_general_samples generalSamples_GPU = gpu_sampler->general_samples();
     hws::rocm_smi_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #elif defined(INTEL)
-    auto* gpu_sampler = dynamic_cast<hws::gpu_intel_hardware_sampler*>(sampler.samplers()[1].get());
+    auto *gpu_sampler = dynamic_cast<hws::gpu_intel_hardware_sampler *>(sampler.samplers()[1].get());
     hws::level_zero_general_samples generalSamples_GPU = gpu_sampler->general_samples();
     hws::level_zero_power_samples powerSamples_GPU = gpu_sampler->power_samples();
+#endif
+
 #endif
 
     metricsJSON << "{\n";
 
     metricsJSON << "\"configuration\": {\n";
     metricsJSON << std::string("\t \"algorithm\":                       ") + "\"" + conf::algorithm + "\"" + ",\n";
+#ifdef BUILD_HWS
     if (cpu_sampler->general_samples().get_name().has_value()) {
         metricsJSON << std::string("\t \"CPU\":                             ") + "\"" + cpu_sampler->general_samples().get_name().value() + "\"" + ",\n";
     }
     if (gpu_sampler->general_samples().get_name().has_value()) {
         metricsJSON << std::string("\t \"GPU\":                             ") + "\"" + gpu_sampler->general_samples().get_name().value() + "\"" + ",\n";
     }
+#endif
 
     metricsJSON << "\t \"N\":                               " + std::to_string(conf::N) + ",\n";
 
@@ -234,7 +246,12 @@ void MetricsTracker::writeJSON(std::string& path) {
         metricsJSON << "\t \"times_delta\":            " + vectorToJSONString<double>(times_delta) + ",\n";
         metricsJSON << "\t \"times_d\":                " + vectorToJSONString<double>(times_d) + ",\n";
 
-        metricsJSON << "\t \"memcopy_d\":              " + vectorToJSONString<double>(memcopy_d) + ",\n";
+        metricsJSON << "\t \"memcopy_d\":              " + vectorToJSONString<double>(memcopy_d);
+#ifdef BUILD_HWS
+        metricsJSON << ",\n";
+#endif
+
+
     } else if (conf::algorithm == "cholesky") {
         metricsJSON << "\t \"shiftTimes\":                      " + vectorToJSONString<double>(shiftTimes) + ",\n";
         metricsJSON << "\t \"choleskyDiagonalBlockTimes\":      " + vectorToJSONString<double>(choleskyDiagonalBlockTimes) + ",\n";
@@ -250,9 +267,13 @@ void MetricsTracker::writeJSON(std::string& path) {
 
         metricsJSON << "\t \"matrixMatrixTimes_GPU\":           " + vectorToJSONString<double>(matrixMatrixTimes_GPU) + ",\n";
         metricsJSON << "\t \"matrixMatrixTimes_CPU\":           " + vectorToJSONString<double>(matrixMatrixTimes_CPU) + ",\n";
-        metricsJSON << "\t \"matrixMatrixTimes_total\":         " + vectorToJSONString<double>(matrixMatrixTimes_total) + ",\n";
+        metricsJSON << "\t \"matrixMatrixTimes_total\":         " + vectorToJSONString<double>(matrixMatrixTimes_total);
+#ifdef BUILD_HWS
+        metricsJSON << ",\n";
+#endif
     }
 
+#ifdef BUILD_HWS
 
 #ifndef INTEL
     metricsJSON << "\t \"rawUtilizationData_GPU\": " + vectorToJSONString<unsigned int>(generalSamples_GPU.get_compute_utilization().value_or(std::vector<unsigned int>(0))) + ",\n";
@@ -268,23 +289,23 @@ void MetricsTracker::writeJSON(std::string& path) {
     metricsJSON << "\t \"rawEnergyData_CPU\":      " + vectorToJSONString<double>(powerSamples_CPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
 
     std::vector<long> timePointsGPU_general;
-    for (auto& x : gpu_sampler->sampling_time_points()) {
+    for (auto &x: gpu_sampler->sampling_time_points()) {
         timePointsGPU_general.push_back(x.time_since_epoch().count());
     }
     metricsJSON << "\t \"timePointsGPU\":  " + vectorToJSONString<long>(timePointsGPU_general) + ",\n";
 
     std::vector<long> timePointsCPU_general;
-    for (auto& x : cpu_sampler->sampling_time_points()) {
+    for (auto &x: cpu_sampler->sampling_time_points()) {
         timePointsCPU_general.push_back(x.time_since_epoch().count());
     }
     metricsJSON << "\t \"timePointsCPU\":  " + vectorToJSONString<long>(timePointsCPU_general) + "\n";
-
+#endif
     metricsJSON << "}\n";
 
     metricsJSON << "}\n";
 }
 
-template <typename T>
+template<typename T>
 std::string MetricsTracker::vectorToJSONString(std::vector<T> vector) {
     std::string jsonString;
     if (vector.empty()) {

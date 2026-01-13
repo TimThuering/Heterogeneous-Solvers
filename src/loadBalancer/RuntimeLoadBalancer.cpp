@@ -1,6 +1,7 @@
 #include <numeric>
 #include <iostream>
 #include "RuntimeLoadBalancer.hpp"
+#include <cmath>
 
 RuntimeLoadBalancer::RuntimeLoadBalancer(int updateInterval, double initialProportionGPU, int blockCountXY) : LoadBalancer(updateInterval,
                                                                                                                            initialProportionGPU, blockCountXY) {

@@ -5,7 +5,10 @@
 #include <iomanip>
 #include <chrono>
 #include <unistd.h>
+
+#ifdef BUILD_HWS
 #include <hws/cpu/hardware_sampler.hpp>
+#endif
 
 #include "Configuration.hpp"
 #include "MatrixGenerator.hpp"
@@ -39,6 +42,7 @@ std::string UtilityFunctions::getTimeString() {
 }
 
 void UtilityFunctions::measureIdlePowerCPU() {
+#ifdef BUILD_HWS
     hws::cpu_hardware_sampler cpuSampler{hws::sample_category::power};
 
     cpuSampler.start_sampling();
@@ -56,6 +60,11 @@ void UtilityFunctions::measureIdlePowerCPU() {
         std::cerr << "\033[93m[WARNING]\033[0m Could not determine CPU idle power draw. Using default of " <<
             conf::idleWatt_CPU << "W." << std::endl;
     }
+#else
+    std::cerr << "\033[93m[WARNING]\033[0m HWS backend not available. No energy metrics will be sampled." << std::endl;
+#endif
+
+
 }
 
 double UtilityFunctions::checkResult(RightHandSide& b, sycl::queue cpuQueue, sycl::queue gpuQueue, std::string path_gp_input, std::string path_gp_output) {

@@ -1,9 +1,11 @@
 #include <iostream>
 #include <sycl/sycl.hpp>
+#ifdef BUILD_HWS
 #include <hws/system_hardware_sampler.hpp>
 #include <hws/cpu/hardware_sampler.hpp>
 #include <hws/gpu_nvidia/hardware_sampler.hpp>
 #include <hws/gpu_amd/hardware_sampler.hpp>
+#endif
 #include <cxxopts.hpp>
 
 #include "MatrixParser.hpp"
@@ -194,7 +196,6 @@ int main(int argc, char* argv[]) {
 
     // measure CPU idle power draw in Watts
     UtilityFunctions::measureIdlePowerCPU();
-
 
     // generate or parse Symmetric matrix
     RightHandSide b = generateMatrix
