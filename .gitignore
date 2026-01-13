@@ -6,3 +6,4 @@ matrixGenerator/datasets/
 output/
 env.sh
 env_dpcpp.sh
+env_icpx.sh
