@@ -267,6 +267,15 @@ void MetricsTracker::writeJSON(std::string& path) {
     metricsJSON << "\t \"rawEnergyData_GPU\":      " + vectorToJSONString<double>(powerSamples_GPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
     metricsJSON << "\t \"rawEnergyData_CPU\":      " + vectorToJSONString<double>(powerSamples_CPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
 
+    if (conf::advancedSampling) {
+        metricsJSON << "\t \"rawClockData_CPU\":       " + vectorToJSONString<unsigned int>(cpu_sampler->clock_samples().get_clock_frequency().value_or(std::vector<unsigned int>(0))) + ",\n";
+        metricsJSON << "\t \"rawTempData_CPU\":        " + vectorToJSONString<double>(cpu_sampler->temperature_samples().get_temperature().value_or(std::vector<double>(0))) + ",\n";
+
+        metricsJSON << "\t \"rawClockData_GPU\":       " + vectorToJSONString<double>(gpu_sampler->clock_samples().get_clock_frequency().value_or(std::vector<double>(0))) + ",\n";
+        metricsJSON << "\t \"rawTempData_GPU\":        " + vectorToJSONString<double>(gpu_sampler->temperature_samples().get_temperature().value_or(std::vector<double>(0))) + ",\n";
+    }
+
+
     std::vector<long> timePointsGPU_general;
     for (auto& x : gpu_sampler->sampling_time_points()) {
         timePointsGPU_general.push_back(x.time_since_epoch().count());

@@ -50,6 +50,8 @@ namespace conf {
         bool trackCholeskySolveStep = true; /// hws library will track the solve step too if enabled
 
         bool unifiedAddressSpace = false; /// assume a unified address space for CPUs and GPUs.
+
+        bool advancedSampling = false; /// use hws to sample more metrics such as temperature and clock speed
     };
 
     Configuration& get();
@@ -111,6 +113,8 @@ namespace conf {
     inline bool& trackCholeskySolveStep = get().trackCholeskySolveStep;
 
     inline bool& unifiedAddressSpace = get().unifiedAddressSpace;
+
+    inline bool& advancedSampling = get().advancedSampling;
 
 
 }

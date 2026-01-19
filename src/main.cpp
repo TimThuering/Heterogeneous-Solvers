@@ -63,6 +63,7 @@ int main(int argc, char* argv[]) {
         ("check_result", "enable/disable result check that outputs error of Ax - b", cxxopts::value<bool>())
         ("track_chol_solve", "enable/disable hws tracking of solving step for cholesky", cxxopts::value<bool>())
         ("unified_address_space", "enable/disable assuming a unified address space between CPU and GPU", cxxopts::value<bool>())
+        ("advanced_sampling", "enable/disable sampling of more metrics using hws", cxxopts::value<bool>())
         ("gpr", "perform gaussian process regression (GPR)", cxxopts::value<bool>());
 
 
@@ -187,6 +188,15 @@ int main(int argc, char* argv[]) {
 
     if (arguments.count("unified_address_space")) {
         conf::unifiedAddressSpace = arguments["unified_address_space"].as<bool>();
+    }
+
+    if (arguments.count("advanced_sampling")) {
+        conf::advancedSampling = arguments["advanced_sampling"].as<bool>();
+    }
+
+    if (conf::advancedSampling) {
+        // enable sampling of general, clock, power and temperature
+        conf::sampleCategories = static_cast<hws::sample_category>(0b00010111);
     }
 
     sycl::property_list properties{sycl::property::queue::enable_profiling()};
