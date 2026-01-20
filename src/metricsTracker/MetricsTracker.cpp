@@ -1,6 +1,7 @@
 #include <numeric>
 #include <iostream>
 #include <filesystem>
+#include <fstream>
 
 #include "MetricsTracker.hpp"
 #include "UtilityFunctions.hpp"
