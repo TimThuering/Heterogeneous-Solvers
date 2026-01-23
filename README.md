@@ -1,9 +1,7 @@
 # Heterogeneous Solvers for Linear Systems with SPD Matrices
 
-This project was created as part of a master thesis.
-
-It contains code for two heterogeneous solvers that can leverage the CPU and GPU simultaneously: a heterogeneous
-implementation of the CG method and a heterogeneous Cholesky decomposition implementation.
+This project includes two heterogeneous solvers that can leverage the CPU and GPU simultaneously: a heterogeneous
+implementation of the CG method and a heterogeneous Cholesky decomposition implementation. This project was initially created as part of a master thesis.
 
 The code is parallelized on the CPU and GPU using [SYCL](https://www.khronos.org/sycl/).
 
@@ -16,8 +14,8 @@ The code is parallelized on the CPU and GPU using [SYCL](https://www.khronos.org
 
 ## Installation
 
-The project supports the SYCL implementation [AdaptiveCpp](https://github.com/AdaptiveCpp/AdaptiveCpp) and requires a
-Linux operating system.
+The project supports the SYCL implementations [AdaptiveCpp](https://github.com/AdaptiveCpp/AdaptiveCpp) and Intel [oneAPI](https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html). 
+It requires a Linux operating system.
 
 The AdaptiveCpp compiler that has been used for the experiment environment can be installed using the script
 `install_AdaptiveCpp.sh`.
@@ -74,6 +72,8 @@ Make sure that ROCm is loaded correctly before the installation. The project has
 To build the project for Intel GPUs set the cmake variable `-DGPU_VENDOR="INTEL"` and replace `cuda:sm_XX` with
 `generic`.
 Make sure that oneAPI is loaded correctly before the installation. The project has been tested with oneAPI 2025.1.
+
+Alternatively, use `-DACPP_TARGETS="generic"` to target all kinds of device.
 
 Building of tests can be enabled with the CMake option `-DENABLE_TESTS=true`.
 
