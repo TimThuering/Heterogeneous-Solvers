@@ -217,7 +217,7 @@ int main(int argc, char* argv[]) {
                           : MatrixParser::parseRightHandSide(path_b, gpuQueue);
 
     SymmetricMatrix A = generateMatrix
-                            ? MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue, gpuQueue)
+                            ? MatrixGenerator::generateSPDMatrix_optimized(path_gp_input, cpuQueue, gpuQueue)
                             : MatrixParser::parseSymmetricMatrix(path_A, gpuQueue);
 
     std::shared_ptr<LoadBalancer> loadBalancer;

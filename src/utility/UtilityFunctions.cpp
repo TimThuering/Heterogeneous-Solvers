@@ -60,7 +60,7 @@ void UtilityFunctions::measureIdlePowerCPU() {
 
 double UtilityFunctions::checkResult(RightHandSide& b, sycl::queue cpuQueue, sycl::queue gpuQueue, std::string path_gp_input, std::string path_gp_output) {
     std::cout << "Checking result" << std::endl;
-    SymmetricMatrix A_new = MatrixGenerator::generateSPDMatrix(path_gp_input, cpuQueue, gpuQueue);
+    SymmetricMatrix A_new = MatrixGenerator::generateSPDMatrix_optimized(path_gp_input, cpuQueue, gpuQueue);
 
     RightHandSide result(conf::N, conf::matrixBlockSize, gpuQueue);
 

@@ -30,6 +30,16 @@ public:
     static SymmetricMatrix generateSPDMatrix(std::string& path, sycl::queue& queue, sycl::queue& queueGPU);
 
     /**
+     * This operation generates a SPD kernel matrix that can be used for Gaussian Processes
+     *
+     * @param path path to text file with data
+     * @param queue CPU queue
+     * @param queueGPU GPU queue
+     * @return a SPD matrix
+     */
+    static SymmetricMatrix generateSPDMatrix_optimized(std::string& path, sycl::queue& queue, sycl::queue& queueGPU);
+
+    /**
      * This operation generates the test kernel matrix K* used required for prediction with Gaussian Processes.
      *
      * @param path_train path to training data

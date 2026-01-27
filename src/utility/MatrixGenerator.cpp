@@ -7,7 +7,7 @@
 #include <fstream>
 using namespace sycl;
 
-SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::queue& queue) {
+SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::queue &queue) {
     SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queue);
 
     // block count of all columns except the first one
@@ -70,19 +70,19 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrixStrictDiagonalDominant(sycl::q
     return matrix;
 }
 
-SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queue& queue, sycl::queue& queueGPU) {
+SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string &path, sycl::queue &queue, sycl::queue &queueGPU) {
     std::cout << "-- generating SPD matrix of size " << conf::N << "x" << conf::N << std::endl;
     SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queueGPU);
 
     std::size_t nRegressors = 8;
-    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> trainingInput{
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host> > trainingInput{
         usm_allocator<conf::fp_type, usm::alloc::host>(queueGPU)
     };
     std::size_t offset = nRegressors - 1;
     trainingInput.resize(conf::N + offset);
 
-    conf::fp_type* matrixData = matrix.matrixData.data();
-    conf::fp_type* trainingInputData = trainingInput.data();
+    conf::fp_type *matrixData = matrix.matrixData.data();
+    conf::fp_type *trainingInputData = trainingInput.data();
 
     std::ifstream dataInputStream(path);
     std::string valueString;
@@ -131,7 +131,7 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
 
             std::size_t matrixBlockSize = conf::matrixBlockSize;
 
-            queue.submit([&](handler& h) {
+            queue.submit([&](handler &h) {
                 h.parallel_for(range<2>(matrixBlockSize, matrixBlockSize), [=](id<2> idx) {
                     const unsigned int i_local = idx[0];
                     const unsigned int j_local = idx[1];
@@ -161,7 +161,106 @@ SymmetricMatrix MatrixGenerator::generateSPDMatrix(std::string& path, sycl::queu
     return matrix;
 }
 
-void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::string& path_test, sycl::queue& queue, sycl::queue& queueGPU, conf::fp_type* K_star) {
+
+SymmetricMatrix MatrixGenerator::generateSPDMatrix_optimized(std::string &path, sycl::queue &queue, sycl::queue &queueGPU) {
+    std::cout << "-- generating SPD matrix of size (optimized Kernel) " << conf::N << "x" << conf::N << std::endl;
+    SymmetricMatrix matrix(conf::N, conf::matrixBlockSize, queueGPU);
+
+    std::size_t nRegressors = 8;
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host> > trainingInput{
+        usm_allocator<conf::fp_type, usm::alloc::host>(queueGPU)
+    };
+    std::size_t offset = nRegressors - 1;
+    trainingInput.resize(conf::N + offset);
+
+    conf::fp_type *matrixData = matrix.matrixData.data();
+    conf::fp_type *trainingInputData = trainingInput.data();
+
+    std::ifstream dataInputStream(path);
+    std::string valueString;
+
+    // parse input data
+    std::size_t rowIndex = 0;
+    while (std::getline(dataInputStream, valueString)) {
+        conf::fp_type value = static_cast<conf::fp_type>(std::stod(valueString));
+        trainingInput[rowIndex + offset] = value;
+        rowIndex++;
+        if (rowIndex == conf::N) {
+            break;
+        }
+    }
+    dataInputStream.close();
+
+    if (rowIndex != conf::N) {
+        throw std::runtime_error("Not enough data available!");
+    }
+
+
+    // block count of all columns except the first one
+    const int referenceBlockCount = (matrix.blockCountXY * (matrix.blockCountXY - 1)) / 2;
+
+    std::size_t N = conf::N;
+
+    std::size_t blockCountXY = matrix.blockCountXY;
+    std::size_t matrixBlockSize = conf::matrixBlockSize;
+
+    queue.submit([&](handler &h) {
+        h.parallel_for(range<2>(blockCountXY, blockCountXY), [=](id<2> idx) {
+                    std::size_t i_block = idx[0];
+                    std::size_t j_block = idx[1];
+
+                    if (j_block > i_block) {
+                        return;
+                    }
+
+                    // number of blocks in row to the right (if matrix would be full)
+                    const int block_j_inv = blockCountXY - (j_block + 1);
+
+                    // total number of blocks to the right that are stored
+                    const int columnBlocksToRight = (block_j_inv * (block_j_inv + 1)) / 2;
+
+                    // id of block in the matrix data structure for symmetric matrices
+                    const int blockID = i_block + referenceBlockCount - columnBlocksToRight;
+
+                    // start index of block in matrix data structure
+                    const std::size_t blockStartIndex = static_cast<std::size_t>(blockID) * matrixBlockSize * matrixBlockSize;
+
+                    // Diagonal noise for stability
+                    const double noiseVariance = 0.01;
+
+                    // Default values for hyperparameters
+                    const double verticalLengthscale = 1.0;
+                    const double lengthscale = 1.0;
+
+                    for (unsigned int i_local = 0; i_local < matrixBlockSize; i_local++) {
+                        const unsigned long i_global = matrixBlockSize * i_block + i_local;
+                        for (unsigned int j_local = 0; j_local < matrixBlockSize; j_local++) {
+                            const unsigned long j_global = matrixBlockSize * j_block + j_local;
+                            if (i_global >= N || j_global >= N) {
+                                continue;
+                            }
+                            double distance = 0.0;
+                            for (unsigned int k = 0; k < nRegressors; k++) {
+                                const double tmp = trainingInputData[i_global + k] - trainingInputData[j_global + k];
+                                distance += tmp * tmp;
+                            }
+                            double covarianceFunction = verticalLengthscale * sycl::exp(-0.5 / (lengthscale * lengthscale) * distance);
+
+                            if (i_global == j_global) {
+                                covarianceFunction += noiseVariance;
+                            }
+                            matrixData[blockStartIndex + i_local * matrixBlockSize + j_local] = covarianceFunction;
+                        }
+                    }
+        });
+    });
+    queue.wait();
+
+    return matrix;
+}
+
+
+void MatrixGenerator::generateTestKernelMatrix(std::string &path_train, std::string &path_test, sycl::queue &queue, sycl::queue &queueGPU, conf::fp_type *K_star) {
     std::cout << "-- generating Kernel matrix of size " << conf::N << "x" << conf::N_test << std::endl;
 
 
@@ -169,12 +268,12 @@ void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::str
     constexpr std::size_t offset = nRegressors - 1;
 
 
-    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> trainingInput{
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host> > trainingInput{
         usm_allocator<conf::fp_type, usm::alloc::host>(queueGPU)
     };
     trainingInput.resize(conf::N + offset);
 
-    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host>> testInput{
+    std::vector<conf::fp_type, usm_allocator<conf::fp_type, usm::alloc::host> > testInput{
         usm_allocator<conf::fp_type, usm::alloc::host>(queueGPU)
     };
     testInput.resize(conf::N_test + offset);
@@ -183,8 +282,8 @@ void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::str
 
     readInputVector(path_test, testInput, conf::N_test, offset);
 
-    conf::fp_type* trainingInputData = trainingInput.data();
-    conf::fp_type* testInputData = testInput.data();
+    conf::fp_type *trainingInputData = trainingInput.data();
+    conf::fp_type *testInputData = testInput.data();
 
     // Default values for hyperparameters
     constexpr double verticalLengthscale = 1.0;
@@ -194,7 +293,7 @@ void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::str
     const std::size_t N = conf::N;
 
     // compute transposed K_star kernel matrix
-    queue.submit([&](handler& h) {
+    queue.submit([&](handler &h) {
         h.parallel_for(range<2>(N_test, N), [=](id<2> idx) {
             const unsigned int i = idx[1];
             const unsigned int j = idx[0];
@@ -212,7 +311,7 @@ void MatrixGenerator::generateTestKernelMatrix(std::string& path_train, std::str
     queue.wait();
 }
 
-RightHandSide MatrixGenerator::parseRHS_GP(std::string& path, sycl::queue& queue) {
+RightHandSide MatrixGenerator::parseRHS_GP(std::string &path, sycl::queue &queue) {
     std::cout << "-- parsing data for rhs of size " << conf::N << std::endl;
 
     RightHandSide rhs(conf::N, conf::matrixBlockSize, queue);
@@ -239,7 +338,7 @@ RightHandSide MatrixGenerator::parseRHS_GP(std::string& path, sycl::queue& queue
     return rhs;
 }
 
-RightHandSide MatrixGenerator::generateRHS(sycl::queue& queue) {
+RightHandSide MatrixGenerator::generateRHS(sycl::queue &queue) {
     RightHandSide b(conf::N, conf::matrixBlockSize, queue);
 
     // random number generator
@@ -254,7 +353,7 @@ RightHandSide MatrixGenerator::generateRHS(sycl::queue& queue) {
     return b;
 }
 
-void MatrixGenerator::readInputVector(std::string& path, std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host>>& dataVector, int N, int offset) {
+void MatrixGenerator::readInputVector(std::string &path, std::vector<conf::fp_type, sycl::usm_allocator<conf::fp_type, sycl::usm::alloc::host> > &dataVector, int N, int offset) {
     std::ifstream dataInputStream(path);
     std::string valueString;
 
