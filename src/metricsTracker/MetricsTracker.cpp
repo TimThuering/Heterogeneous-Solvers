@@ -272,11 +272,17 @@ void MetricsTracker::writeJSON(std::string& path) {
         metricsJSON << "\t \"rawTempData_CPU\":        " + vectorToJSONString<double>(cpu_sampler->temperature_samples().get_temperature().value_or(std::vector<double>(0))) + ",\n";
 
         metricsJSON << "\t \"rawClockData_GPU\":       " + vectorToJSONString<double>(gpu_sampler->clock_samples().get_clock_frequency().value_or(std::vector<double>(0))) + ",\n";
+        metricsJSON << "\t \"rawMemClockData_GPU\":    " + vectorToJSONString<double>(gpu_sampler->clock_samples().get_memory_clock_frequency().value_or(std::vector<double>(0))) + ",\n";
         metricsJSON << "\t \"rawTempData_GPU\":        " + vectorToJSONString<double>(gpu_sampler->temperature_samples().get_temperature().value_or(std::vector<double>(0))) + ",\n";
+
+#ifdef NVIDIA
+        metricsJSON << "\t \"rawPowerProfileData\":    " + vectorToJSONString<int>(gpu_sampler->power_samples().get_power_profile().value_or(std::vector<int>(0))) + ",\n";
+#endif
 
 #ifdef AMD
         metricsJSON << "\t \"rawTempData_GPU_hotspot\": " + vectorToJSONString<double>(gpu_sampler->temperature_samples().get_hotspot_temperature().value_or(std::vector<double>(0))) + ",\n";
         metricsJSON << "\t \"rawTempData_GPU_memory\":  " + vectorToJSONString<double>(gpu_sampler->temperature_samples().get_memory_temperature().value_or(std::vector<double>(0))) + ",\n";
+        metricsJSON << "\t \"socketClockData_GPU\":    " + vectorToJSONString<double>(gpu_sampler->clock_samples().get_socket_clock_frequency().value_or(std::vector<double>(0))) + ",\n";
 #endif
     }
 
