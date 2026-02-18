@@ -130,6 +130,11 @@ if (${BUILD_HWS})
         set(HWS_SAMPLING_INTERVAL ${HWS_SAMPLING_INTERVAL_DEFAULT} CACHE INTERNAL "" FORCE)
         set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
 
+        if (${GPU_VENDOR} STREQUAL "NVIDIA")
+            # disable AMD GPU sampling on NVIDIA systems explicitly
+            set(HWS_ENABLE_GPU_AMD_SAMPLING OFF CACHE INTERNAL "" FORCE)
+        endif ()
+
         FetchContent_Declare(
                 hws
                 GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
