@@ -208,7 +208,9 @@ void MetricsTracker::writeJSON(std::string &path) {
     metricsJSON << "\t \"gpuOptimizationLevel\":            " + std::to_string(conf::gpuOptimizationLevel) + ",\n";
     metricsJSON << "\t \"cpuOptimizationLevel\":            " + std::to_string(conf::cpuOptimizationLevel) + ",\n";
     metricsJSON << "\t \"enableHWS\":                       " + std::to_string(conf::enableHWS) + ",\n";
+#ifdef BUILD_HWS
     metricsJSON << "\t \"samplingIntervalHWS\":             " + std::to_string(HWS_SAMPLING_INTERVAL_DEFAULT) + ",\n";
+#endif
     std::string omp_proc_bind_env = getenv("OMP_PROC_BIND") ? getenv("OMP_PROC_BIND") : "";
     std::string omp_cores_env = getenv("OMP_NUM_THREADS") ? getenv("OMP_NUM_THREADS") : "\"\"";
     metricsJSON << "\t \"cpuBind\":                         " + std::string("\"") + omp_proc_bind_env + "\"" + ",\n";

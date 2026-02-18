@@ -196,10 +196,12 @@ int main(int argc, char* argv[]) {
         conf::advancedSampling = arguments["advanced_sampling"].as<bool>();
     }
 
+#ifdef BUILD_HWS
     if (conf::advancedSampling) {
         // enable sampling of general, clock, power and temperature
         conf::sampleCategories = static_cast<hws::sample_category>(0b00010111);
     }
+#endif
 
     sycl::property_list properties{sycl::property::queue::enable_profiling()};
 
