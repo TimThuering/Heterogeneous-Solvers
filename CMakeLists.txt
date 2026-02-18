@@ -125,12 +125,6 @@ if (${BUILD_HWS})
     set(HWS_SAMPLING_INTERVAL ${HWS_SAMPLING_INTERVAL_DEFAULT} CACHE INTERNAL "" FORCE)
     set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
 
-    message("Building the hardware sampling library")
-    # build and link the hws library
-    set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
-    set(HWS_SAMPLING_INTERVAL 10 CACHE INTERNAL "" FORCE)
-    set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
-
     FetchContent_Declare(
             hws
             GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
