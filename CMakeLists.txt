@@ -116,22 +116,29 @@ target_compile_definitions(heterogeneous_solvers_lib PUBLIC ${GPU_VENDOR})
 if (${BUILD_HWS})
     target_compile_definitions(heterogeneous_solvers_lib PUBLIC BUILD_HWS=1)
     target_compile_definitions(heterogeneous_solvers PUBLIC BUILD_HWS=1)
-    target_compile_definitions(heterogeneous_solvers_lib PUBLIC HWS_SAMPLING_INTERVAL_DEFAULT=${HWS_SAMPLING_INTERVAL_DEFAULT})
 
+    find_package(hws QUIET)
+    if (hws_FOUND)
+        message("Using existing hws installation")
+    else ()
+        message("Building the hws library from source")
 
-    message("Building the hardware sampling library")
-    # build and link the hws library
-    set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
-    set(HWS_SAMPLING_INTERVAL ${HWS_SAMPLING_INTERVAL_DEFAULT} CACHE INTERNAL "" FORCE)
-    set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
+        target_compile_definitions(heterogeneous_solvers_lib PUBLIC HWS_SAMPLING_INTERVAL_DEFAULT=${HWS_SAMPLING_INTERVAL_DEFAULT})
 
-    FetchContent_Declare(
-            hws
-            GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
-            GIT_TAG fbd284d7d18081c4b44fbff3b402afbe8a81610a
-    )
-    FetchContent_MakeAvailable(hws)
-    add_dependencies(heterogeneous_solvers hws)
+        # build and link the hws library
+        set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
+        set(HWS_SAMPLING_INTERVAL ${HWS_SAMPLING_INTERVAL_DEFAULT} CACHE INTERNAL "" FORCE)
+        set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
+
+        FetchContent_Declare(
+                hws
+                GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
+                GIT_TAG fbd284d7d18081c4b44fbff3b402afbe8a81610a
+        )
+        FetchContent_MakeAvailable(hws)
+        add_dependencies(heterogeneous_solvers hws)
+    endif ()
+
     target_include_directories(heterogeneous_solvers PUBLIC ${hws_SOURCE_DIR}/include)
     target_link_libraries(heterogeneous_solvers PUBLIC hws::hws)
     target_link_libraries(heterogeneous_solvers_lib PUBLIC hws::hws)
