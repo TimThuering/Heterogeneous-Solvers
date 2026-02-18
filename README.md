@@ -174,6 +174,7 @@ The entries in both files have to be separated with a semicolon followed by a sp
 | `--check_result`          | enable/disable result check that outputs error of Ax - b for the Cholesky decomposition                                                            | Default: `false`                                            |
 | `--track_chol_solve`      | enable/disable hws tracking of solving step for the Cholesky decomposition                                                                         | Default: `true`                                             |
 | `--unified_address_space` | assumes unified address space for CPU and GPU                                                                                                      | Default: `false`                                            |
+| `--advanced_sampling`     | enable/disable sampling of more metrics using hws                                                                                                  | Default: `false`                                            |
 
 It is recommended to specify the environment variables `OMP_NUM_THREADS` and `OMP_PROC_BIND` when using the CPU-only or
 heterogeneous execution.
@@ -183,14 +184,15 @@ Sampling of CPU metrics with the hws-library might require root privileges.
 
 ## CMake Options
 
-| Argument         | Description                                                          | Notes                                                                 |
-|------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------|
-| `-DENABLE_TESTS` | Enable building of unit tests                                        | `ON` or `OFF` (default)                                               |
-| `-DBUILD_HWS`    | Build the hardware-sampling library (hws)                            | `ON` (default) or `OFF`                                               |
-| `-DUSE_DOUBLE`   | Switch off to use FP32 single precision (experimental)               | `ON` (default) or `OFF`                                               |
-| `-DGPU_VENDOR`   | Specify GPU vendor                                                   | `NVIDIA` (default) `AMD` or `INTEL` (not supported for all compilers) |
-| `-DUSE_DPCPP`    | Switch on when using an Intel SYCL implementation                    | `ON` (default) or `OFF`                                               |
-| `-DDPCPP_ARCH`   | Specify the GPU architecture when using an Intel SYCL implementation | Mandatory for Intel SYCL implementations                              |
+| Argument                          | Description                                                          | Notes                                                                 |
+|-----------------------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------|
+| `-DENABLE_TESTS`                  | Enable building of unit tests                                        | `ON` or `OFF` (default)                                               |
+| `-DBUILD_HWS`                     | Build the hardware-sampling library (hws)                            | `ON` (default) or `OFF`                                               |
+| `-DUSE_DOUBLE`                    | Switch off to use FP32 single precision (experimental)               | `ON` (default) or `OFF`                                               |
+| `-DGPU_VENDOR`                    | Specify GPU vendor                                                   | `NVIDIA` (default) `AMD` or `INTEL` (not supported for all compilers) |
+| `-DUSE_DPCPP`                     | Switch on when using an Intel SYCL implementation                    | `ON` (default) or `OFF`                                               |
+| `-DDPCPP_ARCH`                    | Specify the GPU architecture when using an Intel SYCL implementation | Mandatory for Intel SYCL implementations                              |
+| `-DHWS_SAMPLING_INTERVAL_DEFAULT` | Default sampling interval for the hws library                        | Default: 10                                                           |
 
 ## References
 
