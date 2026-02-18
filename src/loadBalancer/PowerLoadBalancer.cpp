@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <numeric>
+#include <cmath>
 
 PowerLoadBalancer::PowerLoadBalancer(const int updateInterval, const double initialProportionGPU, int blockCountXY): LoadBalancer(
     updateInterval, initialProportionGPU, blockCountXY) {

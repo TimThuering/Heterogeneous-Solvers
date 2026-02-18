@@ -1,7 +1,10 @@
 #include <sycl/sycl.hpp>
-#include <hws/system_hardware_sampler.hpp>
 
+#ifdef BUILD_HWS
+#include <hws/system_hardware_sampler.hpp>
+#endif
 #include "SymmetricMatrix.hpp"
+#include <cmath>
 
 #include "Configuration.hpp"
 

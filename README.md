@@ -1,9 +1,7 @@
 # Heterogeneous Solvers for Linear Systems with SPD Matrices
 
-This project was created as part of a master thesis.
-
-It contains code for two heterogeneous solvers that can leverage the CPU and GPU simultaneously: a heterogeneous
-implementation of the CG method and a heterogeneous Cholesky decomposition implementation.
+This project includes two heterogeneous solvers that can leverage the CPU and GPU simultaneously: a heterogeneous
+implementation of the CG method and a heterogeneous Cholesky decomposition implementation. This project was initially created as part of a master thesis.
 
 The code is parallelized on the CPU and GPU using [SYCL](https://www.khronos.org/sycl/).
 
@@ -16,8 +14,8 @@ The code is parallelized on the CPU and GPU using [SYCL](https://www.khronos.org
 
 ## Installation
 
-The project supports the SYCL implementation [AdaptiveCpp](https://github.com/AdaptiveCpp/AdaptiveCpp) and requires a
-Linux operating system.
+The project supports the SYCL implementations [AdaptiveCpp](https://github.com/AdaptiveCpp/AdaptiveCpp) and Intel [oneAPI](https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html). 
+It requires a Linux operating system.
 
 The AdaptiveCpp compiler that has been used for the experiment environment can be installed using the script
 `install_AdaptiveCpp.sh`.
@@ -29,7 +27,8 @@ Before running the script ensure that the CUDA/ROCm/oneAPI environment is loaded
 ./install_AdaptiveCpp.sh <GPU vendor: "NVIDIA", "AMD" or "INTEL"> <Base directory> <#Jobs for compilation (e.g. core count)> <AMD only: ROCm path>
 ```
 
-Depending on the linux distribution and CUDA/ROCm/oneAPI setup, the script might not be able to install AdaptiveCpp automatically in every scenario.
+Depending on the linux distribution and CUDA/ROCm/oneAPI setup, the script might not be able to install AdaptiveCpp
+automatically in every scenario.
 Thus, a manual installation might still be required.
 
 After the installation of AdaptiveCpp, clone this repository and create a build directory:
@@ -43,14 +42,15 @@ cd build
 
 ### Building the project with AdaptiveCpp
 
-The following command builds the Projects with the AdaptiveCpp CUDA backend for NVIDIA GPUs and the OpenMP backend for
+The following command builds the project with the AdaptiveCpp CUDA backend for NVIDIA GPUs and the OpenMP backend for
 CPUs.
 
 Ensure that the CUDA environment and the AdaptiveCpp compiler are correctly loaded.
 The project has been tested with CUDA 12.2.2 and
 AdaptiveCpp [v25.02.0](https://github.com/AdaptiveCpp/AdaptiveCpp/tree/v25.02.0).
 
-Replace `sm_XX` with the correct [compute capability](https://developer.nvidia.com/cuda-gpus) of your GPU, for example, `sm_80`.
+Replace `sm_XX` with the correct [compute capability](https://developer.nvidia.com/cuda-gpus) of your GPU, for example,
+`sm_80`.
 
 ```
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=acpp -DACPP_TARGETS="cuda:sm_XX;omp.accelerated" -DCMAKE_CXX_FLAGS="-march=native" ..
@@ -73,7 +73,30 @@ To build the project for Intel GPUs set the cmake variable `-DGPU_VENDOR="INTEL"
 `generic`.
 Make sure that oneAPI is loaded correctly before the installation. The project has been tested with oneAPI 2025.1.
 
+Alternatively, use `-DACPP_TARGETS="generic"` to target all kinds of device.
+
 Building of tests can be enabled with the CMake option `-DENABLE_TESTS=true`.
+
+### Building the project with the Intel oneAPI DPC++/C++ compiler (icpx)
+
+The following command builds the project using icpx with the CUDA backend and the CPU backend.
+
+Replace `sm_XX` with the correct [compute capability](https://developer.nvidia.com/cuda-gpus) of your GPU, for example,
+`sm_80`.
+
+```
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=icpx -DUSE_DPCPP=ON -DDPCPP_ARCH=sm_XX ..
+make
+```
+
+To build the project for AMD GPUs set the cmake variable `-DGPU_VENDOR="AMD"` and replace `sm_XX` with
+`gfxXXX`.
+Set `gfxXXX` correctly according to your AMD GPU, for example, `gfx90a`.
+Make sure that ROCm is loaded correctly before the installation. The project has been tested with ROCm 6.4.0.
+
+When building the project with icpx for AMD GPUs, it might be necessary to disable the hws-library with the CMake
+variable
+`-DBUILD_HWS=OFF`.
 
 ### Running the program
 
@@ -157,6 +180,17 @@ heterogeneous execution.
 For the heterogeneous execution it is recommended to disable simultaneous multi threading.
 
 Sampling of CPU metrics with the hws-library might require root privileges.
+
+## CMake Options
+
+| Argument         | Description                                                          | Notes                                                                 |
+|------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------|
+| `-DENABLE_TESTS` | Enable building of unit tests                                        | `ON` or `OFF` (default)                                               |
+| `-DBUILD_HWS`    | Build the hardware-sampling library (hws)                            | `ON` (default) or `OFF`                                               |
+| `-DUSE_DOUBLE`   | Switch off to use FP32 single precision (experimental)               | `ON` (default) or `OFF`                                               |
+| `-DGPU_VENDOR`   | Specify GPU vendor                                                   | `NVIDIA` (default) `AMD` or `INTEL` (not supported for all compilers) |
+| `-DUSE_DPCPP`    | Switch on when using an Intel SYCL implementation                    | `ON` (default) or `OFF`                                               |
+| `-DDPCPP_ARCH`   | Specify the GPU architecture when using an Intel SYCL implementation | Mandatory for Intel SYCL implementations                              |
 
 ## References
 
