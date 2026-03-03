@@ -117,6 +117,7 @@ target_compile_definitions(heterogeneous_solvers_lib PUBLIC ${GPU_VENDOR})
 if (${AMD_ENERGY_ONLY})
     # dependencies for native energy sampling
     find_package(rocm_smi)
+    target_link_libraries(heterogeneous_solvers_lib PRIVATE rocm_smi64)
 
     target_compile_definitions(heterogeneous_solvers_lib PUBLIC AMD_ENERGY_ONLY=1)
     target_compile_definitions(heterogeneous_solvers PUBLIC AMD_ENERGY_ONLY=1)

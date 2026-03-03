@@ -295,7 +295,7 @@ void MetricsTracker::writeJSON(std::string &path) {
 
 #ifdef BUILD_HWS
 
-#if !defined(INTEL) || !defined(AMD_ENERGY_ONLY)
+#if !(defined(INTEL) || defined(AMD_ENERGY_ONLY))
     metricsJSON << "\t \"rawUtilizationData_GPU\": " + vectorToJSONString<unsigned int>(generalSamples_GPU.get_compute_utilization().value_or(std::vector<unsigned int>(0))) + ",\n";
 #else
     metricsJSON << "\t \"rawUtilizationData_GPU\": " + std::string("[]") + ",\n";
@@ -341,12 +341,13 @@ void MetricsTracker::writeJSON(std::string &path) {
 #endif
 
 
+#if !defined(AMD_ENERGY_ONLY)
     std::vector<long> timePointsGPU_general;
     for (auto &x: gpu_sampler->sampling_time_points()) {
         timePointsGPU_general.push_back(x.time_since_epoch().count());
     }
     metricsJSON << "\t \"timePointsGPU\":  " + vectorToJSONString<long>(timePointsGPU_general) + ",\n";
-
+#endif
     std::vector<long> timePointsCPU_general;
     for (auto &x: cpu_sampler->sampling_time_points()) {
         timePointsCPU_general.push_back(x.time_since_epoch().count());
