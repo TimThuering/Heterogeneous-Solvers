@@ -400,7 +400,7 @@ double MetricsTracker::readEnergy_rsmi(uint64_t &timestamp) {
         std::cerr << "Could not retrieve energy with rsmi" << std::endl;
     }
 
-    double energy_joules = energy * (double) resolution;
+    double energy_joules = energy * (double) resolution / 1000000.0;
 
     return energy_joules;
 }
