@@ -47,7 +47,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
         hws::level_zero_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #endif
 
-#ifndef INTEL
+#if !(defined(INTEL) || defined(AMD_ENERGY_ONLY))
         if (generalSamples_GPU.get_compute_utilization().has_value()) {
             double averageUtil = 0.0;
             if (nextTimePoint_GPU < generalSamples_GPU.get_compute_utilization().value().size()) {
@@ -198,9 +198,12 @@ void MetricsTracker::writeJSON(std::string &path) {
     if (cpu_sampler->general_samples().get_name().has_value()) {
         metricsJSON << std::string("\t \"CPU\":                             ") + "\"" + cpu_sampler->general_samples().get_name().value() + "\"" + ",\n";
     }
+#if !defined(AMD_ENERGY_ONLY)
     if (gpu_sampler->general_samples().get_name().has_value()) {
         metricsJSON << std::string("\t \"GPU\":                             ") + "\"" + gpu_sampler->general_samples().get_name().value() + "\"" + ",\n";
     }
+#endif
+
 #endif
 
     metricsJSON << "\t \"N\":                               " + std::to_string(conf::N) + ",\n";
