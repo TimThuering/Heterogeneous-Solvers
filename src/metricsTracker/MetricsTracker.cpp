@@ -376,7 +376,7 @@ double MetricsTracker::readEnergy_rsmi(uint64_t &timestamp) {
 
     returnValue = rsmi_init(0);
     if (returnValue != RSMI_STATUS_SUCCESS) {
-        std::cerr << "Failed to initialize rsmi: " << rsmi_error_string(returnValue) << std::endl;
+        std::cerr << "Failed to initialize rsmi " << std::endl;
         return -1.0;
     }
 
@@ -385,7 +385,7 @@ double MetricsTracker::readEnergy_rsmi(uint64_t &timestamp) {
 
     returnValue = rsmi_dev_energy_count_get(0, &energy, &resolution, &timestamp);
     if (returnValue != RSMI_STATUS_SUCCESS) {
-        std::cerr << "Could not retrieve energy with rsmi"  << rsmi_error_string(returnValue) << std::endl;
+        std::cerr << "Could not retrieve energy with rsmi" << std::endl;
     }
 
     double energy_joules = energy * resolution;
