@@ -7,6 +7,11 @@
 #include "UtilityFunctions.hpp"
 #include "Configuration.hpp"
 
+#ifdef AMD_ENERGY_ONLY
+#include "rocm_smi/rocm_smi.h"
+#endif
+
+
 void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount_GPU, std::size_t blockCount_CPU, double iterationTime, int updateInterval) {
 #ifdef BUILD_HWS
     sampler.pause_sampling();
@@ -139,6 +144,10 @@ void MetricsTracker::startTracking() {
         sampler.start_sampling();
     }
 #endif
+
+#ifdef AMD_ENERGY_ONLY
+    setInitialEnergyValue_rsmi()
+#endif
 }
 
 void MetricsTracker::endTracking() {
@@ -146,6 +155,10 @@ void MetricsTracker::endTracking() {
     if (conf::enableHWS) {
         sampler.stop_sampling();
     }
+#endif
+
+#ifdef AMD_ENERGY_ONLY
+    setFinalEnergyValue_rsmi()
 #endif
 }
 
@@ -312,6 +325,14 @@ void MetricsTracker::writeJSON(std::string &path) {
     }
 
 
+#ifdef AMD_ENERGY_ONLY
+    metricsJSON << "\t \"initial_rsmi_energy_value\": " + std::to_string(initial_rsmi_energy_value) + ",\n";
+    metricsJSON << "\t \"final_rsmi_energy_value\":   " + std::to_string(final_rsmi_energy_value) + ",\n";
+    metricsJSON << "\t \"initial_rsmi_time\":         " + std::to_string(initial_rsmi_time) + ",\n";
+    metricsJSON << "\t \"final_rsmi_time\":           " + std::to_string(final_rsmi_time) + ",\n";
+#endif
+
+
     std::vector<long> timePointsGPU_general;
     for (auto &x: gpu_sampler->sampling_time_points()) {
         timePointsGPU_general.push_back(x.time_since_epoch().count());
@@ -347,3 +368,41 @@ std::string MetricsTracker::vectorToJSONString(std::vector<T> vector) {
 
     return jsonString;
 }
+
+#ifdef AMD_ENERGY_ONLY
+
+double MetricsTracker::readEnergy_rsmi(uint64_t &timestamp) {
+    rsmi_status_t returnValue;
+
+    returnValue = rsmi_init(0);
+    if (returnValue != RSMI_STATUS_SUCCESS) {
+        std::cerr << "Failed to initialize rsmi: " << rsmi_error_string(returnValue) << std::endl;
+        return -1.0;
+    }
+
+    uint64_t energy = 0;
+    float resolution = 0.0f;
+
+    returnValue = rsmi_dev_energy_count_get(0, &energy, &resolution, &timestamp);
+    if (returnValue != RSMI_STATUS_SUCCESS) {
+        std::cerr << "Could not retrieve energy with rsmi"  << rsmi_error_string(returnValue) << std::endl;
+    }
+
+    double energy_joules = energy * resolution;
+
+    return energy_joules;
+}
+
+void MetricsTracker::setInitialEnergyValue_rsmi() {
+    uint64_t timestamp;
+    initial_rsmi_energy_value = readEnergy_rsmi(timestamp);
+    initial_rsmi_time = timestamp;
+}
+
+void MetricsTracker::setFinalEnergyValue_rsmi() {
+    uint64_t timestamp;
+    final_rsmi_energy_value = readEnergy_rsmi(timestamp);
+    final_rsmi_time = timestamp;
+}
+
+#endif

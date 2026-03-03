@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 option(ENABLE_TESTS "Enable Test" OFF)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
 option(BUILD_HWS "Builds the hardware-sampling library (hws)" ON)
+option(AMD_ENERGY_ONLY "Measure only the total energy consumption on AMD GPUs without hws for performance reasons on some GPUs" OFF)
 set(GPU_VENDOR "NVIDIA" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
 set(HWS_SAMPLING_INTERVAL_DEFAULT 10 CACHE STRING "Default sampling interval for the hws library")
 
@@ -113,6 +114,15 @@ endif ()
 
 target_compile_definitions(heterogeneous_solvers_lib PUBLIC ${GPU_VENDOR})
 
+if (${AMD_ENERGY_ONLY})
+    # dependencies for native energy sampling
+    find_package(rocm_smi)
+
+    target_compile_definitions(heterogeneous_solvers_lib PUBLIC AMD_ENERGY_ONLY=1)
+    target_compile_definitions(heterogeneous_solvers PUBLIC AMD_ENERGY_ONLY=1)
+
+endif ()
+
 if (${BUILD_HWS})
     target_compile_definitions(heterogeneous_solvers_lib PUBLIC BUILD_HWS=1)
     target_compile_definitions(heterogeneous_solvers PUBLIC BUILD_HWS=1)
@@ -129,6 +139,11 @@ if (${BUILD_HWS})
         set(HWS_ENABLE_PYTHON_BINDINGS OFF CACHE INTERNAL "" FORCE)
         set(HWS_SAMPLING_INTERVAL ${HWS_SAMPLING_INTERVAL_DEFAULT} CACHE INTERNAL "" FORCE)
         set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE BOOL "" FORCE)
+
+        if (${AMD_ENERGY_ONLY})
+            # disable hws gpu sampling as total energy consumption will be measured natively
+            set(HWS_ENABLE_GPU_AMD_SAMPLING OFF CACHE INTERNAL "" FORCE)
+        endif ()
 
         if (${GPU_VENDOR} STREQUAL "NVIDIA")
             # disable AMD GPU sampling on NVIDIA systems explicitly
