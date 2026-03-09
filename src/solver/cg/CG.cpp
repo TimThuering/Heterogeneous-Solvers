@@ -51,6 +51,11 @@ void CG::solveHeterogeneous() {
     auto endMemInit = std::chrono::steady_clock::now();
     metricsTracker.memoryInitTime = std::chrono::duration<double, std::milli>(endMemInit - startMemInit).count();
 
+#ifdef BUILD_HWS
+    const decltype(hws::event::name) startCompute = "startCompute";
+    metricsTracker.sampler.add_event(startCompute);
+#endif
+
     // variables for cg algorithm
     conf::fp_type delta_new = 0;
     conf::fp_type delta_old = 0;
@@ -132,6 +137,11 @@ void CG::solveHeterogeneous() {
         firstIteration = false;
     }
     waitAllQueues();
+
+#ifdef BUILD_HWS
+    const decltype(hws::event::name) endCompute = "endCompute";
+    metricsTracker.sampler.add_event(endCompute);
+#endif
 
     if (blockCountGPU != 0 && conf::unifiedAddressSpace == false) {
         auto startMemCopy = std::chrono::steady_clock::now();

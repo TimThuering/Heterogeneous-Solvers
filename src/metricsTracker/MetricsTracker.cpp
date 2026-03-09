@@ -343,6 +343,24 @@ void MetricsTracker::writeJSON(std::string &path) {
     metricsJSON << "\t \"final_rsmi_time\":           " + std::to_string(final_rsmi_time) + ",\n";
 #endif
 
+    metricsJSON << "\t \"hwsEvents_GPU\":  [";
+    for (const hws::event &hwsEvent: gpu_sampler->get_events()) {
+        if (hwsEvent.name == "startCompute" || hwsEvent.name == "endCompute") {
+            metricsJSON << "{\"" << hwsEvent.name << "\" : " << std::to_string(hwsEvent.time_point.time_since_epoch().count()) << "},";
+        }
+    }
+    metricsJSON.seekp(-1, std::ios::cur); // delete last ','
+    metricsJSON << "], \n";
+
+    metricsJSON << "\t \"hwsEvents_CPU\":  [";
+    for (const hws::event &hwsEvent: cpu_sampler->get_events()) {
+        if (hwsEvent.name == "startCompute" || hwsEvent.name == "endCompute") {
+            metricsJSON << "{\"" << hwsEvent.name << "\" : " << std::to_string(hwsEvent.time_point.time_since_epoch().count()) << "},";
+        }
+    }
+    metricsJSON.seekp(-1, std::ios::cur); // delete last ','
+    metricsJSON << "], \n";
+
 
 #if !defined(AMD_ENERGY_ONLY)
     std::vector<long> timePointsGPU_general;

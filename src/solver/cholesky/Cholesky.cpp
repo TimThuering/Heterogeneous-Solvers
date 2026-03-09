@@ -454,6 +454,10 @@ void Cholesky::solve_heterogeneous() {
     blockCountCPU = initialBlockCountCPU;
     blockStartGPU = initialBlockStartGPU;
 
+#ifdef BUILD_HWS
+    const decltype(hws::event::name) startCompute = "startCompute";
+    metricsTracker.sampler.add_event(startCompute);
+#endif
 
     // begin with tiled Cholesky decomposition using right-looking algorithm
     for (int k = 0; k < A.blockCountXY; ++k) {
@@ -487,6 +491,11 @@ void Cholesky::solve_heterogeneous() {
         // time measurement and output
         printTimes(k);
     }
+
+#ifdef BUILD_HWS
+    const decltype(hws::event::name) endCompute = "endCompute";
+    metricsTracker.sampler.add_event(endCompute);
+#endif
 
     // copies all values that have been computed on GPU and are not yet in CPU memory
     copyResultFromGPU(blockCountATotal, blockSizeBytes);
