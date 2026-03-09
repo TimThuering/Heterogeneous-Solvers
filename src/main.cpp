@@ -48,6 +48,7 @@ int main(int argc, char* argv[]) {
         ("wg_size_vec", "work-group size for vector-vector operations", cxxopts::value<int>())
         ("wg_size_sp", "work-group size for the final scalar product step on GPUs", cxxopts::value<int>())
         ("i_max", "maximum number of iterations", cxxopts::value<int>())
+        ("i_fixed", "fixed number of iterations", cxxopts::value<int>())
         ("eps", "epsilon value for the termination of the cg algorithm", cxxopts::value<double>())
         ("update_int", "interval in which CPU/GPU distribution will be rebalanced", cxxopts::value<int>())
         ("init_gpu_perc", "initial proportion of work assigned to gpu", cxxopts::value<double>())
@@ -134,6 +135,10 @@ int main(int argc, char* argv[]) {
 
     if (arguments.count("i_max")) {
         conf::iMax = arguments["i_max"].as<int>();
+    }
+
+    if (arguments.count("i_fixed")) {
+        conf::fixedCGIterations = arguments["i_fixed"].as<int>();
     }
 
     if (arguments.count("eps")) {

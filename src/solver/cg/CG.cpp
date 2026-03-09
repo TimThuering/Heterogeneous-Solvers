@@ -79,7 +79,19 @@ void CG::solveHeterogeneous() {
 
     bool firstIteration = true;
 
-    while (iteration < conf::iMax && delta_new > epsilon2 * delta_zero) {
+    while (true) {
+        if (conf::fixedCGIterations == -1) {
+            // use default, residual based termination condition
+            if (!(iteration < conf::iMax && delta_new > epsilon2 * delta_zero)) {
+                break;
+            }
+        } else {
+            // terminate after fixed amount of iterations
+            if (static_cast<long>(iteration) >= conf::fixedCGIterations) {
+                break;
+            }
+        }
+
         auto startIteration = std::chrono::steady_clock::now();
 
         if (iteration % loadBalancer->updateInterval == 0 && !firstIteration) {

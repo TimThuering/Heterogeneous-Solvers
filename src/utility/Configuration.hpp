@@ -57,6 +57,8 @@ namespace conf {
         bool unifiedAddressSpace = false; /// assume a unified address space for CPUs and GPUs.
 
         bool advancedSampling = false; /// use hws to sample more metrics such as temperature and clock speed
+
+        int fixedCGIterations = -1; /// specifies a fixed amount of CG iterations. Use normal residual based criterion if -1
     };
 
     Configuration& get();
@@ -122,6 +124,8 @@ namespace conf {
     inline bool& unifiedAddressSpace = get().unifiedAddressSpace;
 
     inline bool& advancedSampling = get().advancedSampling;
+
+    inline int& fixedCGIterations = get().fixedCGIterations;
 
 
 }
