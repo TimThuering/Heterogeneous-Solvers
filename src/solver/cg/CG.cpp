@@ -303,6 +303,8 @@ void CG::freeDataStructures() {
         sycl::free(d_gpu, gpuQueue);
         sycl::free(q_gpu, gpuQueue);
         sycl::free(tmp_gpu, gpuQueue);
+    } else if (conf::unifiedAddressSpace == true) {
+        sycl::free(tmp_gpu, gpuQueue);
     }
 
     if (blockCountCPU != 0) {
