@@ -108,22 +108,6 @@ private:
 
     template<typename T>
     std::string vectorToJSONString(std::vector<T> vector);
-
-
-#ifdef AMD_ENERGY_ONLY
-    double initial_rsmi_energy_value = 0.0;
-    uint64_t initial_rsmi_time = 0;
-
-    double final_rsmi_energy_value = 0.0;
-    uint64_t final_rsmi_time = 0;
-
-
-    double readEnergy_rsmi(uint64_t &timestamp);
-
-    void setInitialEnergyValue_rsmi();
-
-    void setFinalEnergyValue_rsmi();
-#endif
 };
 
 #endif //HETEROGENEOUS_CONJUGATE_GRADIENTS_METRICSTRACKER_HPP

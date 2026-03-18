@@ -7,10 +7,6 @@
 #include "UtilityFunctions.hpp"
 #include "Configuration.hpp"
 
-#ifdef AMD_ENERGY_ONLY
-#include "rocm_smi/rocm_smi.h"
-#endif
-
 
 void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount_GPU, std::size_t blockCount_CPU, double iterationTime, int updateInterval) {
 #ifdef BUILD_HWS
@@ -37,7 +33,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
         auto *gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler *>(sampler.samplers()[1].get());
         hws::nvml_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::nvml_power_samples powerSamples_GPU = gpu_sampler->power_samples();
-#elif defined(AMD) && !defined(AMD_ENERGY_ONLY)
+#elif defined(AMD)
         auto *gpu_sampler = dynamic_cast<hws::gpu_amd_hardware_sampler *>(sampler.samplers()[1].get());
         hws::rocm_smi_general_samples generalSamples_GPU = gpu_sampler->general_samples();
         hws::rocm_smi_power_samples powerSamples_GPU = gpu_sampler->power_samples();
@@ -47,7 +43,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
         hws::level_zero_power_samples powerSamples_GPU = gpu_sampler->power_samples();
 #endif
 
-#if !(defined(INTEL) || defined(AMD_ENERGY_ONLY))
+#ifndef INTEL
         if (generalSamples_GPU.get_compute_utilization().has_value()) {
             double averageUtil = 0.0;
             if (nextTimePoint_GPU < generalSamples_GPU.get_compute_utilization().value().size()) {
@@ -112,7 +108,6 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
             powerDraw_CPU.push_back(powerDraw);
         }
 
-#ifndef AMD_ENERGY_ONLY
         if (powerSamples_GPU.get_power_usage().has_value()) {
             double powerDraw = 0.0;
             if (nextTimePointPower_GPU < powerSamples_GPU.get_power_usage().value().size()) {
@@ -132,7 +127,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
             nextTimePointPower_GPU = powerSamples_GPU.get_power_usage().value().size();
             powerDraw_GPU.push_back(powerDraw);
         }
-#endif
+
     }
 
 
@@ -147,10 +142,6 @@ void MetricsTracker::startTracking() {
         sampler.start_sampling();
     }
 #endif
-
-#ifdef AMD_ENERGY_ONLY
-    setInitialEnergyValue_rsmi();
-#endif
 }
 
 void MetricsTracker::endTracking() {
@@ -158,10 +149,6 @@ void MetricsTracker::endTracking() {
     if (conf::enableHWS) {
         sampler.stop_sampling();
     }
-#endif
-
-#ifdef AMD_ENERGY_ONLY
-    setFinalEnergyValue_rsmi();
 #endif
 }
 
@@ -178,7 +165,7 @@ void MetricsTracker::writeJSON(std::string &path) {
     auto *gpu_sampler = dynamic_cast<hws::gpu_nvidia_hardware_sampler *>(sampler.samplers()[1].get());
     hws::nvml_general_samples generalSamples_GPU = gpu_sampler->general_samples();
     hws::nvml_power_samples powerSamples_GPU = gpu_sampler->power_samples();
-#elif defined(AMD) && !defined(AMD_ENERGY_ONLY)
+#elif defined(AMD)
     auto *gpu_sampler = dynamic_cast<hws::gpu_amd_hardware_sampler *>(sampler.samplers()[1].get());
     hws::rocm_smi_general_samples generalSamples_GPU = gpu_sampler->general_samples();
     hws::rocm_smi_power_samples powerSamples_GPU = gpu_sampler->power_samples();
@@ -198,12 +185,9 @@ void MetricsTracker::writeJSON(std::string &path) {
     if (cpu_sampler->general_samples().get_name().has_value()) {
         metricsJSON << std::string("\t \"CPU\":                             ") + "\"" + cpu_sampler->general_samples().get_name().value() + "\"" + ",\n";
     }
-#if !defined(AMD_ENERGY_ONLY)
     if (gpu_sampler->general_samples().get_name().has_value()) {
         metricsJSON << std::string("\t \"GPU\":                             ") + "\"" + gpu_sampler->general_samples().get_name().value() + "\"" + ",\n";
     }
-#endif
-
 #endif
 
     metricsJSON << "\t \"N\":                               " + std::to_string(conf::N) + ",\n";
@@ -298,50 +282,36 @@ void MetricsTracker::writeJSON(std::string &path) {
 
 #ifdef BUILD_HWS
 
-#if !(defined(INTEL) || defined(AMD_ENERGY_ONLY))
+#ifndef INTEL
     metricsJSON << "\t \"rawUtilizationData_GPU\": " + vectorToJSONString<unsigned int>(generalSamples_GPU.get_compute_utilization().value_or(std::vector<unsigned int>(0))) + ",\n";
 #else
     metricsJSON << "\t \"rawUtilizationData_GPU\": " + std::string("[]") + ",\n";
 #endif
     metricsJSON << "\t \"rawUtilizationData_CPU\": " + vectorToJSONString<double>(generalSamples_CPU.get_compute_utilization().value_or(std::vector<double>(0))) + ",\n";
 
-#if !defined(AMD_ENERGY_ONLY)
     metricsJSON << "\t \"rawPowerData_GPU\":       " + vectorToJSONString<double>(powerSamples_GPU.get_power_usage().value_or(std::vector<double>(0))) + ",\n";
-#endif
     metricsJSON << "\t \"rawPowerData_CPU\":       " + vectorToJSONString<double>(powerSamples_CPU.get_power_usage().value_or(std::vector<double>(0))) + ",\n";
 
-#if !defined(AMD_ENERGY_ONLY)
     metricsJSON << "\t \"rawEnergyData_GPU\":      " + vectorToJSONString<double>(powerSamples_GPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
-#endif
     metricsJSON << "\t \"rawEnergyData_CPU\":      " + vectorToJSONString<double>(powerSamples_CPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
 
     if (conf::advancedSampling) {
         metricsJSON << "\t \"rawClockData_CPU\":       " + vectorToJSONString<unsigned int>(cpu_sampler->clock_samples().get_clock_frequency().value_or(std::vector<unsigned int>(0))) + ",\n";
         metricsJSON << "\t \"rawTempData_CPU\":        " + vectorToJSONString<double>(cpu_sampler->temperature_samples().get_temperature().value_or(std::vector<double>(0))) + ",\n";
-#if !defined(AMD_ENERGY_ONLY)
         metricsJSON << "\t \"rawClockData_GPU\":       " + vectorToJSONString<double>(gpu_sampler->clock_samples().get_clock_frequency().value_or(std::vector<double>(0))) + ",\n";
         metricsJSON << "\t \"rawMemClockData_GPU\":    " + vectorToJSONString<double>(gpu_sampler->clock_samples().get_memory_clock_frequency().value_or(std::vector<double>(0))) + ",\n";
         metricsJSON << "\t \"rawTempData_GPU\":        " + vectorToJSONString<double>(gpu_sampler->temperature_samples().get_temperature().value_or(std::vector<double>(0))) + ",\n";
-#endif
 
 #ifdef NVIDIA
         metricsJSON << "\t \"rawPowerProfileData\":    " + vectorToJSONString<int>(gpu_sampler->power_samples().get_power_profile().value_or(std::vector<int>(0))) + ",\n";
 #endif
 
-#if defined(AMD) && !defined(AMD_ENERGY_ONLY)
+#ifdef AMD
         metricsJSON << "\t \"rawTempData_GPU_hotspot\": " + vectorToJSONString<double>(gpu_sampler->temperature_samples().get_hotspot_temperature().value_or(std::vector<double>(0))) + ",\n";
         metricsJSON << "\t \"rawTempData_GPU_memory\":  " + vectorToJSONString<double>(gpu_sampler->temperature_samples().get_memory_temperature().value_or(std::vector<double>(0))) + ",\n";
         metricsJSON << "\t \"socketClockData_GPU\":    " + vectorToJSONString<double>(gpu_sampler->clock_samples().get_socket_clock_frequency().value_or(std::vector<double>(0))) + ",\n";
 #endif
     }
-
-
-#ifdef AMD_ENERGY_ONLY
-    metricsJSON << "\t \"initial_rsmi_energy_value\": " + std::to_string(initial_rsmi_energy_value) + ",\n";
-    metricsJSON << "\t \"final_rsmi_energy_value\":   " + std::to_string(final_rsmi_energy_value) + ",\n";
-    metricsJSON << "\t \"initial_rsmi_time\":         " + std::to_string(initial_rsmi_time) + ",\n";
-    metricsJSON << "\t \"final_rsmi_time\":           " + std::to_string(final_rsmi_time) + ",\n";
-#endif
 
     metricsJSON << "\t \"hwsEvents_GPU\":  [";
     for (const hws::event &hwsEvent: gpu_sampler->get_events()) {
@@ -362,13 +332,11 @@ void MetricsTracker::writeJSON(std::string &path) {
     metricsJSON << "], \n";
 
 
-#if !defined(AMD_ENERGY_ONLY)
     std::vector<long> timePointsGPU_general;
     for (auto &x: gpu_sampler->sampling_time_points()) {
         timePointsGPU_general.push_back(x.time_since_epoch().count());
     }
     metricsJSON << "\t \"timePointsGPU\":  " + vectorToJSONString<long>(timePointsGPU_general) + ",\n";
-#endif
     std::vector<long> timePointsCPU_general;
     for (auto &x: cpu_sampler->sampling_time_points()) {
         timePointsCPU_general.push_back(x.time_since_epoch().count());
@@ -399,40 +367,3 @@ std::string MetricsTracker::vectorToJSONString(std::vector<T> vector) {
     return jsonString;
 }
 
-#ifdef AMD_ENERGY_ONLY
-
-double MetricsTracker::readEnergy_rsmi(uint64_t &timestamp) {
-    rsmi_status_t returnValue;
-
-    returnValue = rsmi_init(0);
-    if (returnValue != RSMI_STATUS_SUCCESS) {
-        std::cerr << "Failed to initialize rsmi " << std::endl;
-        return -1.0;
-    }
-
-    uint64_t energy = 0;
-    float resolution = 0.0f;
-
-    returnValue = rsmi_dev_energy_count_get(0, &energy, &resolution, &timestamp);
-    if (returnValue != RSMI_STATUS_SUCCESS) {
-        std::cerr << "Could not retrieve energy with rsmi" << std::endl;
-    }
-
-    double energy_joules = energy * (double) resolution / 1000000.0;
-
-    return energy_joules;
-}
-
-void MetricsTracker::setInitialEnergyValue_rsmi() {
-    uint64_t timestamp;
-    initial_rsmi_energy_value = readEnergy_rsmi(timestamp);
-    initial_rsmi_time = timestamp;
-}
-
-void MetricsTracker::setFinalEnergyValue_rsmi() {
-    uint64_t timestamp;
-    final_rsmi_energy_value = readEnergy_rsmi(timestamp);
-    final_rsmi_time = timestamp;
-}
-
-#endif
