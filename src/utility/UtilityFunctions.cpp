@@ -42,7 +42,7 @@ std::string UtilityFunctions::getTimeString() {
 }
 
 void UtilityFunctions::measureIdlePowerCPU() {
-#ifdef BUILD_HWS
+#if defined(BUILD_HWS) && defined(ENABLE_CPU_SAMPLING)
     hws::cpu_hardware_sampler cpuSampler{hws::sample_category::power};
 
     cpuSampler.start_sampling();
@@ -61,7 +61,7 @@ void UtilityFunctions::measureIdlePowerCPU() {
             conf::idleWatt_CPU << "W." << std::endl;
     }
 #else
-    std::cerr << "\033[93m[WARNING]\033[0m HWS backend not available. No energy metrics will be sampled." << std::endl;
+    std::cerr << "\033[93m[WARNING]\033[0m HWS (CPU) backend not available. No energy metrics will be sampled." << std::endl;
 #endif
 
 

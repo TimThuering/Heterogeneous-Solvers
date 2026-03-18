@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 option(ENABLE_TESTS "Enable Test" OFF)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
 option(BUILD_HWS "Builds the hardware-sampling library (hws)" ON)
+option(ENABLE_CPU_SAMPLING "Enable CPU sampling with hws" ON)
 set(GPU_VENDOR "NVIDIA" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
 set(HWS_SAMPLING_INTERVAL_DEFAULT 10 CACHE STRING "Default sampling interval for the hws library")
 
@@ -118,6 +119,11 @@ if (${BUILD_HWS})
     target_compile_definitions(heterogeneous_solvers_lib PUBLIC BUILD_HWS=1)
     target_compile_definitions(heterogeneous_solvers PUBLIC BUILD_HWS=1)
 
+    if (${ENABLE_CPU_SAMPLING})
+        target_compile_definitions(heterogeneous_solvers_lib PUBLIC ENABLE_CPU_SAMPLING=1)
+        target_compile_definitions(heterogeneous_solvers PUBLIC ENABLE_CPU_SAMPLING=1)
+    endif ()
+
     find_package(hws QUIET)
     if (hws_FOUND)
         message("Using existing hws installation")
@@ -134,6 +140,11 @@ if (${BUILD_HWS})
         if (${GPU_VENDOR} STREQUAL "NVIDIA")
             # disable AMD GPU sampling on NVIDIA systems explicitly
             set(HWS_ENABLE_GPU_AMD_SAMPLING OFF CACHE INTERNAL "" FORCE)
+        endif ()
+
+        if (NOT ${ENABLE_CPU_SAMPLING})
+            # disable hws CPU sampling
+            set(HWS_ENABLE_CPU_SAMPLING OFF CACHE INTERNAL "" FORCE)
         endif ()
 
         FetchContent_Declare(

@@ -106,6 +106,14 @@ private:
     std::size_t nextTimePointPower_GPU = 0;
     std::size_t nextTimePointPower_CPU = 0;
 
+#ifdef ENABLE_CPU_SAMPLING
+    int hwsSamplerIndexCPU = 0;
+    int hwsSamplerIndexGPU = 1;
+#else
+    int hwsSamplerIndexGPU = 0;
+    int hwsSamplerIndexCPU = -1; // CPU sampler does not exist
+#endif
+
     template<typename T>
     std::string vectorToJSONString(std::vector<T> vector);
 };
