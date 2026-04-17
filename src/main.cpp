@@ -118,6 +118,11 @@ int main(int argc, char* argv[]) {
 
     if (arguments.count("mode")) {
         conf::mode = arguments["mode"].as<std::string>();
+        if (conf::mode == "power") {
+#ifndef ENABLE_DYN_LB_METRICS
+        throw std::runtime_error("experimental power load balancing not available --> enable in CMake");
+#endif
+        }
     }
 
     if (arguments.count("matrix_bsz")) {

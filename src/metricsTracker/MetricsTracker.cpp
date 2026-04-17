@@ -21,6 +21,8 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
     iterationTimes.push_back(iterationTime);
 
 #ifdef BUILD_HWS
+
+#ifdef ENABLE_DYN_LB_METRICS
     // track metrics for load balancing before every update interval
     if ((iteration + 1) % updateInterval == 0) {
         // get samples for power and utilization from the hws library
@@ -133,6 +135,7 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
 
     }
 
+#endif
 
     sampler.resume_sampling();
 #endif

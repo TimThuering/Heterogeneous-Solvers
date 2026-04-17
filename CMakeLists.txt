@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 option(ENABLE_TESTS "Enable Test" OFF)
 option(USE_DOUBLE "Use FP64 precision instead of FP32 for floating point data types" ON)
 option(BUILD_HWS "Builds the hardware-sampling library (hws)" ON)
+option(ENABLE_DYN_LB_METRICS "Enables experimental dynamic load balancing based on hws metics" OFF)
 option(ENABLE_CPU_SAMPLING "Enable CPU sampling with hws" ON)
 set(GPU_VENDOR "NVIDIA" CACHE STRING "GPU vendor: NVIDIA, AMD and INTEL are supported")
 set(HWS_SAMPLING_INTERVAL_DEFAULT 10 CACHE STRING "Default sampling interval for the hws library")
@@ -114,6 +115,10 @@ endif ()
 
 target_compile_definitions(heterogeneous_solvers_lib PUBLIC ${GPU_VENDOR})
 
+if (${ENABLE_DYN_LB_METRICS})
+    target_compile_definitions(heterogeneous_solvers_lib PUBLIC ENABLE_DYN_LB_METRICS=1)
+    target_compile_definitions(heterogeneous_solvers PUBLIC ENABLE_DYN_LB_METRICS=1)
+endif ()
 
 if (${BUILD_HWS})
     target_compile_definitions(heterogeneous_solvers_lib PUBLIC BUILD_HWS=1)
