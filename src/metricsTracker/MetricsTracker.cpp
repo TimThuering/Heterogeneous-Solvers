@@ -139,7 +139,6 @@ void MetricsTracker::updateMetrics(std::size_t iteration, std::size_t blockCount
 
     sampler.resume_sampling();
 #endif
-
 }
 
 void MetricsTracker::startTracking() {
@@ -268,8 +267,6 @@ void MetricsTracker::writeJSON(std::string &path) {
 #ifdef BUILD_HWS
         metricsJSON << ",\n";
 #endif
-
-
     } else if (conf::algorithm == "cholesky") {
         metricsJSON << "\t \"shiftTimes\":                      " + vectorToJSONString<double>(shiftTimes) + ",\n";
         metricsJSON << "\t \"choleskyDiagonalBlockTimes\":      " + vectorToJSONString<double>(choleskyDiagonalBlockTimes) + ",\n";
@@ -308,6 +305,9 @@ void MetricsTracker::writeJSON(std::string &path) {
     metricsJSON << "\t \"rawPowerData_CPU\":       " + vectorToJSONString<double>(powerSamples_CPU.get_power_usage().value_or(std::vector<double>(0))) + ",\n";
 #endif
 
+#ifdef NVIDIA
+    metricsJSON << "\t \"rawPowerData_Module\":    " + vectorToJSONString<double>(powerSamples_GPU.get_system_power_usage().value_or(std::vector<double>(0))) + ",\n";
+#endif
     metricsJSON << "\t \"rawEnergyData_GPU\":      " + vectorToJSONString<double>(powerSamples_GPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
 #ifdef ENABLE_CPU_SAMPLING
     metricsJSON << "\t \"rawEnergyData_CPU\":      " + vectorToJSONString<double>(powerSamples_CPU.get_power_total_energy_consumption().value_or(std::vector<double>(0))) + ",\n";
@@ -324,6 +324,8 @@ void MetricsTracker::writeJSON(std::string &path) {
 
 #ifdef NVIDIA
         metricsJSON << "\t \"rawPowerProfileData\":    " + vectorToJSONString<int>(gpu_sampler->power_samples().get_power_profile().value_or(std::vector<int>(0))) + ",\n";
+#else
+        metricsJSON << "\t \"rawPowerData_Module\":    " + std::string("[]") + ",\n";
 #endif
 
 #ifdef AMD
@@ -389,4 +391,3 @@ std::string MetricsTracker::vectorToJSONString(std::vector<T> vector) {
 
     return jsonString;
 }
-

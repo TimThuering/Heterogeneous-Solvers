@@ -155,7 +155,7 @@ if (${BUILD_HWS})
         FetchContent_Declare(
                 hws
                 GIT_REPOSITORY https://github.com/SC-SGS/hardware_sampling
-                GIT_TAG fbd284d7d18081c4b44fbff3b402afbe8a81610a
+                GIT_TAG d3041bb9bd78c27fd708cd42672651c69f50fe25
         )
         FetchContent_MakeAvailable(hws)
         add_dependencies(heterogeneous_solvers hws)
