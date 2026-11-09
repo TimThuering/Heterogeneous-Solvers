@@ -19,7 +19,7 @@ namespace conf {
 #endif
 
     struct Configuration {
-        int matrixBlockSize = 128; /// Block size for storing the symmetric matrix in memory
+        unsigned long matrixBlockSize = 128; /// Block size for storing the symmetric matrix in memory
         int workGroupSize = 128; /// Work-group size for matrix-vector operations
         int workGroupSizeVector = 128; /// Work-group size for vector-vector operations
         int workGroupSizeFinalScalarProduct = 512; /// Work-group size for the final scalar product step on GPUs
@@ -63,7 +63,7 @@ namespace conf {
 
     Configuration& get();
 
-    inline unsigned long matrixBlockSize = get().matrixBlockSize;
+    inline unsigned long& matrixBlockSize = get().matrixBlockSize;
 
     inline int& workGroupSize = get().workGroupSize;
 
